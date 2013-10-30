@@ -2,12 +2,12 @@
 @match_urgency(URGENCY.HIGH, URGENCY.MEDIUM)
 def notify(me, event) :
     if me.is_buisness_time() :
-        me.send(event, METHOD.EMAIL)
-        me.send(event, METHOD.SMS)
+        me.send_email(event)
+        me.send_sms(event)
     else :
-        me.send(event, METHOD.CALL)
+        me.call_via_duty(event)
         wait(2)
-        me.send(event, METHOD.CALL)
+        me.call_via_duty(event)
     wait(2)
     get_user("asimakov").send(event, METHOD.EMAIL)
 
@@ -15,12 +15,12 @@ def notify(me, event) :
 def notify(me, event) :
     if me.is_buisness_time() :
         if event.level == LEVEL.CRIT :
-            me.send(event, METHOD.EMAIL)
-            me.send(event, METHOD.SMS)
+            me.send_email(event)
+            me.send_sms(event)
         else :
-            me.send(event, METHOD.EMAIL)
+            me.send_email(event)
 
 @match_urgency(URGENCY.CUSTOM)
 def notify(me, event) :
-    me.send(event, METHOD.EMAIL)
+    me.send_email(event)
 

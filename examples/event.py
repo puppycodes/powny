@@ -9,7 +9,7 @@ def on_event(event) : # В обработчик прилетает копия о
         notify(event, login="disarmer", urgency=URGENCY.HIGH, wait=10)
 
     event.text = "В течении полутора часов, andozer и disarmer не ответили на сообщение\n-----\n" + event.text
-    get_maillist("monitor-admins@yandex-team.ru").send(event)
+    get_maillist("monitor-admins@yandex-team.ru").send_email(event)
 
 
 ##### Правило, имитирующее список ответственных #####
