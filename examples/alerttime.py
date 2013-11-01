@@ -13,7 +13,7 @@ def on_event(event) :
 ####
 # Способ второй: откладывание реализует пользователь сам для себя, он же описывает собственную логику оповещений
 ####
-@match_urgency(URGENCY.HIGH, URGENCY.MEDIUM)
+@match_notify(urgency=(URGENCY.HIGH, URGENCY.MEDIUM))
 def on_notify(event) :
     if not (time("9:00") <= event.time_start <= time("21:00")) :
         wait_until("9:00")
@@ -26,7 +26,7 @@ def on_notify(event) :
     wait("2m")
     get_user("asimakov").send(event, METHOD.EMAIL)
 
-@match_urgency(URGENCY.LOW)
+@match_notify(urgency=URGENCY.LOW)
 def on_notify(event) :
     if not (time("9:00") <= event.time_start <= time("21:00")) :
         delay_until("9:00")
