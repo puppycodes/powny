@@ -17,7 +17,7 @@ def on_event(event) :
 def on_notify(event) :
     if not (time("9:00") <= event.time_start <= time("21:00")) :
         wait_until("9:00")
-    if event.user.is_buisness_time() :
+    if event.user.is_business_time() :
         event.user.send_email(event)
         event.user.send_sms(event)
     else :
@@ -30,7 +30,7 @@ def on_notify(event) :
 def on_notify(event) :
     if not (time("9:00") <= event.time_start <= time("21:00")) :
         delay_until("9:00")
-    if event.user.is_buisness_time() :
+    if event.user.is_business_time() :
         if event.level == LEVEL.CRIT :
             event.user.send_email(event)
             event.user.send_sms(event)
