@@ -5,13 +5,7 @@ from raava import zoo
 from raava import splitter
 from raava import rules
 from raava import handlers
-#from raava import worker # FIXME!
 
-
-#worker.setup_builtins({
-#    "LEVEL":       rules.LEVEL,
-#    "match_event": rules.match_event,
-#})
 
 import logging
 logger = logging.getLogger(const.LOGGER_NAME)
@@ -21,10 +15,10 @@ handler.setLevel(logging.DEBUG)
 handler.setFormatter(logging.Formatter("%(name)s %(threadName)s - %(levelname)s - %(message)s"))
 logger.addHandler(handler)
 
-
-import builtins
-builtins.LEVEL = rules.LEVEL
-builtins.match_event = rules.match_event
+rules.setup_builtins({
+        "LEVEL":       rules.LEVEL,
+        "match_event": rules.match_event,
+    })
 
 hand = handlers.Handlers("demo", (rules.HANDLER.ON_EVENT, rules.HANDLER.ON_NOTIFY, rules.HANDLER.ON_SEND))
 hand.load_handlers()
