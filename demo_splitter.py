@@ -22,7 +22,7 @@ rules.setup_builtins({
 
 hand = handlers.Handlers("demo", (rules.HANDLER.ON_EVENT, rules.HANDLER.ON_NOTIFY, rules.HANDLER.ON_SEND))
 hand.load_handlers()
-splitter_thread = splitter.Splitter(
+splitter_thread = splitter.SplitterThread(
     zoo.connect(("localhost",)),
     hand,
     1,

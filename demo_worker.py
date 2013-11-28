@@ -18,7 +18,7 @@ logger.addHandler(handler)
 
 def notify(task, *args_tuple, **kwargs_dict):
     task.checkpoint()
-    print(args_tuple, kwargs_dict)
+    print("\x1b[31;1m", args_tuple, kwargs_dict, "\x1b[0m")
     time.sleep(2)
     task.checkpoint()
 
@@ -30,7 +30,7 @@ rules.setup_builtins({
 z = zoo.connect(("localhost",))
 zoo.init(z)
 
-worker_thread = worker.Worker(z, 1, 5, 5)
+worker_thread = worker.WorkerThread(z, 1, 5, 5)
 worker_thread.start()
 worker_thread.join()
 
