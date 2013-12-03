@@ -30,7 +30,7 @@ rules.setup_builtins({
 z = zoo.connect(("localhost",))
 zoo.init(z)
 
-worker_thread = worker.WorkerThread(z, 1, 5, 5)
+worker_thread = worker.WorkerThread(z, 1)
 worker_thread.start()
 worker_thread.join()
 
