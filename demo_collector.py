@@ -16,7 +16,7 @@ logger.addHandler(handler)
 z = zoo.connect(("localhost",))
 zoo.init(z)
 
-collector_thread = collector.CollectorThread(z, 0.01, 5)
+collector_thread = collector.CollectorThread(z, 0.01, 5, 0)
 collector_thread.start()
 collector_thread.join()
 
