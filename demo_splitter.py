@@ -6,6 +6,7 @@ from raava import splitter
 from raava import rules
 from raava import handlers
 
+import gns
 
 import logging
 logger = logging.getLogger(const.LOGGER_NAME)
@@ -16,11 +17,11 @@ handler.setFormatter(logging.Formatter("%(name)s %(threadName)s - %(levelname)s 
 logger.addHandler(handler)
 
 rules.setup_builtins({
-        "LEVEL":       rules.LEVEL,
+        "LEVEL":       gns.LEVEL,
         "match_event": rules.match_event,
     })
 
-hand = handlers.Handlers("demo", (rules.HANDLER.ON_EVENT, rules.HANDLER.ON_NOTIFY, rules.HANDLER.ON_SEND))
+hand = handlers.Handlers("demo", (gns.HANDLER.ON_EVENT, gns.HANDLER.ON_NOTIFY, gns.HANDLER.ON_SEND))
 hand.load_handlers()
 splitter_thread = splitter.SplitterThread(
     zoo.connect(("localhost",)),
