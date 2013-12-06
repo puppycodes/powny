@@ -15,5 +15,9 @@ z = zoo.connect(("localhost",))
 zoo.init(z)
 splitter_thread = splitter.SplitterThread(z, hand, 1)
 splitter_thread.start()
-splitter_thread.join()
+try:
+    splitter_thread.join()
+except KeyboardInterrupt:
+    splitter_thread.stop()
+    rules.cleanup_builtins()
 
