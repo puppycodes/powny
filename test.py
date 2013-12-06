@@ -1,7 +1,9 @@
 #!/usr/bin/env pypy3
 
 
+# pylint: disable=W0401,W0614
 from raava.tests.test_task import *
+from raava.tests.test_rules import *
 
 import unittest
 
