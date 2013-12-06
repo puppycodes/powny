@@ -8,6 +8,9 @@ from raava import events
 
 import gns
 
-events_api = events.EventsApi(zoo.connect(["localhost"]))
-event_root = rules.EventRoot(json.loads(input()), extra={ rules.EXTRA_HANDLER : gns.HANDLER.ON_EVENT })
-print(events_api.add_event(event_root))
+gns.init_logging()
+z = zoo.connect(["localhost"])
+zoo.init(z)
+events_api = events.EventsApi(z)
+event_root = rules.EventRoot(json.loads(input()))
+print(events_api.add_event(event_root, gns.HANDLER.ON_EVENT))
