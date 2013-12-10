@@ -32,6 +32,12 @@ def _task_notify(task, *args_tuple, **kwargs_dict):
     time.sleep(2)
     task.checkpoint()
 
+def _task_fork(task, event_root, handler_type):
+    task.checkpoint()
+    task.fork(event_root, handler_type)
+    print("\x1b[31;1mFORK:", event_root, handler_type, "\x1b[0m")
+    task.checkpoint()
+
 MATCHER_BUILTINS_MAP = {
     "LEVEL":   LEVEL,
     "URGENCY": URGENCY,
@@ -53,6 +59,7 @@ MATCHER_BUILTINS_MAP = {
 
 WORKER_BUILTINS_MAP = {
     "notify": worker.make_task_builtin(_task_notify),
+    "fork":   worker.make_task_builtin(_task_fork),
 }
 WORKER_BUILTINS_MAP.update(MATCHER_BUILTINS_MAP)
 
