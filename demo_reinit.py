@@ -8,7 +8,7 @@ import gns
 
 gns.init_logging()
 z = zoo.connect(["localhost"])
-for path in (zoo.INPUT_PATH, zoo.READY_PATH, zoo.RUNNING_PATH, zoo.CONTROL_PATH, zoo.INPUT_ENTRIES_PATH, zoo.READY_ENTRIES_PATH):
+for path in (zoo.INPUT_PATH, zoo.READY_PATH, zoo.RUNNING_PATH, zoo.CONTROL_PATH):
     try:
         z.delete(path, recursive=True)
     except kazoo.exceptions.NoNodeError:
