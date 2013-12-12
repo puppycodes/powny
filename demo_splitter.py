@@ -6,7 +6,7 @@ from raava import handlers
 from raava import application
 
 from raava import apps
-import raava.apps.splitter
+import raava.apps.splitter # pylint: disable=W0611
 
 import gns
 

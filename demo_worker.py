@@ -5,7 +5,7 @@ from raava import application
 from raava import rules
 
 from raava import apps
-import raava.apps.worker
+import raava.apps.worker # pylint: disable=W0611
 
 import gns
 

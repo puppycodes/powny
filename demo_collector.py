@@ -4,7 +4,7 @@ from raava import zoo
 from raava import application
 
 from raava import apps
-import raava.apps.collector
+import raava.apps.collector # pylint: disable=W0611
 
 def main():
     application.init_logging()
