@@ -1,17 +1,20 @@
 #!/usr/bin/env pypy3
 
 from raava import zoo
-from raava import collector
+from raava import application
 
-import gns
+from raava import apps
+import raava.apps.collector
 
-gns.init_logging()
-z = zoo.connect(("localhost",))
-zoo.init(z)
-collector_thread = collector.CollectorThread(z, 0.01, 5, 0)
-collector_thread.start()
-try:
-    collector_thread.join()
-except KeyboardInterrupt:
-    collector_thread.stop()
+def main():
+    application.init_logging()
+
+    client = zoo.connect(["localhost"])
+    zoo.init(client)
+    client.stop()
+
+    apps.collector.Collector(10, 100, 10, 0.01, (["localhost"], 0.01, 5, 0)).run()
+
+if __name__ == "__main__":
+    main()
 
