@@ -24,6 +24,23 @@ ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0], OPTION_RECYCLED_PRIORITY,
 
 ##### Public classes #####
 class CollectorMain(service.Main):
+    def __init__(self):
+        service.Main.__init__(
+            self,
+            apps.collector.Collector,
+            COLLECTOR_SECTION,
+            (
+                OPTION_POLL_INTERVAL,
+                OPTION_ACQUIRE_DELAY,
+                OPTION_RECYCLED_PRIORITY,
+            ),
+            (
+                ARG_POLL_INTERVAL,
+                ARG_ACQUIRE_DELAY,
+                ARG_RECYCLED_PRIORITY,
+            ),
+        )
+
     def construct(self, options):
         return (
             options[service.OPTION_ZOO_NODES],
@@ -35,18 +52,5 @@ class CollectorMain(service.Main):
 
 ##### Main #####
 if __name__ == "__main__":
-    CollectorMain(
-        apps.collector.Collector,
-        COLLECTOR_SECTION,
-        (
-            OPTION_POLL_INTERVAL,
-            OPTION_ACQUIRE_DELAY,
-            OPTION_RECYCLED_PRIORITY,
-        ),
-        (
-            ARG_POLL_INTERVAL,
-            ARG_ACQUIRE_DELAY,
-            ARG_RECYCLED_PRIORITY,
-        ),
-    ).run()
+    CollectorMain().run()
 

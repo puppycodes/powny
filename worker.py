@@ -21,6 +21,14 @@ ARG_QUEUE_TIMEOUT = ((OPTION_QUEUE_TIMEOUT[0],), OPTION_QUEUE_TIMEOUT, { "action
 
 ##### Public classes #####
 class WorkerMain(service.Main):
+    def __init__(self):
+        service.Main.__init__(
+            self,
+            apps.worker.Worker,
+            WORKER_SECTION,
+            (OPTION_QUEUE_TIMEOUT,),
+            (ARG_QUEUE_TIMEOUT,),
+        )
     def construct(self, options):
         rules.setup_builtins(gns.WORKER_BUILTINS_MAP)
         return (
@@ -31,10 +39,5 @@ class WorkerMain(service.Main):
 
 ##### Main #####
 if __name__ == "__main__":
-    WorkerMain(
-        apps.worker.Worker,
-        WORKER_SECTION,
-        (OPTION_QUEUE_TIMEOUT,),
-        (ARG_QUEUE_TIMEOUT,),
-    ).run()
+    WorkerMain().run()
 

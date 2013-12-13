@@ -22,6 +22,15 @@ ARG_QUEUE_TIMEOUT = ((OPTION_QUEUE_TIMEOUT[0],), OPTION_QUEUE_TIMEOUT, { "action
 
 ##### Public classes #####
 class SplitterMain(service.Main):
+    def __init__(self):
+        service.Main.__init__(
+            self,
+            apps.splitter.Splitter,
+            SPLITTER_SECTION,
+            (OPTION_QUEUE_TIMEOUT,),
+            (ARG_QUEUE_TIMEOUT,),
+        )
+
     def construct(self, options):
         rules.setup_builtins(gns.MATCHER_BUILTINS_MAP)
         hstorage = handlers.Handlers("demo", (gns.HANDLER.ON_EVENT, gns.HANDLER.ON_NOTIFY, gns.HANDLER.ON_SEND)) # FIXME: demo path
@@ -35,10 +44,5 @@ class SplitterMain(service.Main):
 
 ##### Main #####
 if __name__ == "__main__":
-    SplitterMain(
-        apps.splitter.Splitter,
-        SPLITTER_SECTION,
-        (OPTION_QUEUE_TIMEOUT,),
-        (ARG_QUEUE_TIMEOUT,),
-    ).run()
+    SplitterMain().run()
 
