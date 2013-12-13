@@ -16,7 +16,7 @@ import gns
 
 ##### Public constants #####
 SPLITTER_SECTION = "splitter"
-OPTION_QUEUE_TIMEOUT = ("queue-timeout", "queue_timeout", 1, lambda arg: validators.common.validNumber(arg, 0, value_type=float))
+OPTION_QUEUE_TIMEOUT = ("queue-timeout", "queue_timeout", 1, lambda arg: validators.common.valid_number(arg, 0, value_type=float))
 ARG_QUEUE_TIMEOUT = ((OPTION_QUEUE_TIMEOUT[0],), OPTION_QUEUE_TIMEOUT, { "action" : "store", "metavar" : "<seconds>" })
 
 

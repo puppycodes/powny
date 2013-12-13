@@ -13,9 +13,9 @@ import raava.apps.collector # pylint: disable=W0611
 ##### Public constants #####
 COLLECTOR_SECTION = "worker"
 
-OPTION_POLL_INTERVAL     = ("poll-interval",     "poll_interval",     10, lambda arg: validators.common.validNumber(arg, 1))
-OPTION_ACQUIRE_DELAY     = ("acquire-delay",     "acquire_delay",     5,  lambda arg: validators.common.validNumber(arg, 1))
-OPTION_RECYCLED_PRIORITY = ("recycled-priority", "recycled_priority", 0,  lambda arg: validators.common.validNumber(arg, 0))
+OPTION_POLL_INTERVAL     = ("poll-interval",     "poll_interval",     10, lambda arg: validators.common.valid_number(arg, 1))
+OPTION_ACQUIRE_DELAY     = ("acquire-delay",     "acquire_delay",     5,  lambda arg: validators.common.valid_number(arg, 1))
+OPTION_RECYCLED_PRIORITY = ("recycled-priority", "recycled_priority", 0,  lambda arg: validators.common.valid_number(arg, 0))
 
 ARG_POLL_INTERVAL     = ((OPTION_POLL_INTERVAL[0],),   OPTION_POLL_INTERVAL,     { "action" : "store", "metavar" : "<seconds>" })
 ARG_ACQUIRE_DELAY     = ((OPTION_ACQUIRE_DELAY[0],),   OPTION_ACQUIRE_DELAY,     { "action" : "store", "metavar" : "<seconds>" })
