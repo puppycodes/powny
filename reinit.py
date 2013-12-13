@@ -29,7 +29,7 @@ def main():
     config.parser().add_argument("--do-it-now", dest="do_flag", action="store_true")
     options = config.sync((service.MAIN_SECTION,))
 
-    if not options.do_flag:
+    if not options.do_flag: # pylint: disable=E1101
         raise RuntimeError("Specify option --do-it-now to process")
 
     application.init_logging(
