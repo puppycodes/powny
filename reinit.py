@@ -33,10 +33,10 @@ def main():
         raise RuntimeError("Specify option --do-it-now to process")
 
     application.init_logging(
-        getattr(options, service.OPTION_LOG_LEVEL[1]),
-        getattr(options, service.OPTION_LOG_FILE[1]),
+        options[service.OPTION_LOG_LEVEL],
+        options[service.OPTION_LOG_FILE],
     )
-    client = zoo.connect(getattr(options, service.OPTION_ZOO_NODES[1]))
+    client = zoo.connect(options[service.OPTION_ZOO_NODES])
     for path in (zoo.INPUT_PATH, zoo.READY_PATH, zoo.RUNNING_PATH, zoo.CONTROL_PATH):
         try:
             client.delete(path, recursive=True)

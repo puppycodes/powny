@@ -26,10 +26,10 @@ ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0], OPTION_RECYCLED_PRIORITY,
 class CollectorMain(service.Main):
     def construct(self, options):
         return (
-            getattr(options, service.OPTION_ZOO_NODES[1]), # TODO: getattr
-            getattr(options, OPTION_POLL_INTERVAL[1]),
-            getattr(options, OPTION_ACQUIRE_DELAY[1]),
-            getattr(options, OPTION_RECYCLED_PRIORITY[1]),
+            options[service.OPTION_ZOO_NODES],
+            options[OPTION_POLL_INTERVAL],
+            options[OPTION_ACQUIRE_DELAY],
+            options[OPTION_RECYCLED_PRIORITY],
         )
 
 

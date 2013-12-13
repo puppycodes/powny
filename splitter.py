@@ -27,9 +27,9 @@ class SplitterMain(service.Main):
         hstorage = handlers.Handlers("demo", (gns.HANDLER.ON_EVENT, gns.HANDLER.ON_NOTIFY, gns.HANDLER.ON_SEND)) # FIXME: demo path
         hstorage.load_handlers()
         return (
-            getattr(options, service.OPTION_ZOO_NODES[1]), # TODO: getattr
+            options[service.OPTION_ZOO_NODES],
             hstorage,
-            getattr(options, OPTION_QUEUE_TIMEOUT[1]),
+            options[OPTION_QUEUE_TIMEOUT],
         )
 
 

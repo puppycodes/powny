@@ -24,8 +24,8 @@ class WorkerMain(service.Main):
     def construct(self, options):
         rules.setup_builtins(gns.WORKER_BUILTINS_MAP)
         return (
-            getattr(options, service.OPTION_ZOO_NODES[1]), # TODO: getattr
-            getattr(options, OPTION_QUEUE_TIMEOUT[1]),
+            options[service.OPTION_ZOO_NODES],
+            options[OPTION_QUEUE_TIMEOUT],
         )
 
 
