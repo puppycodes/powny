@@ -11,6 +11,5 @@ import gns
 gns.init_logging()
 z = zoo.connect(["localhost"])
 zoo.init(z)
-events_api = events.EventsApi(z)
 event_root = rules.EventRoot(json.loads(input()))
-print(events_api.add_event(event_root, gns.HANDLER.ON_EVENT))
+print(events.add_event(z, event_root, gns.HANDLER.ON_EVENT))

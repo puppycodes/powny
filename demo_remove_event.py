@@ -10,5 +10,4 @@ import gns
 gns.init_logging()
 z = zoo.connect(["localhost"])
 zoo.init(z)
-events_api = events.EventsApi()
-events_api.cancel_event(sys.argv[1])
+events.cancel_event(z, sys.argv[1])
