@@ -11,6 +11,10 @@ from raava import service
 from raava import application
 
 
+##### Public constants #####
+REINIT_SECTION = "reinit"
+
+
 ##### Public methods #####
 def main():
     config = optconf.OptionsConfig((
@@ -27,7 +31,7 @@ def main():
         service.ARG_ZOO_NODES,
     )
     config.parser().add_argument("--do-it-now", dest="do_flag", action="store_true")
-    options = config.sync((service.MAIN_SECTION,))
+    options = config.sync((service.MAIN_SECTION, REINIT_SECTION))
 
     if not options.do_flag: # pylint: disable=E1101
         raise RuntimeError("Specify option --do-it-now to process")
