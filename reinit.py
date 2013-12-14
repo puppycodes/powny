@@ -37,11 +37,7 @@ def main():
         options[service.OPTION_LOG_FILE],
     )
     client = zoo.connect(options[service.OPTION_ZOO_NODES])
-    for path in (zoo.INPUT_PATH, zoo.READY_PATH, zoo.RUNNING_PATH, zoo.CONTROL_PATH):
-        try:
-            client.delete(path, recursive=True)
-        except zoo.NoNodeError:
-            pass
+    zoo.drop(client, True)
     zoo.init(client, True)
 
 
