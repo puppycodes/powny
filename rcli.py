@@ -36,6 +36,7 @@ def main():
     )
     config.parser().add_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
     config.parser().add_argument("--cancel", dest="cancel_job_id",    action="store", metavar="<uuid>")
+    config.parser().add_argument("--info",   dest="info_job_id",      action="store", metavar="<uuid>")
     options = config.sync((service.MAIN_SECTION,))
 
     application.init_logging(
@@ -46,10 +47,13 @@ def main():
 
     if not options.add_handler_type is None:
         zoo.init(client)
-        events.add(client, rules.EventRoot(json.loads(input())), options.add_handler_type)
-    elif options.cancel_job_id:
+        print(events.add(client, rules.EventRoot(json.loads(input())), options.add_handler_type))
+    elif not options.cancel_job_id is None:
         zoo.init(client)
         events.cancel(client, options.cancel_job_id)
+    elif not options.info_job_id is None:
+        zoo.init(client)
+        print(json.dumps(events.info(client, options.info_job_id), sort_keys=True, indent=4))
 
 
 ##### Main #####
