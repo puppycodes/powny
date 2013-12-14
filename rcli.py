@@ -35,7 +35,7 @@ def main():
         service.ARG_ZOO_NODES,
     )
     config.parser().add_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
-    config.parser().add_argument("--cancel", dest="cancel_job_id",      action="store_true")
+    config.parser().add_argument("--cancel", dest="cancel_job_id",    action="store", metavar="<uuid>")
     options = config.sync((service.MAIN_SECTION,))
 
     application.init_logging(
