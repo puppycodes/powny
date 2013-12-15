@@ -1,8 +1,6 @@
 #!/usr/bin/env pypy3
 
 
-import sys
-
 from ulib import optconf
 
 from raava import const
@@ -17,21 +15,20 @@ REINIT_SECTION = "reinit"
 
 ##### Public methods #####
 def main():
-    config = optconf.OptionsConfig((
+    parser = optconf.OptionsConfig((
             service.OPTION_LOG_FILE,
             service.OPTION_LOG_LEVEL,
             service.OPTION_ZOO_NODES,
         ),
-        sys.argv[1:],
         const.CONFIG_FILE,
     )
-    config.add_arguments(
+    parser.add_arguments(
         service.ARG_LOG_FILE,
         service.ARG_LOG_LEVEL,
         service.ARG_ZOO_NODES,
     )
-    config.parser().add_argument("--do-it-now", dest="do_flag", action="store_true")
-    options = config.sync((service.MAIN_SECTION, REINIT_SECTION))
+    parser.add_raw_argument("--do-it-now", dest="do_flag", action="store_true")
+    options = parser.sync((service.MAIN_SECTION, REINIT_SECTION))[0]
 
     if not options.do_flag: # pylint: disable=E1101
         raise RuntimeError("Specify option --do-it-now to process")

@@ -1,7 +1,6 @@
 #!/usr/bin/env pypy3
 
 
-import sys
 import json
 import logging
 
@@ -25,23 +24,22 @@ RCLI_SECTION = "rcli"
 
 ##### Public methods #####
 def main():
-    config = optconf.OptionsConfig((
+    parser = optconf.OptionsConfig((
             service.OPTION_LOG_FILE,
             service.OPTION_LOG_LEVEL,
             service.OPTION_ZOO_NODES,
         ),
-        sys.argv[1:],
         const.CONFIG_FILE,
     )
-    config.add_arguments(
+    parser.add_arguments(
         service.ARG_LOG_FILE,
         service.ARG_LOG_LEVEL,
         service.ARG_ZOO_NODES,
     )
-    config.parser().add_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
-    config.parser().add_argument("--cancel", dest="cancel_job_id",    action="store", metavar="<uuid>")
-    config.parser().add_argument("--info",   dest="info_job_id",      action="store", metavar="<uuid>")
-    options = config.sync((service.MAIN_SECTION, RCLI_SECTION))
+    parser.add_raw_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
+    parser.add_raw_argument("--cancel", dest="cancel_job_id",    action="store", metavar="<uuid>")
+    parser.add_raw_argument("--info",   dest="info_job_id",      action="store", metavar="<uuid>")
+    options = parser.sync((service.MAIN_SECTION, RCLI_SECTION))[0]
 
     application.init_logging(
         options[service.OPTION_LOG_LEVEL],
