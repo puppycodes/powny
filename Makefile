@@ -8,6 +8,7 @@ pylint :
 		--output-format=colorized 2>&1 | less -SR
 
 clean :
+	rm -rf build gns.egg-info
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name __pycache__ -delete
 
