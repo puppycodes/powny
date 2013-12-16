@@ -39,7 +39,6 @@ def make_task_builtin(method):
 class WorkerThread(application.Thread):
     def __init__(self, client, queue_timeout):
         self._client = client
-        self._events_api = events.EventsApi(self._client)
         self._queue_timeout = queue_timeout
         self._ready_queue = self._client.LockingQueue(zoo.READY_PATH)
         self._client_lock = threading.Lock()
@@ -85,33 +84,35 @@ class WorkerThread(application.Thread):
         state = ready_dict[zoo.READY_STATE]
         handler = ( ready_dict[zoo.READY_HANDLER] if state is None else None )
         assert not task_id in self._threads_dict, "Duplicating tasks"
-        try:
-            parents_list = self._client.pget(zoo.join(zoo.CONTROL_PATH, job_id, zoo.CONTROL_PARENTS))
-            created = self._client.pget(zoo.join(zoo.CONTROL_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_CREATED))
-        except zoo.NoNodeError:
-            _logger.exception("Missing the necessary control nodes for the ready job")
-            return
 
-        trans = self._client.transaction()
-        trans.pcreate(zoo.join(zoo.RUNNING_PATH, task_id), {
-                zoo.RUNNING_JOB_ID:  job_id,
-                zoo.RUNNING_HANDLER: handler,
-                zoo.RUNNING_STATE:   state,
-            })
-        for (node, value) in (
-                (zoo.CONTROL_TASK_STATUS,   ( zoo.TASK_STATUS.NEW if state is None else zoo.TASK_STATUS.READY )),
-                (zoo.CONTROL_TASK_CREATED,  ( created or time.time() )),
-                (zoo.CONTROL_TASK_RECYCLED, time.time()),
-            ):
-            trans.pset(zoo.join(zoo.CONTROL_PATH, job_id, zoo.CONTROL_TASKS, task_id, node), value)
-        zoo.check_transaction("init_task", trans.commit())
-        lock = self._client.SingleLock(zoo.join(zoo.RUNNING_PATH, task_id, zoo.RUNNING_LOCK))
-        assert lock.try_acquire(), "Fresh job was captured by another worker"
+        lock_path = zoo.join(zoo.RUNNING_PATH, task_id, zoo.RUNNING_LOCK)
+        with self._client.Lock(zoo.CONTROL_LOCK_PATH):
+            try:
+                parents_list = self._client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_PARENTS))
+                created = self._client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_CREATED))
+            except zoo.NoNodeError:
+                _logger.exception("Missing the necessary control nodes for the ready job")
+                return
+
+            trans = self._client.transaction()
+            trans.pcreate(zoo.join(zoo.RUNNING_PATH, task_id), {
+                    zoo.RUNNING_JOB_ID:  job_id,
+                    zoo.RUNNING_HANDLER: handler,
+                    zoo.RUNNING_STATE:   state,
+                })
+            for (node, value) in (
+                    (zoo.CONTROL_TASK_STATUS,   ( zoo.TASK_STATUS.NEW if state is None else zoo.TASK_STATUS.READY )),
+                    (zoo.CONTROL_TASK_CREATED,  ( created or time.time() )),
+                    (zoo.CONTROL_TASK_RECYCLED, time.time()),
+                ):
+                trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, node), value)
+            trans.create(lock_path, ephemeral=True) # XXX: Acquired SingleLock()
+            zoo.check_transaction("init_task", trans.commit())
 
         task_thread = _TaskThread(parents_list, job_id, task_id, handler, state, self._controller, self._saver, self._fork)
         self._threads_dict[task_id] = {
             _TASK_THREAD: task_thread,
-            _TASK_LOCK:   lock,
+            _TASK_LOCK:   self._client.SingleLock(lock_path),
         }
         message = ( "Spawned the new job" if state is None else "Respawned the old job" )
         _logger.info("%s: %s; task: %s (parents: %s)", message, job_id, task_id, parents_list)
@@ -141,7 +142,8 @@ class WorkerThread(application.Thread):
     def _controller_unsafe(self, task):
         parents_list = task.get_parents()
         root_job_id = ( task.get_job_id() if len(parents_list) == 0 else parents_list[0][0] )
-        return ( self._client.exists(zoo.join(zoo.CONTROL_PATH, root_job_id, zoo.CONTROL_CANCEL)) is None )
+        # XXX: There is no need to control lock
+        return ( self._client.exists(zoo.join(zoo.CONTROL_JOBS_PATH, root_job_id, zoo.CONTROL_CANCEL)) is None )
 
     def _saver_unsafe(self, task, state):
         job_id = task.get_job_id()
@@ -153,20 +155,21 @@ class WorkerThread(application.Thread):
                 zoo.RUNNING_STATE:   state,
             })
         if state is None:
-            trans.pset(zoo.join(zoo.CONTROL_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_FINISHED), time.time())
+            trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_FINISHED), time.time())
             status = zoo.TASK_STATUS.FINISHED
         else:
             status = zoo.TASK_STATUS.READY
-        trans.pset(zoo.join(zoo.CONTROL_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_STATUS), status)
-        try:
-            zoo.check_transaction("saver", trans.commit())
-        except zoo.TransactionError:
-            _logger.exception("saver error, current task has been dropped")
-            raise
+        trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_STATUS), status)
+        with self._client.Lock(zoo.CONTROL_LOCK_PATH):
+            try:
+                zoo.check_transaction("saver", trans.commit())
+            except zoo.TransactionError:
+                _logger.exception("saver error, current task has been dropped")
+                raise
         _logger.debug("Saved; status: %s", status)
 
     def _fork_unsafe(self, task, event_root, handler_type):
-        self._events_api.add_event(event_root, handler_type, task.get_parents() + [(task.get_job_id(), task.get_task_id())])
+        events.add(self._client, event_root, handler_type, task.get_parents() + [(task.get_job_id(), task.get_task_id())])
 
 
 

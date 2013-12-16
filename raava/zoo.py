@@ -21,6 +21,8 @@ INPUT_EVENT  = "event"
 INPUT_ADDED  = "added"
 
 CONTROL_PARENTS        = "parents"
+CONTROL_JOBS           = "jobs"
+CONTROL_JOBS_PATH      = join(CONTROL_PATH, CONTROL_JOBS)
 CONTROL_TASKS          = "tasks"
 CONTROL_TASK_ADDED     = INPUT_ADDED
 CONTROL_TASK_SPLITTED  = "splitted"
@@ -30,6 +32,7 @@ CONTROL_TASK_FINISHED  = "finished"
 CONTROL_TASK_STATUS    = "status"
 CONTROL_CANCEL         = "cancel"
 CONTROL_LOCK           = "lock"
+CONTROL_LOCK_PATH      = join(CONTROL_PATH, CONTROL_LOCK)
 
 READY_JOB_ID   = INPUT_JOB_ID
 READY_TASK_ID  = "task_id"
@@ -64,15 +67,34 @@ def connect(hosts_list):
     _logger.info("Started zookeeper client on hosts: %s", hosts)
     return client
 
-def init(client):
-    for path in (INPUT_PATH, READY_PATH, RUNNING_PATH, CONTROL_PATH):
+def init(client, fatal_flag = False):
+    for path in (INPUT_PATH, READY_PATH, RUNNING_PATH, CONTROL_JOBS_PATH):
         try:
             client.create(path, makepath=True)
             _logger.info("Created zoo path: %s", path)
         except NodeExistsError:
-            _logger.debug("Zoo path is already exists: %s", path)
+            msg_tuple = ("Zoo path is already exists: %s", path)
+            if not fatal_flag:
+                _logger.debug(*msg_tuple)
+            else:
+                _logger.error(*msg_tuple)
+                raise
     client.LockingQueue(INPUT_PATH)._ensure_paths() # pylint: disable=W0212
     client.LockingQueue(READY_PATH)._ensure_paths() # pylint: disable=W0212
+    client.Lock(CONTROL_LOCK_PATH)._ensure_path() # pylint: disable=W0212
+
+def drop(client, fatal_flag = False):
+    for path in (INPUT_PATH, READY_PATH, RUNNING_PATH, CONTROL_PATH):
+        try:
+            client.delete(path, recursive=True)
+            _logger.info("Removed zoo path: %s", path)
+        except NoNodeError:
+            msg_tuple = ("Zoo path does not exists: %s", path)
+            if not fatal_flag:
+                _logger.debug(*msg_tuple)
+            else:
+                _logger.error(*msg_tuple)
+                raise
 
 
 ###
@@ -114,7 +136,7 @@ class SingleLock:
         import time # FIXME: Fix this bullshit
         while not self.try_acquire(True):
             print(self._path)
-            time.sleep(0.001)
+            time.sleep(0.1)
 
     def release(self):
         try:

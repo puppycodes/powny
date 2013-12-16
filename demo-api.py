@@ -8,19 +8,18 @@ from raava import zoo
 from raava import rules
 from raava import events
 
-import gns
+import gns.stub
 
 def webapi(env_dict, start_response):
     path = env_dict["PATH_INFO"]
     client = zoo.connect(["localhost"])
-    events_api = events.EventsApi(client)
     try:
         if path == "/add":
             data = env_dict["wsgi.input"].read(int(env_dict["CONTENT_LENGTH"]))
             event_root = rules.EventRoot(json.loads(data.decode()))
-            retval = events_api.add_event(event_root, gns.HANDLER.ON_EVENT)
+            retval = events.add(client, event_root, gns.stub.HANDLER.ON_EVENT)
         elif path == "/cancel":
-            events_api.cancel_event(cgi.parse_qs(env_dict["QUERY_STRING"])["job_id"][0])
+            events.cancel(client, cgi.parse_qs(env_dict["QUERY_STRING"])["job_id"][0])
             retval = None
         else:
             raise Exception("Unknown method")
