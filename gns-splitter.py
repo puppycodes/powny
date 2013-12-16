@@ -1,35 +1,41 @@
 #!/usr/bin/env pypy3
 
 
-from raava import service
-from raava import rules
-from raava import handlers
-
-from raava import apps
-import raava.apps.splitter # pylint: disable=W0611
-
-import gns
+import raava.rules
+import raava.handlers
+import raava.apps.splitter
+import gns.const
+import gns.service
+import gns.stub
 
 
 ##### Public classes #####
-class SplitterMain(service.AbstractMain):
+class SplitterMain(gns.service.AbstractMain):
     def __init__(self):
-        service.AbstractMain.__init__(
+        gns.service.AbstractMain.__init__(
             self,
-            apps.splitter.Splitter,
-            service.SECTION.SPLITTER,
-            (service.OPTION_QUEUE_TIMEOUT,),
-            (service.ARG_QUEUE_TIMEOUT,),
+            raava.apps.splitter.Splitter,
+            gns.service.SECTION.SPLITTER,
+            (gns.service.OPTION_QUEUE_TIMEOUT,),
+            (gns.service.ARG_QUEUE_TIMEOUT,),
+            gns.const.CONFIG_FILE,
         )
 
     def construct(self, options):
-        rules.setup_builtins(gns.MATCHER_BUILTINS_MAP)
-        hstorage = handlers.Handlers("demo", (gns.HANDLER.ON_EVENT, gns.HANDLER.ON_NOTIFY, gns.HANDLER.ON_SEND)) # FIXME: demo path
+        raava.rules.setup_builtins(gns.stub.MATCHER_BUILTINS_MAP)
+        hstorage = raava.handlers.Handlers(
+            gns.const.RULES_DIR,
+            (
+                gns.stub.HANDLER.ON_EVENT,
+                gns.stub.HANDLER.ON_NOTIFY,
+                gns.stub.HANDLER.ON_SEND
+            ),
+        ) # FIXME: demo path
         hstorage.load_handlers()
         return (
-            options[service.OPTION_ZOO_NODES],
+            options[gns.service.OPTION_ZOO_NODES],
             hstorage,
-            options[service.OPTION_QUEUE_TIMEOUT],
+            options[gns.service.OPTION_QUEUE_TIMEOUT],
         )
 
 

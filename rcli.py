@@ -4,54 +4,57 @@
 import json
 import logging
 
-from ulib import optconf
+import ulib.optconf
 
-from raava import const
-from raava import zoo
-from raava import service
-from raava import application
-from raava import events
-from raava import rules
+import raava.const
+import raava.zoo
+import raava.application
+import raava.events
+import raava.rules
+
+import gns.const
+import gns.service
 
 
 ##### Private objects #####
-_logger = logging.getLogger(const.LOGGER_NAME)
+_logger = logging.getLogger(raava.const.LOGGER_NAME)
 
 
 ##### Public methods #####
 def main():
-    parser = optconf.OptionsConfig((
-            service.OPTION_LOG_FILE,
-            service.OPTION_LOG_LEVEL,
-            service.OPTION_ZOO_NODES,
+    parser = ulib.optconf.OptionsConfig(
+        (
+            gns.service.OPTION_LOG_FILE,
+            gns.service.OPTION_LOG_LEVEL,
+            gns.service.OPTION_ZOO_NODES,
         ),
-        const.CONFIG_FILE,
+        gns.const.CONFIG_FILE,
     )
     parser.add_arguments(
-        service.ARG_LOG_FILE,
-        service.ARG_LOG_LEVEL,
-        service.ARG_ZOO_NODES,
+        gns.service.ARG_LOG_FILE,
+        gns.service.ARG_LOG_LEVEL,
+        gns.service.ARG_ZOO_NODES,
     )
     parser.add_raw_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
     parser.add_raw_argument("--cancel", dest="cancel_job_id",    action="store", metavar="<uuid>")
     parser.add_raw_argument("--info",   dest="info_job_id",      action="store", metavar="<uuid>")
-    options = parser.sync((service.SECTION.MAIN, service.SECTION.RCLI))[0]
+    options = parser.sync((gns.service.SECTION.MAIN, gns.service.SECTION.RCLI))[0]
 
-    application.init_logging(
-        options[service.OPTION_LOG_LEVEL],
-        options[service.OPTION_LOG_FILE],
+    raava.application.init_logging(
+        options[gns.service.OPTION_LOG_LEVEL],
+        options[gns.service.OPTION_LOG_FILE],
     )
-    client = zoo.connect(options[service.OPTION_ZOO_NODES])
+    client = raava.zoo.connect(options[gns.service.OPTION_ZOO_NODES])
 
     if not options.add_handler_type is None:
-        zoo.init(client)
-        print(events.add(client, rules.EventRoot(json.loads(input())), options.add_handler_type))
+        raava.zoo.init(client)
+        print(raava.events.add(client, raava.rules.EventRoot(json.loads(input())), options.add_handler_type))
     elif not options.cancel_job_id is None:
-        zoo.init(client)
-        events.cancel(client, options.cancel_job_id)
+        raava.zoo.init(client)
+        raava.events.cancel(client, options.cancel_job_id)
     elif not options.info_job_id is None:
-        zoo.init(client)
-        print(json.dumps(events.info(client, options.info_job_id), sort_keys=True, indent=4))
+        raava.zoo.init(client)
+        print(json.dumps(raava.events.info(client, options.info_job_id), sort_keys=True, indent=4))
 
 
 ##### Main #####

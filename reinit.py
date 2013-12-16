@@ -1,41 +1,42 @@
 #!/usr/bin/env pypy3
 
 
-from ulib import optconf
-
-from raava import const
-from raava import zoo
-from raava import service
-from raava import application
+import ulib.optconf
+import raava.const
+import raava.zoo
+import raava.application
+import gns.const
+import gns.service
 
 
 ##### Public methods #####
 def main():
-    parser = optconf.OptionsConfig((
-            service.OPTION_LOG_FILE,
-            service.OPTION_LOG_LEVEL,
-            service.OPTION_ZOO_NODES,
+    parser = ulib.optconf.OptionsConfig(
+        (
+            gns.service.OPTION_LOG_FILE,
+            gns.service.OPTION_LOG_LEVEL,
+            gns.service.OPTION_ZOO_NODES,
         ),
-        const.CONFIG_FILE,
+        gns.const.CONFIG_FILE,
     )
     parser.add_arguments(
-        service.ARG_LOG_FILE,
-        service.ARG_LOG_LEVEL,
-        service.ARG_ZOO_NODES,
+        gns.service.ARG_LOG_FILE,
+        gns.service.ARG_LOG_LEVEL,
+        gns.service.ARG_ZOO_NODES,
     )
     parser.add_raw_argument("--do-it-now", dest="do_flag", action="store_true")
-    options = parser.sync((service.SECTION.MAIN, service.SECTION.REINIT))[0]
+    options = parser.sync((gns.service.SECTION.MAIN, gns.service.SECTION.REINIT))[0]
 
     if not options.do_flag: # pylint: disable=E1101
         raise RuntimeError("Specify option --do-it-now to process")
 
-    application.init_logging(
-        options[service.OPTION_LOG_LEVEL],
-        options[service.OPTION_LOG_FILE],
+    raava.application.init_logging(
+        options[gns.service.OPTION_LOG_LEVEL],
+        options[gns.service.OPTION_LOG_FILE],
     )
-    client = zoo.connect(options[service.OPTION_ZOO_NODES])
-    zoo.drop(client, True)
-    zoo.init(client, True)
+    client = raava.zoo.connect(options[gns.service.OPTION_ZOO_NODES])
+    raava.zoo.drop(client, True)
+    raava.zoo.init(client, True)
 
 
 ##### Main #####

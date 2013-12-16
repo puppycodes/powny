@@ -63,11 +63,3 @@ WORKER_BUILTINS_MAP = {
 }
 WORKER_BUILTINS_MAP.update(MATCHER_BUILTINS_MAP)
 
-def init_logging():
-    logger = logging.getLogger(const.LOGGER_NAME)
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler()
-    handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter("%(process)d %(name)s %(threadName)s - %(levelname)s - %(message)s"))
-    logger.addHandler(handler)
-

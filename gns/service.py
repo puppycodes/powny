@@ -2,9 +2,8 @@ from ulib import optconf
 from ulib import validators
 import ulib.validators.common # pylint: disable=W0611
 
-from . import const
-from . import zoo
-from . import application
+from raava import zoo
+from raava import application
 
 
 ##### Private constants #####
@@ -51,11 +50,12 @@ ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0], OPTION_RECYCLED_PRIORITY,
 
 ##### Public methods #####
 class AbstractMain:
-    def __init__(self, app, app_section, options_list, args_list):
+    def __init__(self, app, app_section, options_list, args_list, config_file_path):
         self._app = app
         self._app_section = app_section
         self._options_list = options_list
         self._args_list = args_list
+        self._config_file_path = config_file_path
         self._options = None
 
     def construct(self, options):
@@ -81,7 +81,7 @@ class AbstractMain:
                 OPTION_QUIT_WAIT,
                 OPTION_INTERVAL,
             ) + tuple(self._options_list),
-            const.CONFIG_FILE,
+            self._config_file_path,
         )
         for arg_tuple in (
                 ARG_LOG_FILE,

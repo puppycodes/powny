@@ -1,30 +1,29 @@
 #!/usr/bin/env pypy3
 
 
-from raava import service
-from raava import rules
-
-from raava import apps
-import raava.apps.worker # pylint: disable=W0611
-
-import gns
+import raava.rules
+import raava.apps.worker
+import gns.const
+import gns.service
+import gns.stub
 
 
 ##### Public classes #####
-class WorkerMain(service.AbstractMain):
+class WorkerMain(gns.service.AbstractMain):
     def __init__(self):
-        service.AbstractMain.__init__(
+        gns.service.AbstractMain.__init__(
             self,
-            apps.worker.Worker,
-            service.SECTION.WORKER,
-            (service.OPTION_QUEUE_TIMEOUT,),
-            (service.ARG_QUEUE_TIMEOUT,),
+            raava.apps.worker.Worker,
+            gns.service.SECTION.WORKER,
+            (gns.service.OPTION_QUEUE_TIMEOUT,),
+            (gns.service.ARG_QUEUE_TIMEOUT,),
+            gns.const.CONFIG_FILE,
         )
     def construct(self, options):
-        rules.setup_builtins(gns.WORKER_BUILTINS_MAP)
+        raava.rules.setup_builtins(gns.stub.WORKER_BUILTINS_MAP)
         return (
-            options[service.OPTION_ZOO_NODES],
-            options[service.OPTION_QUEUE_TIMEOUT],
+            options[gns.service.OPTION_ZOO_NODES],
+            options[gns.service.OPTION_QUEUE_TIMEOUT],
         )
 
 
