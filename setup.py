@@ -10,7 +10,6 @@ import gns.const
 
 ##### Public constants #####
 ETC_DIR    = "/etc"
-USRLIB_DIR = "/usr/lib"
 VARLIB_DIR = "/var/lib"
 
 
@@ -51,15 +50,13 @@ if __name__ == "__main__":
             "raava/apps",
         ),
 
-        data_files=(
-            (USRLIB_DIR + "/gns", (
-                    "splitter.py",
-                    "worker.py",
-                    "collector.py",
-                    "cli.py",
-                    "reinit.py",
-                    "demo-api.py",
-                )),
+        scripts=(
+            "gns-splitter.py",
+            "gns-worker.py",
+            "gns-collector.py",
+            "gns-cli.py",
+            "gns-reinit.py",
+            "gns-demo-api.py",
         ),
 
         classifiers=( # http://pypi.python.org/pypi?:action=list_classifiers
