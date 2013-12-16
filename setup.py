@@ -42,7 +42,7 @@ if __name__ == "__main__":
         license="GPLv3",
         author="Devaev Maxim",
         author_email="mdevaev@gmail.com",
-        description="Useful python library",
+        description="Universal distributed notification service",
         platforms="any",
 
         packages=(
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         install_requires=(
             "kazoo >= 1.3.1",
             "ulib >= 0.17",
-        )
+        ),
 
         cmdclass = { "build": GnsBuild },
     )
