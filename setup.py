@@ -73,6 +73,11 @@ if __name__ == "__main__":
             "Topic :: System :: Networking :: Monitoring",
         ),
 
+        install_requires=(
+            "kazoo >= 1.3.1",
+            "ulib >= 0.17",
+        )
+
         cmdclass = { "build": GnsBuild },
     )
 
