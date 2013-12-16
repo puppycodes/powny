@@ -16,15 +16,21 @@ class SplitterMain(gns.service.AbstractMain):
             self,
             raava.apps.splitter.Splitter,
             gns.service.SECTION.SPLITTER,
-            (gns.service.OPTION_QUEUE_TIMEOUT,),
-            (gns.service.ARG_QUEUE_TIMEOUT,),
+            (
+                gns.service.OPTION_RULES_DIR,
+                gns.service.OPTION_QUEUE_TIMEOUT,
+            ),
+            (
+                gns.service.ARG_RULES_DIR,
+                gns.service.ARG_QUEUE_TIMEOUT,
+            ),
             gns.const.CONFIG_FILE,
         )
 
     def construct(self, options):
         raava.rules.setup_builtins(gns.stub.MATCHER_BUILTINS_MAP)
         hstorage = raava.handlers.Handlers(
-            gns.const.RULES_DIR,
+            options[gns.service.OPTION_RULES_DIR],
             (
                 gns.stub.HANDLER.ON_EVENT,
                 gns.stub.HANDLER.ON_NOTIFY,

@@ -1,9 +1,12 @@
 from ulib import optconf
 from ulib import validators
 import ulib.validators.common # pylint: disable=W0611
+import ulib.validators.fs
 
 from raava import zoo
 from raava import application
+
+from . import const
 
 
 ##### Private constants #####
@@ -16,13 +19,14 @@ class SECTION:
     REINIT    = "reinit"
 
 # Common
-OPTION_LOG_LEVEL = ("log-level", "log_level",     "INFO",         str)
-OPTION_LOG_FILE  = ("log-file",  "log_file_path", None,           validators.common.valid_empty)
-OPTION_ZOO_NODES = ("zoo-nodes", "nodes_list",    ("localhost",), validators.common.valid_string_list)
-OPTION_WORKERS   = ("workers",   "workers",       10,             lambda arg: validators.common.valid_number(arg, 1))
-OPTION_DIE_AFTER = ("die-after", "die_after",     100,            lambda arg: validators.common.valid_number(arg, 1))
-OPTION_QUIT_WAIT = ("quit-wait", "quit_wait",     10,             lambda arg: validators.common.valid_number(arg, 0))
-OPTION_INTERVAL  = ("interval",  "interval",      0.01,           lambda arg: validators.common.valid_number(arg, 0, value_type=float))
+OPTION_LOG_LEVEL = ("log-level", "log_level",     "INFO",            str)
+OPTION_LOG_FILE  = ("log-file",  "log_file_path", None,              validators.common.valid_empty)
+OPTION_ZOO_NODES = ("zoo-nodes", "nodes_list",    ("localhost",),    validators.common.valid_string_list)
+OPTION_RULES_DIR = ("rules-dir", "rules_dir",     const.CONFIG_FILE, validators.fs.validAccessiblePath)
+OPTION_WORKERS   = ("workers",   "workers",       10,                lambda arg: validators.common.valid_number(arg, 1))
+OPTION_DIE_AFTER = ("die-after", "die_after",     100,               lambda arg: validators.common.valid_number(arg, 1))
+OPTION_QUIT_WAIT = ("quit-wait", "quit_wait",     10,                lambda arg: validators.common.valid_number(arg, 0))
+OPTION_INTERVAL  = ("interval",  "interval",      0.01,              lambda arg: validators.common.valid_number(arg, 0, value_type=float))
 # Splitter/Worker
 OPTION_QUEUE_TIMEOUT = ("queue-timeout", "queue_timeout", 1, lambda arg: validators.common.valid_number(arg, 0, value_type=float))
 # Collector
@@ -33,6 +37,7 @@ OPTION_RECYCLED_PRIORITY = ("recycled-priority", "recycled_priority", 0,  lambda
 ARG_LOG_FILE  = (("-l", OPTION_LOG_FILE[0],),  OPTION_LOG_FILE,  { "action" : "store", "metavar" : "<file>" })
 ARG_LOG_LEVEL = (("-L", OPTION_LOG_LEVEL[0],), OPTION_LOG_LEVEL, { "action" : "store", "metavar" : "<level>" })
 ARG_ZOO_NODES = (("-z", OPTION_ZOO_NODES[0],), OPTION_ZOO_NODES, { "nargs"  : "+",     "metavar" : "<hosts>" })
+ARG_RULES_DIR = (("-r", OPTION_RULES_DIR[0],), OPTION_RULES_DIR, { "action" : "store", "metavar" : "<dir>" })
 ARG_WORKERS   = (("-w", OPTION_WORKERS[0],),   OPTION_WORKERS,   { "action" : "store", "metavar" : "<number>" })
 ARG_DIE_AFTER = (("-d", OPTION_DIE_AFTER[0],), OPTION_DIE_AFTER, { "action" : "store", "metavar" : "<seconds>" })
 ARG_QUIT_WAIT = (("-q", OPTION_QUIT_WAIT[0],), OPTION_QUIT_WAIT, { "action" : "store", "metavar" : "<seconds>" })
