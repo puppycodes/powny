@@ -18,10 +18,6 @@ from raava import rules
 _logger = logging.getLogger(const.LOGGER_NAME)
 
 
-##### Public constants #####
-RCLI_SECTION = "rcli"
-
-
 ##### Public methods #####
 def main():
     parser = optconf.OptionsConfig((
@@ -39,7 +35,7 @@ def main():
     parser.add_raw_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
     parser.add_raw_argument("--cancel", dest="cancel_job_id",    action="store", metavar="<uuid>")
     parser.add_raw_argument("--info",   dest="info_job_id",      action="store", metavar="<uuid>")
-    options = parser.sync((service.MAIN_SECTION, RCLI_SECTION))[0]
+    options = parser.sync((service.SECTION.MAIN, service.SECTION.RCLI))[0]
 
     application.init_logging(
         options[service.OPTION_LOG_LEVEL],

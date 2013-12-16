@@ -1,9 +1,6 @@
 #!/usr/bin/env pypy3
 
 
-from ulib import validators
-import ulib.validators.common # pylint: disable=W0611
-
 from raava import service
 from raava import rules
 
@@ -13,27 +10,21 @@ import raava.apps.worker # pylint: disable=W0611
 import gns
 
 
-##### Public constants #####
-WORKER_SECTION = "worker"
-OPTION_QUEUE_TIMEOUT = ("queue-timeout", "queue_timeout", 1, lambda arg: validators.common.valid_number(arg, 0, value_type=float))
-ARG_QUEUE_TIMEOUT = ((OPTION_QUEUE_TIMEOUT[0],), OPTION_QUEUE_TIMEOUT, { "action" : "store", "metavar" : "<seconds>" })
-
-
 ##### Public classes #####
-class WorkerMain(service.Main):
+class WorkerMain(service.AbstractMain):
     def __init__(self):
-        service.Main.__init__(
+        service.AbstractMain.__init__(
             self,
             apps.worker.Worker,
-            WORKER_SECTION,
-            (OPTION_QUEUE_TIMEOUT,),
-            (ARG_QUEUE_TIMEOUT,),
+            service.SECTION.WORKER,
+            (service.OPTION_QUEUE_TIMEOUT,),
+            (service.ARG_QUEUE_TIMEOUT,),
         )
     def construct(self, options):
         rules.setup_builtins(gns.WORKER_BUILTINS_MAP)
         return (
             options[service.OPTION_ZOO_NODES],
-            options[OPTION_QUEUE_TIMEOUT],
+            options[service.OPTION_QUEUE_TIMEOUT],
         )
 
 

@@ -1,52 +1,37 @@
 #!/usr/bin/env pypy3
 
 
-from ulib import validators
-import ulib.validators.common # pylint: disable=W0611
-
 from raava import service
 
 from raava import apps
 import raava.apps.collector # pylint: disable=W0611
 
 
-##### Public constants #####
-COLLECTOR_SECTION = "worker"
-
-OPTION_POLL_INTERVAL     = ("poll-interval",     "poll_interval",     10, lambda arg: validators.common.valid_number(arg, 1))
-OPTION_ACQUIRE_DELAY     = ("acquire-delay",     "acquire_delay",     5,  lambda arg: validators.common.valid_number(arg, 1))
-OPTION_RECYCLED_PRIORITY = ("recycled-priority", "recycled_priority", 0,  lambda arg: validators.common.valid_number(arg, 0))
-
-ARG_POLL_INTERVAL     = ((OPTION_POLL_INTERVAL[0],),   OPTION_POLL_INTERVAL,     { "action" : "store", "metavar" : "<seconds>" })
-ARG_ACQUIRE_DELAY     = ((OPTION_ACQUIRE_DELAY[0],),   OPTION_ACQUIRE_DELAY,     { "action" : "store", "metavar" : "<seconds>" })
-ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0], OPTION_RECYCLED_PRIORITY, { "action" : "store", "metavar" : "<number>" }))
-
-
 ##### Public classes #####
-class CollectorMain(service.Main):
+class CollectorMain(service.AbstractMain):
     def __init__(self):
-        service.Main.__init__(
+        service.AbstractMain.__init__(
             self,
             apps.collector.Collector,
-            COLLECTOR_SECTION,
+            service.SECTION.COLLECTOR,
             (
-                OPTION_POLL_INTERVAL,
-                OPTION_ACQUIRE_DELAY,
-                OPTION_RECYCLED_PRIORITY,
+                service.OPTION_POLL_INTERVAL,
+                service.OPTION_ACQUIRE_DELAY,
+                service.OPTION_RECYCLED_PRIORITY,
             ),
             (
-                ARG_POLL_INTERVAL,
-                ARG_ACQUIRE_DELAY,
-                ARG_RECYCLED_PRIORITY,
+                service.ARG_POLL_INTERVAL,
+                service.ARG_ACQUIRE_DELAY,
+                service.ARG_RECYCLED_PRIORITY,
             ),
         )
 
     def construct(self, options):
         return (
             options[service.OPTION_ZOO_NODES],
-            options[OPTION_POLL_INTERVAL],
-            options[OPTION_ACQUIRE_DELAY],
-            options[OPTION_RECYCLED_PRIORITY],
+            options[service.OPTION_POLL_INTERVAL],
+            options[service.OPTION_ACQUIRE_DELAY],
+            options[service.OPTION_RECYCLED_PRIORITY],
         )
 
 
