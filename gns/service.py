@@ -47,9 +47,9 @@ ARG_INTERVAL  = (("-i", OPTION_INTERVAL[0],),  OPTION_INTERVAL,  { "action" : "s
 # Splitter/Worker
 ARG_QUEUE_TIMEOUT = ((OPTION_QUEUE_TIMEOUT[0],), OPTION_QUEUE_TIMEOUT, { "action" : "store", "metavar" : "<seconds>" })
 # Collector
-ARG_POLL_INTERVAL     = ((OPTION_POLL_INTERVAL[0],),   OPTION_POLL_INTERVAL,     { "action" : "store", "metavar" : "<seconds>" })
-ARG_ACQUIRE_DELAY     = ((OPTION_ACQUIRE_DELAY[0],),   OPTION_ACQUIRE_DELAY,     { "action" : "store", "metavar" : "<seconds>" })
-ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0], OPTION_RECYCLED_PRIORITY, { "action" : "store", "metavar" : "<number>" }))
+ARG_POLL_INTERVAL     = ((OPTION_POLL_INTERVAL[0],),     OPTION_POLL_INTERVAL,     { "action" : "store", "metavar" : "<seconds>" })
+ARG_ACQUIRE_DELAY     = ((OPTION_ACQUIRE_DELAY[0],),     OPTION_ACQUIRE_DELAY,     { "action" : "store", "metavar" : "<seconds>" })
+ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0],), OPTION_RECYCLED_PRIORITY, { "action" : "store", "metavar" : "<number>" })
 
 
 
