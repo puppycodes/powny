@@ -36,7 +36,7 @@ class SplitterMain(gns.service.AbstractMain):
                 gns.stub.HANDLER.ON_NOTIFY,
                 gns.stub.HANDLER.ON_SEND
             ),
-        ) # FIXME: demo path
+        )
         hstorage.load_handlers()
         return (
             options[gns.service.OPTION_ZOO_NODES],
