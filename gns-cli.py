@@ -54,7 +54,7 @@ def main():
         raava.events.cancel(client, options.cancel_job_id)
     elif options.info_job_id is not None:
         raava.zoo.init(client)
-        print(json.dumps(raava.events.info(client, options.info_job_id), sort_keys=True, indent=4))
+        print(json.dumps(raava.events.get_info(client, options.info_job_id), sort_keys=True, indent=4))
 
 
 ##### Main #####
