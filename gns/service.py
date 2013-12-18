@@ -35,6 +35,7 @@ OPTION_QUEUE_TIMEOUT = ("queue-timeout", "queue_timeout", 1, lambda arg: validat
 OPTION_POLL_INTERVAL     = ("poll-interval",     "poll_interval",     10, lambda arg: validators.common.valid_number(arg, 1))
 OPTION_ACQUIRE_DELAY     = ("acquire-delay",     "acquire_delay",     5,  lambda arg: validators.common.valid_number(arg, 1))
 OPTION_RECYCLED_PRIORITY = ("recycled-priority", "recycled_priority", 0,  lambda arg: validators.common.valid_number(arg, 0))
+OPTION_GARBAGE_LIFETIME  = ("garbage-lifetime",  "garbage_lifetime",  0,  lambda arg: validators.common.valid_number(arg, 0))
 
 ARG_LOG_FILE  = (("-l", OPTION_LOG_FILE[0],),  OPTION_LOG_FILE,  { "action" : "store", "metavar" : "<file>" })
 ARG_LOG_LEVEL = (("-L", OPTION_LOG_LEVEL[0],), OPTION_LOG_LEVEL, { "action" : "store", "metavar" : "<level>" })
@@ -50,6 +51,7 @@ ARG_QUEUE_TIMEOUT = ((OPTION_QUEUE_TIMEOUT[0],), OPTION_QUEUE_TIMEOUT, { "action
 ARG_POLL_INTERVAL     = ((OPTION_POLL_INTERVAL[0],),     OPTION_POLL_INTERVAL,     { "action" : "store", "metavar" : "<seconds>" })
 ARG_ACQUIRE_DELAY     = ((OPTION_ACQUIRE_DELAY[0],),     OPTION_ACQUIRE_DELAY,     { "action" : "store", "metavar" : "<seconds>" })
 ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0],), OPTION_RECYCLED_PRIORITY, { "action" : "store", "metavar" : "<number>" })
+ARG_GARBAGE_LIFETIME  = ((OPTION_GARBAGE_LIFETIME[0],),  OPTION_GARBAGE_LIFETIME,  { "action" : "store", "metavar" : "<seconds>" })
 
 
 
