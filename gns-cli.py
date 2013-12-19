@@ -46,15 +46,15 @@ def main():
     )
     client = raava.zoo.connect(options[gns.service.OPTION_ZOO_NODES])
 
-    if not options.add_handler_type is None:
+    if options.add_handler_type is not None:
         raava.zoo.init(client)
         print(raava.events.add(client, raava.rules.EventRoot(json.loads(input())), options.add_handler_type))
-    elif not options.cancel_job_id is None:
+    elif options.cancel_job_id is not None:
         raava.zoo.init(client)
         raava.events.cancel(client, options.cancel_job_id)
-    elif not options.info_job_id is None:
+    elif options.info_job_id is not None:
         raava.zoo.init(client)
-        print(json.dumps(raava.events.info(client, options.info_job_id), sort_keys=True, indent=4))
+        print(json.dumps(raava.events.get_info(client, options.info_job_id), sort_keys=True, indent=4))
 
 
 ##### Main #####

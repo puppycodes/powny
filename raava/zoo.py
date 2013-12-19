@@ -1,5 +1,6 @@
 import pickle
 import functools
+import threading
 import logging
 
 import kazoo.client
@@ -18,14 +19,13 @@ RUNNING_PATH = "/running"
 
 INPUT_JOB_ID = "job_id"
 INPUT_EVENT  = "event"
-INPUT_ADDED  = "added"
 
 CONTROL_PARENTS        = "parents"
+CONTROL_ADDED          = "added"
+CONTROL_SPLITTED       = "splitted"
 CONTROL_JOBS           = "jobs"
 CONTROL_JOBS_PATH      = join(CONTROL_PATH, CONTROL_JOBS)
 CONTROL_TASKS          = "tasks"
-CONTROL_TASK_ADDED     = INPUT_ADDED
-CONTROL_TASK_SPLITTED  = "splitted"
 CONTROL_TASK_CREATED   = "created"
 CONTROL_TASK_RECYCLED  = "recycled"
 CONTROL_TASK_FINISHED  = "finished"
@@ -103,7 +103,7 @@ def check_transaction(name, results_list, pairs_list = None):
     for (index, result) in enumerate(results_list):
         if isinstance(result, Exception):
             ok_flag = False
-            if not pairs_list is None:
+            if pairs_list is not None:
                 _logger.error("Failed the part of transaction \"%s\": %s=%s; err=%s",
                     name,
                     pairs_list[index][0], # Node
@@ -126,17 +126,20 @@ class SingleLock:
         try:
             self._client.create(self._path, ephemeral=True)
             return True
-        except (NoNodeError, NodeExistsError):
+        except NoNodeError:
             if raise_flag:
                 raise
             return False
-        return False
+        except NodeExistsError:
+            return False
 
-    def acquire(self):
-        import time # FIXME: Fix this bullshit
-        while not self.try_acquire(True):
-            print(self._path)
-            time.sleep(0.1)
+    def acquire(self, raise_flag = True):
+        while not self.try_acquire(raise_flag):
+            wait = threading.Event()
+            def watcher(_) :
+                wait.set()
+            if self._client.exists(self._path, watch=watcher) is not None:
+                wait.wait()
 
     def release(self):
         try:

@@ -24,7 +24,7 @@ class NotRootError(Exception):
 ##### Public methods #####
 def add(client, event_root, handler_type, parents_list = None):
     assert isinstance(event_root, rules.EventRoot), "Invalid event type"
-    if not parents_list is None:
+    if parents_list is not None:
         assert isinstance(parents_list, (tuple, list))
         for item in parents_list:
             assert len(item) == 2
@@ -34,19 +34,20 @@ def add(client, event_root, handler_type, parents_list = None):
 
     job_id = str(uuid.uuid4())
     event_root = copy.copy(event_root)
-    event_root.get_extra()[rules.EXTRA_HANDLER] = handler_type
-    event_root.get_extra()[rules.EXTRA_JOB_ID] = job_id
+    event_root.get_extra()[rules.EXTRA.HANDLER] = handler_type
+    event_root.get_extra()[rules.EXTRA.JOB_ID] = job_id
 
     input_dict = {
         zoo.INPUT_JOB_ID: job_id,
         zoo.INPUT_EVENT:  event_root,
-        zoo.INPUT_ADDED:  time.time(),
     }
 
+    control_job_path = zoo.join(zoo.CONTROL_JOBS_PATH, job_id)
     trans = client.transaction()
     trans.lq_put(zoo.INPUT_PATH, pickle.dumps(input_dict))
-    trans.create(zoo.join(zoo.CONTROL_JOBS_PATH, job_id))
-    trans.pcreate(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_PARENTS), parents_list)
+    trans.create(control_job_path)
+    trans.pcreate(zoo.join(control_job_path, zoo.CONTROL_PARENTS), parents_list)
+    trans.pcreate(zoo.join(control_job_path, zoo.CONTROL_ADDED), time.time())
     with client.Lock(zoo.CONTROL_LOCK_PATH):
         zoo.check_transaction("add_event", trans.commit())
 
@@ -65,36 +66,51 @@ def cancel(client, job_id):
     except zoo.NodeExistsError:
         pass
 
-def is_finished(client, job_id):
+def get_finished(client, job_id):
     with client.Lock(zoo.CONTROL_LOCK_PATH):
-        statuses_set = set(
-            client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_STATUS))
-            for task_id in client.get_children(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS))
-        )
-        return ( len(statuses_set) == 0 or statuses_set == set((zoo.TASK_STATUS.FINISHED,)) )
+        if client.exists(zoo.join(zoo.CONTROL_JOBS_PATH, job_id)) is None:
+            raise NoJobError
+        try:
+            finished_list = [
+                client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_FINISHED))
+                for task_id in client.get_children(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS))
+            ]
+        except zoo.NoNodeError:
+            return None
 
-def info(client, job_id):
+        if len(finished_list) == 0:
+            return client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_SPLITTED))
+        elif None in finished_list:
+            return None
+        else:
+            return max(finished_list)
+
+def get_info(client, job_id):
+    control_job_path = zoo.join(zoo.CONTROL_JOBS_PATH, job_id)
     with client.Lock(zoo.CONTROL_LOCK_PATH):
         try:
-            parents_list = client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_PARENTS))
+            parents_list = client.pget(zoo.join(control_job_path, zoo.CONTROL_PARENTS))
         except zoo.NoNodeError:
             raise NoJobError
-        info_dict = {
-            zoo.CONTROL_PARENTS: parents_list,
-            zoo.CONTROL_CANCEL:  ( not client.exists(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_CANCEL)) is None ),
-        }
-        try:
-            tasks_list = client.get_children(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS))
-        except zoo.NoNodeError:
-            return info_dict
 
-        info_dict[zoo.CONTROL_TASKS] = {}
+        try:
+            splitted = client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_SPLITTED))
+            tasks_list = client.get_children(zoo.join(control_job_path, zoo.CONTROL_TASKS))
+        except zoo.NoNodeError:
+            splitted = None
+            tasks_list = []
+
+        info_dict = {
+            zoo.CONTROL_PARENTS:  parents_list,
+            zoo.CONTROL_TASKS:    {},
+            zoo.CONTROL_ADDED:    client.pget(zoo.join(control_job_path, zoo.CONTROL_ADDED)),
+            zoo.CONTROL_SPLITTED: splitted,
+            zoo.CONTROL_CANCEL:   ( client.exists(zoo.join(control_job_path, zoo.CONTROL_CANCEL)) is not None ),
+        }
         for task_id in tasks_list:
             info_dict[zoo.CONTROL_TASKS][task_id] = {
-                node: client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, node))
+                node: client.pget(zoo.join(control_job_path, zoo.CONTROL_TASKS, task_id, node))
                 for node in (
-                    zoo.CONTROL_TASK_ADDED,
-                    zoo.CONTROL_TASK_SPLITTED,
                     zoo.CONTROL_TASK_CREATED,
                     zoo.CONTROL_TASK_RECYCLED,
                     zoo.CONTROL_TASK_FINISHED,

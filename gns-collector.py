@@ -17,11 +17,13 @@ class CollectorMain(gns.service.AbstractMain):
                 gns.service.OPTION_POLL_INTERVAL,
                 gns.service.OPTION_ACQUIRE_DELAY,
                 gns.service.OPTION_RECYCLED_PRIORITY,
+                gns.service.OPTION_GARBAGE_LIFETIME,
             ),
             (
                 gns.service.ARG_POLL_INTERVAL,
                 gns.service.ARG_ACQUIRE_DELAY,
                 gns.service.ARG_RECYCLED_PRIORITY,
+                gns.service.ARG_GARBAGE_LIFETIME,
             ),
             gns.const.CONFIG_FILE,
         )
@@ -32,6 +34,7 @@ class CollectorMain(gns.service.AbstractMain):
             options[gns.service.OPTION_POLL_INTERVAL],
             options[gns.service.OPTION_ACQUIRE_DELAY],
             options[gns.service.OPTION_RECYCLED_PRIORITY],
+            options[gns.service.OPTION_GARBAGE_LIFETIME],
         )
 
 

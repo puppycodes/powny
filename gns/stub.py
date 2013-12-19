@@ -1,14 +1,23 @@
 import time
-import logging
 
 from raava import worker
 from raava import rules
-from raava import const
 
 
-EVENT_LEVEL = "level"
-EXTRA_URGENCY = "urgency"
+##### Public constants #####
+class EVENT:
+    HOST    = "host"
+    SERVICE = "service"
+    LEVEL   = "level"
+    INFO    = "info"
 
+class EXTRA(rules.EXTRA):
+    URGENCY = "urgency"
+    USER    = "user"
+    METHOD  = "method"
+
+
+###
 class LEVEL:
     CRIT   = 0
     WARN   = 1
@@ -21,26 +30,45 @@ class URGENCY:
     LOW    = 2
     CUSTOM = 3
 
+class METHOD:
+    EMAIL = "email"
+    SMS   = "sms"
+
 class HANDLER:
     ON_EVENT  = "on_event"
     ON_NOTIFY = "on_notify"
     ON_SEND   = "on_send"
 
-def _task_notify(task, *args_tuple, **kwargs_dict):
+
+##### Stubs #####
+def builtin_notify(task, event_root, user, wait = 0):
     task.checkpoint()
-    print("\x1b[31;1mNOTIFY:", args_tuple, kwargs_dict, "\x1b[0m")
-    time.sleep(2)
+    event_root = event_root.copy()
+    event_root.get_extra()[EXTRA.USER] = user
+    task.fork(event_root, HANDLER.ON_NOTIFY)
+    print("\x1b[31;1mNOTIFY: user=%s, sleep=%d\x1b[0m" % (user, wait))
+    task.checkpoint()
+    time.sleep(wait)
     task.checkpoint()
 
-def _task_fork(task, event_root, handler_type):
+def builtin_send(task, event_root, method, wait = 0):
     task.checkpoint()
-    task.fork(event_root, handler_type)
-    print("\x1b[31;1mFORK:", event_root, handler_type, "\x1b[0m")
+    event_root = event_root.copy()
+    event_root.get_extra()[EXTRA.METHOD] = method
+    task.fork(event_root, HANDLER.ON_SEND)
+    print("\x1b[31;1mSEND: user=%s, method=%s, sleep=%d\x1b[0m" % (event_root.get_extra()[EXTRA.USER], method, wait))
+    task.checkpoint()
+    time.sleep(wait)
     task.checkpoint()
 
+
+##### Public constants #####
 MATCHER_BUILTINS_MAP = {
+    "EVENT":   EVENT,
+    "EXTRA":   EXTRA,
     "LEVEL":   LEVEL,
     "URGENCY": URGENCY,
+    "METHOD":  METHOD,
     "HANDLER": HANDLER,
 
     "eq":          rules.EqComparator, # XXX: eq: key=value
@@ -58,8 +86,8 @@ MATCHER_BUILTINS_MAP = {
 }
 
 WORKER_BUILTINS_MAP = {
-    "notify": worker.make_task_builtin(_task_notify),
-    "fork":   worker.make_task_builtin(_task_fork),
+    "notify": worker.make_task_builtin(builtin_notify),
+    "send":   worker.make_task_builtin(builtin_send),
 }
 WORKER_BUILTINS_MAP.update(MATCHER_BUILTINS_MAP)
 

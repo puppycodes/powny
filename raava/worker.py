@@ -83,31 +83,30 @@ class WorkerThread(application.Thread):
         task_id = ready_dict[zoo.READY_TASK_ID]
         state = ready_dict[zoo.READY_STATE]
         handler = ( ready_dict[zoo.READY_HANDLER] if state is None else None )
-        assert not task_id in self._threads_dict, "Duplicating tasks"
+        assert task_id not in self._threads_dict, "Duplicating tasks"
 
         lock_path = zoo.join(zoo.RUNNING_PATH, task_id, zoo.RUNNING_LOCK)
-        with self._client.Lock(zoo.CONTROL_LOCK_PATH):
-            try:
-                parents_list = self._client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_PARENTS))
-                created = self._client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_CREATED))
-            except zoo.NoNodeError:
-                _logger.exception("Missing the necessary control nodes for the ready job")
-                return
+        try:
+            parents_list = self._client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_PARENTS))
+            created = self._client.pget(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_CREATED))
+        except zoo.NoNodeError:
+            _logger.exception("Missing the necessary control nodes for the ready job")
+            return
 
-            trans = self._client.transaction()
-            trans.pcreate(zoo.join(zoo.RUNNING_PATH, task_id), {
-                    zoo.RUNNING_JOB_ID:  job_id,
-                    zoo.RUNNING_HANDLER: handler,
-                    zoo.RUNNING_STATE:   state,
-                })
-            for (node, value) in (
-                    (zoo.CONTROL_TASK_STATUS,   ( zoo.TASK_STATUS.NEW if state is None else zoo.TASK_STATUS.READY )),
-                    (zoo.CONTROL_TASK_CREATED,  ( created or time.time() )),
-                    (zoo.CONTROL_TASK_RECYCLED, time.time()),
-                ):
-                trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, node), value)
-            trans.create(lock_path, ephemeral=True) # XXX: Acquired SingleLock()
-            zoo.check_transaction("init_task", trans.commit())
+        trans = self._client.transaction()
+        trans.pcreate(zoo.join(zoo.RUNNING_PATH, task_id), {
+                zoo.RUNNING_JOB_ID:  job_id,
+                zoo.RUNNING_HANDLER: handler,
+                zoo.RUNNING_STATE:   state,
+            })
+        for (node, value) in (
+                (zoo.CONTROL_TASK_STATUS,   ( zoo.TASK_STATUS.NEW if state is None else zoo.TASK_STATUS.READY )),
+                (zoo.CONTROL_TASK_CREATED,  ( created or time.time() )),
+                (zoo.CONTROL_TASK_RECYCLED, time.time()),
+            ):
+            trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, node), value)
+        trans.create(lock_path, ephemeral=True) # XXX: Acquired SingleLock()
+        zoo.check_transaction("init_task", trans.commit())
 
         task_thread = _TaskThread(parents_list, job_id, task_id, handler, state, self._controller, self._saver, self._fork)
         self._threads_dict[task_id] = {
@@ -142,7 +141,6 @@ class WorkerThread(application.Thread):
     def _controller_unsafe(self, task):
         parents_list = task.get_parents()
         root_job_id = ( task.get_job_id() if len(parents_list) == 0 else parents_list[0][0] )
-        # XXX: There is no need to control lock
         return ( self._client.exists(zoo.join(zoo.CONTROL_JOBS_PATH, root_job_id, zoo.CONTROL_CANCEL)) is None )
 
     def _saver_unsafe(self, task, state):
@@ -160,12 +158,11 @@ class WorkerThread(application.Thread):
         else:
             status = zoo.TASK_STATUS.READY
         trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_STATUS), status)
-        with self._client.Lock(zoo.CONTROL_LOCK_PATH):
-            try:
-                zoo.check_transaction("saver", trans.commit())
-            except zoo.TransactionError:
-                _logger.exception("saver error, current task has been dropped")
-                raise
+        try:
+            zoo.check_transaction("saver", trans.commit())
+        except zoo.TransactionError:
+            _logger.exception("saver error, current task has been dropped")
+            raise
         _logger.debug("Saved; status: %s", status)
 
     def _fork_unsafe(self, task, event_root, handler_type):
@@ -210,11 +207,11 @@ class _TaskThread(threading.Thread):
                 return
 
             (do_tuple, err, state) = self._task.step()
-            if not err is None:
+            if err is not None:
                 _logger.error("Unhandled step() error: %s", err)
                 self._saver(self._task, None)
                 return
-            if not do_tuple is None and do_tuple[0] == _REASON.FORK:
+            if do_tuple is not None and do_tuple[0] == _REASON.FORK:
                 self._fork(self._task, *do_tuple[1])
 
             self._saver(self._task, state)
@@ -259,11 +256,11 @@ class _Task:
 
     def init_cont(self):
         assert self._cont is None, "Continulet is already constructed"
-        if not self._handler is None:
+        if self._handler is not None:
             _logger.debug("Creating a new continulet...")
             handler = pickle.loads(self._handler)
             cont = _continuation.continulet(lambda _: handler())
-        elif not self._state is None:
+        elif self._state is not None:
             _logger.debug("Restoring the old state...")
             cont = pickle.loads(self._state)
             assert isinstance(cont, _continuation.continulet), "The unpickled state is a garbage!"
@@ -273,11 +270,11 @@ class _Task:
         self._cont = cont
 
     def is_pending(self):
-        assert not self._cont is None, "Run init_cont() first"
+        assert self._cont is not None, "Run init_cont() first"
         return self._cont.is_pending()
 
     def step(self):
-        assert not self._cont is None, "Run init_cont() first"
+        assert self._cont is not None, "Run init_cont() first"
         assert self._cont.is_pending(), "Attempt to step() on a finished task"
         _logger.debug("Activating...")
         try:

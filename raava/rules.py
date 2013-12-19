@@ -1,3 +1,4 @@
+import copy
 import builtins
 import logging
 import re
@@ -10,8 +11,9 @@ _logger = logging.getLogger(const.LOGGER_NAME)
 
 
 ##### Public constants #####
-EXTRA_HANDLER = "__handler__"
-EXTRA_JOB_ID  = "__job_id__"
+class EXTRA:
+    HANDLER = "handler"
+    JOB_ID  = "job_id"
 
 
 ##### Private constants #####
@@ -60,8 +62,8 @@ match_event = _make_matcher(_FILTER.EVENT)
 match_extra = _make_matcher(_FILTER.EXTRA)
 
 def get_handlers(event_root, handlers_dict):
-    handler_type = event_root.get_extra()[EXTRA_HANDLER]
-    job_id = event_root.get_extra()[EXTRA_JOB_ID]
+    handler_type = event_root.get_extra()[EXTRA.HANDLER]
+    job_id = event_root.get_extra()[EXTRA.JOB_ID]
     selected_set = set()
     for handler in handlers_dict.get(handler_type, set()):
         event_filters_dict = getattr(handler, _FILTER.EVENT, {})
@@ -108,6 +110,9 @@ class EventRoot(dict):
         self._extra_dict = kwargs_dict.pop("extra", {})
         dict.__init__(self, *args_tuple, **kwargs_dict)
 
+    def copy(self):
+        return copy.copy(self)
+
     def get_extra(self):
         return self._extra_dict
 
@@ -142,7 +147,7 @@ class NotInListComparator(AbstractComparator):
         AbstractComparator.__init__(self, variants_tuple)
 
     def compare(self, value):
-        return ( not value in self._operand )
+        return ( value not in self._operand )
 
 
 class RegexpComparator(AbstractComparator):
@@ -150,7 +155,7 @@ class RegexpComparator(AbstractComparator):
         AbstractComparator.__init__(self, re.compile(regexp))
 
     def compare(self, value):
-        return ( not self._operand.match(value) is None )
+        return ( self._operand.match(value) is not None )
 
 class EqComparator(AbstractComparator):
     def compare(self, value):
