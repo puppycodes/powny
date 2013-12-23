@@ -23,11 +23,12 @@ _logger = logging.getLogger(raava.const.LOGGER_NAME)
 ##### Public methods #####
 def main():
     parser = ulib.optconf.OptionsConfig(
-        (
-            gns.service.OPTION_LOG_FILE,
-            gns.service.OPTION_LOG_LEVEL,
-            gns.service.OPTION_ZOO_NODES,
-        ),
+        #(
+        #    gns.service.OPTION_LOG_FILE,
+        #    gns.service.OPTION_LOG_LEVEL,
+        #    gns.service.OPTION_ZOO_NODES,
+        #),
+        gns.service.ALL_OPTIONS,
         gns.const.CONFIG_FILE,
     )
     parser.add_arguments(

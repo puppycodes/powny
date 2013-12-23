@@ -53,7 +53,7 @@ ARG_ACQUIRE_DELAY     = ((OPTION_ACQUIRE_DELAY[0],),     OPTION_ACQUIRE_DELAY,  
 ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0],), OPTION_RECYCLED_PRIORITY, { "action" : "store", "metavar" : "<number>" })
 ARG_GARBAGE_LIFETIME  = ((OPTION_GARBAGE_LIFETIME[0],),  OPTION_GARBAGE_LIFETIME,  { "action" : "store", "metavar" : "<seconds>" })
 
-
+ALL_OPTIONS = [value for (key, value) in globals().items() if key.startswith("OPTION_") ] # FIXME: Remove this crutch
 
 
 
@@ -81,7 +81,7 @@ class AbstractMain:
         ).run()
 
     def _init(self):
-        parser = optconf.OptionsConfig((
+        """parser = optconf.OptionsConfig((
                 OPTION_LOG_FILE,
                 OPTION_LOG_LEVEL,
                 OPTION_ZOO_NODES,
@@ -91,7 +91,9 @@ class AbstractMain:
                 OPTION_INTERVAL,
             ) + tuple(self._options_list),
             self._config_file_path,
-        )
+        )"""
+        # FIXME: Remove this crutch
+        parser = optconf.OptionsConfig(ALL_OPTIONS, self._config_file_path)
         for arg_tuple in (
                 ARG_LOG_FILE,
                 ARG_LOG_LEVEL,
