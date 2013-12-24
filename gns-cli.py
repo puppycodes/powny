@@ -23,17 +23,13 @@ _logger = logging.getLogger(raava.const.LOGGER_NAME)
 ##### Public methods #####
 def main():
     parser = ulib.optconf.OptionsConfig(
-        #(
-        #    gns.service.OPTION_LOG_FILE,
-        #    gns.service.OPTION_LOG_LEVEL,
-        #    gns.service.OPTION_ZOO_NODES,
-        #),
         gns.service.ALL_OPTIONS,
         gns.const.CONFIG_FILE,
     )
     parser.add_arguments(
         gns.service.ARG_LOG_FILE,
         gns.service.ARG_LOG_LEVEL,
+        gns.service.ARG_LOG_FORMAT,
         gns.service.ARG_ZOO_NODES,
     )
     parser.add_raw_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
@@ -44,6 +40,7 @@ def main():
     raava.application.init_logging(
         options[gns.service.OPTION_LOG_LEVEL],
         options[gns.service.OPTION_LOG_FILE],
+        options[gns.service.OPTION_LOG_FORMAT],
     )
     client = raava.zoo.connect(options[gns.service.OPTION_ZOO_NODES])
 
