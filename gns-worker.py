@@ -9,7 +9,6 @@ import gns.service
 import gns.stub
 
 
-##### Public classes #####
 def main():
     options = gns.service.init(
         app_section = gns.service.SECTION.WORKER,
@@ -17,7 +16,6 @@ def main():
             gns.service.ARG_RULES_DIR,
             gns.service.ARG_QUEUE_TIMEOUT,
         ),
-        config_file_path = gns.const.CONFIG_FILE
     )
     raava.rules.setup_builtins(gns.stub.WORKER_BUILTINS_MAP)
     raava.handlers.setup_path(options[gns.service.OPTION_RULES_DIR])

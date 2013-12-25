@@ -6,33 +6,30 @@ import gns.const
 import gns.service
 
 
-##### Public classes #####
-class CollectorMain(gns.service.AbstractMain):
-    def __init__(self):
-        gns.service.AbstractMain.__init__(
-            self,
-            raava.apps.collector.Collector,
-            gns.service.SECTION.COLLECTOR,
-            (
-                gns.service.ARG_POLL_INTERVAL,
-                gns.service.ARG_ACQUIRE_DELAY,
-                gns.service.ARG_RECYCLED_PRIORITY,
-                gns.service.ARG_GARBAGE_LIFETIME,
-            ),
-            gns.const.CONFIG_FILE,
-        )
+def main():
+    options = gns.service.init(
+        app_section = gns.service.SECTION.COLLECTOR,
+        args_list = (
+            gns.service.ARG_POLL_INTERVAL,
+            gns.service.ARG_ACQUIRE_DELAY,
+            gns.service.ARG_RECYCLED_PRIORITY,
+            gns.service.ARG_GARBAGE_LIFETIME,
+        ),
+    )
 
-    def construct(self, options):
-        return (
-            options[gns.service.OPTION_ZOO_NODES],
-            options[gns.service.OPTION_POLL_INTERVAL],
-            options[gns.service.OPTION_ACQUIRE_DELAY],
-            options[gns.service.OPTION_RECYCLED_PRIORITY],
-            options[gns.service.OPTION_GARBAGE_LIFETIME],
-        )
+    app = raava.apps.collector.Collector(
+        workers = options[gns.service.OPTION_WORKERS],
+        die_after = options[gns.service.OPTION_DIE_AFTER],
+        quit_wait = options[gns.service.OPTION_QUIT_WAIT],
+        interval = options[gns.service.OPTION_INTERVAL],
+        worker_args_tuple = (options[gns.service.OPTION_ZOO_NODES],
+                             options[gns.service.OPTION_POLL_INTERVAL],
+                             options[gns.service.OPTION_ACQUIRE_DELAY],
+                             options[gns.service.OPTION_RECYCLED_PRIORITY],
+                             options[gns.service.OPTION_GARBAGE_LIFETIME])
+    )
+    app.run()
 
 
-##### Main #####
 if __name__ == "__main__":
-    CollectorMain().run()
-
+    main()

@@ -60,7 +60,7 @@ ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0],), OPTION_RECYCLED_PRIORIT
 ARG_GARBAGE_LIFETIME  = ((OPTION_GARBAGE_LIFETIME[0],),  OPTION_GARBAGE_LIFETIME,  { "action" : "store", "metavar" : "<seconds>" })
 
 
-def init(app_section, args_list, config_file_path):
+def init(app_section, args_list, config_file_path=const.CONFIG_FILE):
     parser = optconf.OptionsConfig(ALL_OPTIONS, config_file_path)
     for arg_tuple in (
             ARG_LOG_FILE,
