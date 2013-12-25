@@ -81,8 +81,9 @@ MATCHER_BUILTINS_MAP = {
     "not_in_list": rules.NotInListComparator,
     "regexp":      rules.RegexpComparator,
 
-    "match_event": rules.match_event,
-    "match_extra": rules.match_extra,
+    "match_event":     rules.match_event,
+    "match_extra":     rules.match_extra,
+    "disable_handler": rules.disable_handler,
 }
 
 WORKER_BUILTINS_MAP = {
