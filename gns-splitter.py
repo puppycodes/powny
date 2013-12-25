@@ -18,10 +18,12 @@ class SplitterMain(gns.service.AbstractMain):
             gns.service.SECTION.SPLITTER,
             (
                 gns.service.OPTION_RULES_DIR,
+                gns.service.OPTION_RULES_HEAD,
                 gns.service.OPTION_QUEUE_TIMEOUT,
             ),
             (
                 gns.service.ARG_RULES_DIR,
+                gns.service.ARG_RULES_HEAD,
                 gns.service.ARG_QUEUE_TIMEOUT,
             ),
             gns.const.CONFIG_FILE,
@@ -29,18 +31,19 @@ class SplitterMain(gns.service.AbstractMain):
 
     def construct(self, options):
         raava.rules.setup_builtins(gns.stub.MATCHER_BUILTINS_MAP)
-        hstorage = raava.handlers.Handlers(
+        raava.handlers.setup_path(options[gns.service.OPTION_RULES_DIR])
+        loader = raava.handlers.Loader(
             options[gns.service.OPTION_RULES_DIR],
+            options[gns.service.OPTION_RULES_HEAD],
             (
                 gns.stub.HANDLER.ON_EVENT,
                 gns.stub.HANDLER.ON_NOTIFY,
                 gns.stub.HANDLER.ON_SEND
             ),
         )
-        hstorage.load_handlers()
         return (
             options[gns.service.OPTION_ZOO_NODES],
-            hstorage,
+            loader,
             options[gns.service.OPTION_QUEUE_TIMEOUT],
         )
 

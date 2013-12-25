@@ -64,7 +64,7 @@ if __name__ == "__main__":
             "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
             "Operating System :: POSIX :: Linux",
             "Programming Language :: Python :: 3",
-            "Programming Language :: Python :: Implementation :: PyPy"
+            "Programming Language :: Python :: Implementation :: PyPy",
             "Topic :: Software Development :: Libraries :: Python Modules",
             "Topic :: System :: Distributed Computing",
             "Topic :: System :: Networking :: Monitoring",
@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
         install_requires=(
             "kazoo >= 1.3.1",
-            "ulib >= 0.17",
+            "ulib >= 0.19",
         ),
 
         cmdclass = { "build": GnsBuild },

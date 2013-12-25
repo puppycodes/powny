@@ -2,6 +2,7 @@
 
 
 import raava.rules
+import raava.handlers
 import raava.apps.worker
 import gns.const
 import gns.service
@@ -15,12 +16,19 @@ class WorkerMain(gns.service.AbstractMain):
             self,
             raava.apps.worker.Worker,
             gns.service.SECTION.WORKER,
-            (gns.service.OPTION_QUEUE_TIMEOUT,),
-            (gns.service.ARG_QUEUE_TIMEOUT,),
+            (
+                gns.service.OPTION_RULES_DIR,
+                gns.service.OPTION_QUEUE_TIMEOUT,
+            ),
+            (
+                gns.service.ARG_RULES_DIR,
+                gns.service.ARG_QUEUE_TIMEOUT,
+            ),
             gns.const.CONFIG_FILE,
         )
     def construct(self, options):
         raava.rules.setup_builtins(gns.stub.WORKER_BUILTINS_MAP)
+        raava.handlers.setup_path(options[gns.service.OPTION_RULES_DIR])
         return (
             options[gns.service.OPTION_ZOO_NODES],
             options[gns.service.OPTION_QUEUE_TIMEOUT],
