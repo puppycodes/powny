@@ -17,11 +17,6 @@ class SplitterMain(gns.service.AbstractMain):
             raava.apps.splitter.Splitter,
             gns.service.SECTION.SPLITTER,
             (
-                gns.service.OPTION_RULES_DIR,
-                gns.service.OPTION_RULES_HEAD,
-                gns.service.OPTION_QUEUE_TIMEOUT,
-            ),
-            (
                 gns.service.ARG_RULES_DIR,
                 gns.service.ARG_RULES_HEAD,
                 gns.service.ARG_QUEUE_TIMEOUT,
