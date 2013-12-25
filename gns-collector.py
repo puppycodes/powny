@@ -22,11 +22,13 @@ def main():
         die_after = options[gns.service.OPTION_DIE_AFTER],
         quit_wait = options[gns.service.OPTION_QUIT_WAIT],
         interval = options[gns.service.OPTION_INTERVAL],
-        worker_args_tuple = (options[gns.service.OPTION_ZOO_NODES],
-                             options[gns.service.OPTION_POLL_INTERVAL],
-                             options[gns.service.OPTION_ACQUIRE_DELAY],
-                             options[gns.service.OPTION_RECYCLED_PRIORITY],
-                             options[gns.service.OPTION_GARBAGE_LIFETIME])
+        worker_args_tuple = (
+            options[gns.service.OPTION_ZOO_NODES],
+            options[gns.service.OPTION_POLL_INTERVAL],
+            options[gns.service.OPTION_ACQUIRE_DELAY],
+            options[gns.service.OPTION_RECYCLED_PRIORITY],
+            options[gns.service.OPTION_GARBAGE_LIFETIME]
+        )
     )
     app.run()
 

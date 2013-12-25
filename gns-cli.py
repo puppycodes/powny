@@ -16,11 +16,9 @@ import gns.const
 import gns.service
 
 
-##### Private objects #####
 _logger = logging.getLogger(raava.const.LOGGER_NAME)
 
 
-##### Public methods #####
 def main():
     parser = ulib.optconf.OptionsConfig(
         gns.service.ALL_OPTIONS,
@@ -55,7 +53,6 @@ def main():
         print(json.dumps(raava.events.get_info(client, options.info_job_id), sort_keys=True, indent=4))
 
 
-##### Main #####
 if __name__ == "__main__":
     main()
 

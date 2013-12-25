@@ -25,8 +25,10 @@ def main():
         die_after = options[gns.service.OPTION_DIE_AFTER],
         quit_wait = options[gns.service.OPTION_QUIT_WAIT],
         interval = options[gns.service.OPTION_INTERVAL],
-        worker_args_tuple = (options[gns.service.OPTION_ZOO_NODES],
-                             options[gns.service.OPTION_QUEUE_TIMEOUT])
+        worker_args_tuple = (
+            options[gns.service.OPTION_ZOO_NODES],
+            options[gns.service.OPTION_QUEUE_TIMEOUT]
+        )
     )
     app.run()
 
