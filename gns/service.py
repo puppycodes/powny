@@ -60,50 +60,29 @@ ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0],), OPTION_RECYCLED_PRIORIT
 ARG_GARBAGE_LIFETIME  = ((OPTION_GARBAGE_LIFETIME[0],),  OPTION_GARBAGE_LIFETIME,  { "action" : "store", "metavar" : "<seconds>" })
 
 
-##### Public methods #####
-class AbstractMain:
-    def __init__(self, app, app_section, args_list, config_file_path):
-        self._app = app
-        self._app_section = app_section
-        self._args_list = args_list
-        self._config_file_path = config_file_path
-        self._options = None
+def init(app_section, args_list, config_file_path):
+    parser = optconf.OptionsConfig(ALL_OPTIONS, config_file_path)
+    for arg_tuple in (
+            ARG_LOG_FILE,
+            ARG_LOG_LEVEL,
+            ARG_LOG_FORMAT,
+            ARG_ZOO_NODES,
+            ARG_WORKERS,
+            ARG_DIE_AFTER,
+            ARG_QUIT_WAIT,
+            ARG_INTERVAL,
+        ) + tuple(args_list) :
+        parser.add_argument(arg_tuple)
+    options = parser.sync((SECTION.MAIN, app_section))[0]
 
-    def construct(self, options):
-        raise NotImplementedError
+    application.init_logging(
+        options[OPTION_LOG_LEVEL],
+        options[OPTION_LOG_FILE],
+        options[OPTION_LOG_FORMAT],
+    )
 
-    def run(self):
-        self._init()
-        self._app(
-            self._options[OPTION_WORKERS],
-            self._options[OPTION_DIE_AFTER],
-            self._options[OPTION_QUIT_WAIT],
-            self._options[OPTION_INTERVAL],
-            self.construct(self._options),
-        ).run()
+    client = zoo.connect(options[OPTION_ZOO_NODES])
+    zoo.init(client)
+    client.stop()
 
-    def _init(self):
-        parser = optconf.OptionsConfig(ALL_OPTIONS, self._config_file_path)
-        for arg_tuple in (
-                ARG_LOG_FILE,
-                ARG_LOG_LEVEL,
-                ARG_LOG_FORMAT,
-                ARG_ZOO_NODES,
-                ARG_WORKERS,
-                ARG_DIE_AFTER,
-                ARG_QUIT_WAIT,
-                ARG_INTERVAL,
-            ) + tuple(self._args_list) :
-            parser.add_argument(arg_tuple)
-        self._options = parser.sync((SECTION.MAIN, self._app_section))[0]
-
-        application.init_logging(
-            self._options[OPTION_LOG_LEVEL],
-            self._options[OPTION_LOG_FILE],
-            self._options[OPTION_LOG_FORMAT],
-        )
-
-        client = zoo.connect(self._options[OPTION_ZOO_NODES])
-        zoo.init(client)
-        client.stop()
-
+    return options
