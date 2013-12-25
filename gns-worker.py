@@ -17,10 +17,6 @@ class WorkerMain(gns.service.AbstractMain):
             raava.apps.worker.Worker,
             gns.service.SECTION.WORKER,
             (
-                gns.service.OPTION_RULES_DIR,
-                gns.service.OPTION_QUEUE_TIMEOUT,
-            ),
-            (
                 gns.service.ARG_RULES_DIR,
                 gns.service.ARG_QUEUE_TIMEOUT,
             ),

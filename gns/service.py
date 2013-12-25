@@ -62,10 +62,9 @@ ARG_GARBAGE_LIFETIME  = ((OPTION_GARBAGE_LIFETIME[0],),  OPTION_GARBAGE_LIFETIME
 
 ##### Public methods #####
 class AbstractMain:
-    def __init__(self, app, app_section, options_list, args_list, config_file_path):
+    def __init__(self, app, app_section, args_list, config_file_path):
         self._app = app
         self._app_section = app_section
-        self._options_list = options_list
         self._args_list = args_list
         self._config_file_path = config_file_path
         self._options = None
