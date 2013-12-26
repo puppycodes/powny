@@ -2,10 +2,10 @@
 
 
 import raava.apps.collector
-import gns.const
 import gns.service
 
 
+##### Public methods #####
 def main():
     options = gns.service.parse_options(
         app_section="collector",
@@ -28,10 +28,12 @@ def main():
         poll_interval=options[gns.service.OPTION_POLL_INTERVAL],
         delay=options[gns.service.OPTION_ACQUIRE_DELAY],
         recycled_priority=options[gns.service.OPTION_RECYCLED_PRIORITY],
-        garbage_lifetime=options[gns.service.OPTION_GARBAGE_LIFETIME]
+        garbage_lifetime=options[gns.service.OPTION_GARBAGE_LIFETIME],
     )
     app.run()
 
 
+##### Main #####
 if __name__ == "__main__":
     main()
+

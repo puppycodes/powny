@@ -4,10 +4,12 @@
 import raava.rules
 import raava.handlers
 import raava.apps.splitter
-import gns.const
+
 import gns.service
 import gns.stub
 
+
+##### Public methods #####
 def main():
     options = gns.service.parse_options(
         app_section="splitter",
@@ -28,7 +30,7 @@ def main():
         (
             gns.stub.HANDLER.ON_EVENT,
             gns.stub.HANDLER.ON_NOTIFY,
-            gns.stub.HANDLER.ON_SEND
+            gns.stub.HANDLER.ON_SEND,
         ),
     )
     app = raava.apps.splitter.Splitter(
@@ -43,5 +45,7 @@ def main():
     app.run()
 
 
+##### Main #####
 if __name__ == "__main__":
     main()
+

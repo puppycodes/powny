@@ -2,9 +2,9 @@
 
 
 import ulib.optconf
-import raava.const
+
 import raava.zoo
-import raava.application
+
 import gns.const
 import gns.service
 
@@ -22,7 +22,7 @@ def main():
         gns.service.ARG_ZOO_NODES,
     )
     parser.add_raw_argument("--do-it-now", dest="do_flag", action="store_true")
-    options = parser.sync((gns.service.SECTION.MAIN, "reinit"))[0]
+    options = parser.sync(("main", "reinit"))[0]
 
     if not options.do_flag: # pylint: disable=E1101
         raise RuntimeError("Specify option --do-it-now to process")
