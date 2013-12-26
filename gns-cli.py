@@ -2,13 +2,10 @@
 
 
 import json
-import logging
 
 import ulib.optconf
 
-import raava.const
 import raava.zoo
-import raava.application
 import raava.events
 import raava.rules
 
@@ -16,9 +13,7 @@ import gns.const
 import gns.service
 
 
-_logger = logging.getLogger(raava.const.LOGGER_NAME)
-
-
+##### Public methods #####
 def main():
     parser = ulib.optconf.OptionsConfig(
         gns.service.ALL_OPTIONS,
@@ -33,7 +28,7 @@ def main():
     parser.add_raw_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
     parser.add_raw_argument("--cancel", dest="cancel_job_id",    action="store", metavar="<uuid>")
     parser.add_raw_argument("--info",   dest="info_job_id",      action="store", metavar="<uuid>")
-    options = parser.sync((gns.service.SECTION.MAIN, "rcli"))[0]
+    options = parser.sync(("main", "rcli"))[0]
 
     gns.service.init_logging(options)
 
@@ -50,6 +45,7 @@ def main():
         print(json.dumps(raava.events.get_info(client, options.info_job_id), sort_keys=True, indent=4))
 
 
+##### Main #####
 if __name__ == "__main__":
     main()
 

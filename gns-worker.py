@@ -4,19 +4,19 @@
 import raava.rules
 import raava.handlers
 import raava.apps.worker
-from raava import application
-import gns.const
+
 import gns.service
 import gns.stub
 
 
+##### Public methods #####
 def main():
     options = gns.service.parse_options(
         app_section="worker",
         args_list=(
             gns.service.ARG_RULES_DIR,
-            gns.service.ARG_QUEUE_TIMEOUT
-        )
+            gns.service.ARG_QUEUE_TIMEOUT,
+        ),
     )
     gns.service.init_logging(options)
 
@@ -29,9 +29,12 @@ def main():
         quit_wait=options[gns.service.OPTION_QUIT_WAIT],
         interval=options[gns.service.OPTION_INTERVAL],
         host_list=options[gns.service.OPTION_ZOO_NODES],
-        queue_timeout=options[gns.service.OPTION_QUEUE_TIMEOUT]
+        queue_timeout=options[gns.service.OPTION_QUEUE_TIMEOUT],
     )
     app.run()
 
+
+##### Main #####
 if __name__ == "__main__":
     main()
+
