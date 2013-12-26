@@ -1,4 +1,6 @@
 import os
+import logging
+import warnings
 
 from ulib import optconf
 from ulib import validators
@@ -6,19 +8,9 @@ import ulib.validators.common # pylint: disable=W0611
 import ulib.validators.fs
 
 from raava import zoo
-from raava import application
 
 from . import const
 
-
-##### Private constants #####
-class SECTION:
-    MAIN      = "main"
-    SPLITTER  = "splitter"
-    WORKER    = "worker"
-    COLLECTOR = "collector"
-    RCLI      = "rcli"
-    REINIT    = "reinit"
 
 # Common
 OPTION_LOG_LEVEL = ("log-level", "log_level",     "INFO",            str)
@@ -53,6 +45,7 @@ ARG_QUIT_WAIT = (("-q", OPTION_QUIT_WAIT[0],), OPTION_QUIT_WAIT, { "action" : "s
 ARG_INTERVAL  = (("-i", OPTION_INTERVAL[0],),  OPTION_INTERVAL,  { "action" : "store", "metavar" : "<seconds>" })
 # Splitter/Worker
 ARG_QUEUE_TIMEOUT = ((OPTION_QUEUE_TIMEOUT[0],), OPTION_QUEUE_TIMEOUT, { "action" : "store", "metavar" : "<seconds>" })
+
 # Collector
 ARG_POLL_INTERVAL     = ((OPTION_POLL_INTERVAL[0],),     OPTION_POLL_INTERVAL,     { "action" : "store", "metavar" : "<seconds>" })
 ARG_ACQUIRE_DELAY     = ((OPTION_ACQUIRE_DELAY[0],),     OPTION_ACQUIRE_DELAY,     { "action" : "store", "metavar" : "<seconds>" })
@@ -60,7 +53,7 @@ ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0],), OPTION_RECYCLED_PRIORIT
 ARG_GARBAGE_LIFETIME  = ((OPTION_GARBAGE_LIFETIME[0],),  OPTION_GARBAGE_LIFETIME,  { "action" : "store", "metavar" : "<seconds>" })
 
 
-def init(app_section, args_list, config_file_path=const.CONFIG_FILE):
+def parse_options(app_section, args_list, config_file_path=const.CONFIG_FILE):
     parser = optconf.OptionsConfig(ALL_OPTIONS, config_file_path)
     for arg_tuple in (
             ARG_LOG_FILE,
@@ -73,16 +66,39 @@ def init(app_section, args_list, config_file_path=const.CONFIG_FILE):
             ARG_INTERVAL,
         ) + tuple(args_list) :
         parser.add_argument(arg_tuple)
-    options = parser.sync((SECTION.MAIN, app_section))[0]
+    options = parser.sync(("main", app_section))[0]
+    return options
 
-    application.init_logging(
-        options[OPTION_LOG_LEVEL],
-        options[OPTION_LOG_FILE],
-        options[OPTION_LOG_FORMAT],
-    )
-
+def init_zookeeper(options):
     client = zoo.connect(options[OPTION_ZOO_NODES])
     zoo.init(client)
     client.stop()
 
-    return options
+##### Public methods #####
+def init_logging(options):
+    level = options[OPTION_LOG_LEVEL]
+    log_file_path = options[OPTION_LOG_FILE]
+    line_format = options[OPTION_LOG_FORMAT]
+
+    root = logging.getLogger()
+    root.setLevel(level)
+    if line_format is None:
+        line_format = "%(asctime)s %(process)d %(threadName)s - %(levelname)s -- %(message)s"
+    formatter = logging.Formatter(line_format)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(level)
+    stream_handler.setFormatter(formatter)
+    root.addHandler(stream_handler)
+
+    if log_file_path is not None:
+        file_handler = logging.handlers.WatchedFileHandler(log_file_path)
+        file_handler.setLevel(level)
+        file_handler.setFormatter(formatter)
+        root.addHandler(file_handler)
+
+    def log_warning(message, category, filename, lineno, file=None, line=None) : # pylint: disable=W0622
+        root.warning("Python warning: %s", warnings.formatwarning(message, category, filename, lineno, line))
+
+    warnings.showwarning = log_warning
+

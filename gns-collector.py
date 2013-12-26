@@ -7,9 +7,9 @@ import gns.service
 
 
 def main():
-    options = gns.service.init(
-        app_section = gns.service.SECTION.COLLECTOR,
-        args_list = (
+    options = gns.service.parse_options(
+        app_section="collector",
+        args_list=(
             gns.service.ARG_POLL_INTERVAL,
             gns.service.ARG_ACQUIRE_DELAY,
             gns.service.ARG_RECYCLED_PRIORITY,
@@ -17,18 +17,18 @@ def main():
         ),
     )
 
+    gns.service.init_logging(options)
+
     app = raava.apps.collector.Collector(
-        workers = options[gns.service.OPTION_WORKERS],
-        die_after = options[gns.service.OPTION_DIE_AFTER],
-        quit_wait = options[gns.service.OPTION_QUIT_WAIT],
-        interval = options[gns.service.OPTION_INTERVAL],
-        worker_args_tuple = (
-            options[gns.service.OPTION_ZOO_NODES],
-            options[gns.service.OPTION_POLL_INTERVAL],
-            options[gns.service.OPTION_ACQUIRE_DELAY],
-            options[gns.service.OPTION_RECYCLED_PRIORITY],
-            options[gns.service.OPTION_GARBAGE_LIFETIME]
-        )
+        workers=options[gns.service.OPTION_WORKERS],
+        die_after=options[gns.service.OPTION_DIE_AFTER],
+        quit_wait=options[gns.service.OPTION_QUIT_WAIT],
+        interval=options[gns.service.OPTION_INTERVAL],
+        host_list=options[gns.service.OPTION_ZOO_NODES],
+        poll_interval=options[gns.service.OPTION_POLL_INTERVAL],
+        delay=options[gns.service.OPTION_ACQUIRE_DELAY],
+        recycled_priority=options[gns.service.OPTION_RECYCLED_PRIORITY],
+        garbage_lifetime=options[gns.service.OPTION_GARBAGE_LIFETIME]
     )
     app.run()
 

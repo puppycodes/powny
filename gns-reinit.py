@@ -22,16 +22,12 @@ def main():
         gns.service.ARG_ZOO_NODES,
     )
     parser.add_raw_argument("--do-it-now", dest="do_flag", action="store_true")
-    options = parser.sync((gns.service.SECTION.MAIN, gns.service.SECTION.REINIT))[0]
+    options = parser.sync((gns.service.SECTION.MAIN, "reinit"))[0]
 
     if not options.do_flag: # pylint: disable=E1101
         raise RuntimeError("Specify option --do-it-now to process")
 
-    raava.application.init_logging(
-        options[gns.service.OPTION_LOG_LEVEL],
-        options[gns.service.OPTION_LOG_FILE],
-        options[gns.service.OPTION_LOG_FORMAT],
-    )
+    gns.service.init_logging(options)
     client = raava.zoo.connect(options[gns.service.OPTION_ZOO_NODES])
     raava.zoo.drop(client, True)
     raava.zoo.init(client, True)
