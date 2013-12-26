@@ -4,34 +4,34 @@
 import raava.rules
 import raava.handlers
 import raava.apps.worker
+from raava import application
 import gns.const
 import gns.service
 import gns.stub
 
 
-##### Public classes #####
-class WorkerMain(gns.service.AbstractMain):
-    def __init__(self):
-        gns.service.AbstractMain.__init__(
-            self,
-            raava.apps.worker.Worker,
-            gns.service.SECTION.WORKER,
-            (
-                gns.service.ARG_RULES_DIR,
-                gns.service.ARG_QUEUE_TIMEOUT,
-            ),
-            gns.const.CONFIG_FILE,
+def main():
+    options = gns.service.parse_options(
+        app_section="worker",
+        args_list=(
+            gns.service.ARG_RULES_DIR,
+            gns.service.ARG_QUEUE_TIMEOUT
         )
-    def construct(self, options):
-        raava.rules.setup_builtins(gns.stub.WORKER_BUILTINS_MAP)
-        raava.handlers.setup_path(options[gns.service.OPTION_RULES_DIR])
-        return (
-            options[gns.service.OPTION_ZOO_NODES],
-            options[gns.service.OPTION_QUEUE_TIMEOUT],
-        )
+    )
+    gns.service.init_logging(options)
 
+    raava.rules.setup_builtins(gns.stub.WORKER_BUILTINS_MAP)
+    raava.handlers.setup_path(options[gns.service.OPTION_RULES_DIR])
 
-##### Main #####
+    app = raava.apps.worker.Worker(
+        workers=options[gns.service.OPTION_WORKERS],
+        die_after=options[gns.service.OPTION_DIE_AFTER],
+        quit_wait=options[gns.service.OPTION_QUIT_WAIT],
+        interval=options[gns.service.OPTION_INTERVAL],
+        host_list=options[gns.service.OPTION_ZOO_NODES],
+        queue_timeout=options[gns.service.OPTION_QUEUE_TIMEOUT]
+    )
+    app.run()
+
 if __name__ == "__main__":
-    WorkerMain().run()
-
+    main()
