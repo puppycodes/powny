@@ -1,4 +1,6 @@
 import os
+import logging
+import warnings
 
 from ulib import optconf
 from ulib import validators
@@ -6,19 +8,9 @@ import ulib.validators.common # pylint: disable=W0611
 import ulib.validators.fs
 
 from raava import zoo
-from raava import application
 
 from . import const
 
-
-##### Private constants #####
-class SECTION:
-    MAIN      = "main"
-    SPLITTER  = "splitter"
-    WORKER    = "worker"
-    COLLECTOR = "collector"
-    RCLI      = "rcli"
-    REINIT    = "reinit"
 
 # Common
 OPTION_LOG_LEVEL = ("log-level", "log_level",     "INFO",            str)
@@ -53,6 +45,7 @@ ARG_QUIT_WAIT = (("-q", OPTION_QUIT_WAIT[0],), OPTION_QUIT_WAIT, { "action" : "s
 ARG_INTERVAL  = (("-i", OPTION_INTERVAL[0],),  OPTION_INTERVAL,  { "action" : "store", "metavar" : "<seconds>" })
 # Splitter/Worker
 ARG_QUEUE_TIMEOUT = ((OPTION_QUEUE_TIMEOUT[0],), OPTION_QUEUE_TIMEOUT, { "action" : "store", "metavar" : "<seconds>" })
+
 # Collector
 ARG_POLL_INTERVAL     = ((OPTION_POLL_INTERVAL[0],),     OPTION_POLL_INTERVAL,     { "action" : "store", "metavar" : "<seconds>" })
 ARG_ACQUIRE_DELAY     = ((OPTION_ACQUIRE_DELAY[0],),     OPTION_ACQUIRE_DELAY,     { "action" : "store", "metavar" : "<seconds>" })
@@ -60,50 +53,52 @@ ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0],), OPTION_RECYCLED_PRIORIT
 ARG_GARBAGE_LIFETIME  = ((OPTION_GARBAGE_LIFETIME[0],),  OPTION_GARBAGE_LIFETIME,  { "action" : "store", "metavar" : "<seconds>" })
 
 
+def parse_options(app_section, args_list, config_file_path=const.CONFIG_FILE):
+    parser = optconf.OptionsConfig(ALL_OPTIONS, config_file_path)
+    for arg_tuple in (
+            ARG_LOG_FILE,
+            ARG_LOG_LEVEL,
+            ARG_LOG_FORMAT,
+            ARG_ZOO_NODES,
+            ARG_WORKERS,
+            ARG_DIE_AFTER,
+            ARG_QUIT_WAIT,
+            ARG_INTERVAL,
+        ) + tuple(args_list) :
+        parser.add_argument(arg_tuple)
+    options = parser.sync(("main", app_section))[0]
+    return options
+
+def init_zookeeper(options):
+    client = zoo.connect(options[OPTION_ZOO_NODES])
+    zoo.init(client)
+    client.stop()
+
 ##### Public methods #####
-class AbstractMain:
-    def __init__(self, app, app_section, args_list, config_file_path):
-        self._app = app
-        self._app_section = app_section
-        self._args_list = args_list
-        self._config_file_path = config_file_path
-        self._options = None
+def init_logging(options):
+    level = options[OPTION_LOG_LEVEL]
+    log_file_path = options[OPTION_LOG_FILE]
+    line_format = options[OPTION_LOG_FORMAT]
 
-    def construct(self, options):
-        raise NotImplementedError
+    root = logging.getLogger()
+    root.setLevel(level)
+    if line_format is None:
+        line_format = "%(asctime)s %(process)d %(threadName)s - %(levelname)s -- %(message)s"
+    formatter = logging.Formatter(line_format)
 
-    def run(self):
-        self._init()
-        self._app(
-            self._options[OPTION_WORKERS],
-            self._options[OPTION_DIE_AFTER],
-            self._options[OPTION_QUIT_WAIT],
-            self._options[OPTION_INTERVAL],
-            self.construct(self._options),
-        ).run()
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(level)
+    stream_handler.setFormatter(formatter)
+    root.addHandler(stream_handler)
 
-    def _init(self):
-        parser = optconf.OptionsConfig(ALL_OPTIONS, self._config_file_path)
-        for arg_tuple in (
-                ARG_LOG_FILE,
-                ARG_LOG_LEVEL,
-                ARG_LOG_FORMAT,
-                ARG_ZOO_NODES,
-                ARG_WORKERS,
-                ARG_DIE_AFTER,
-                ARG_QUIT_WAIT,
-                ARG_INTERVAL,
-            ) + tuple(self._args_list) :
-            parser.add_argument(arg_tuple)
-        self._options = parser.sync((SECTION.MAIN, self._app_section))[0]
+    if log_file_path is not None:
+        file_handler = logging.handlers.WatchedFileHandler(log_file_path)
+        file_handler.setLevel(level)
+        file_handler.setFormatter(formatter)
+        root.addHandler(file_handler)
 
-        application.init_logging(
-            self._options[OPTION_LOG_LEVEL],
-            self._options[OPTION_LOG_FILE],
-            self._options[OPTION_LOG_FORMAT],
-        )
+    def log_warning(message, category, filename, lineno, file=None, line=None) : # pylint: disable=W0622
+        root.warning("Python warning: %s", warnings.formatwarning(message, category, filename, lineno, line))
 
-        client = zoo.connect(self._options[OPTION_ZOO_NODES])
-        zoo.init(client)
-        client.stop()
+    warnings.showwarning = log_warning
 

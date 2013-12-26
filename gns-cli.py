@@ -16,11 +16,9 @@ import gns.const
 import gns.service
 
 
-##### Private objects #####
 _logger = logging.getLogger(raava.const.LOGGER_NAME)
 
 
-##### Public methods #####
 def main():
     parser = ulib.optconf.OptionsConfig(
         gns.service.ALL_OPTIONS,
@@ -35,13 +33,10 @@ def main():
     parser.add_raw_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
     parser.add_raw_argument("--cancel", dest="cancel_job_id",    action="store", metavar="<uuid>")
     parser.add_raw_argument("--info",   dest="info_job_id",      action="store", metavar="<uuid>")
-    options = parser.sync((gns.service.SECTION.MAIN, gns.service.SECTION.RCLI))[0]
+    options = parser.sync((gns.service.SECTION.MAIN, "rcli"))[0]
 
-    raava.application.init_logging(
-        options[gns.service.OPTION_LOG_LEVEL],
-        options[gns.service.OPTION_LOG_FILE],
-        options[gns.service.OPTION_LOG_FORMAT],
-    )
+    gns.service.init_logging(options)
+
     client = raava.zoo.connect(options[gns.service.OPTION_ZOO_NODES])
 
     if options.add_handler_type is not None:
@@ -55,7 +50,6 @@ def main():
         print(json.dumps(raava.events.get_info(client, options.info_job_id), sort_keys=True, indent=4))
 
 
-##### Main #####
 if __name__ == "__main__":
     main()
 
