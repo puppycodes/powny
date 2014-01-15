@@ -30,6 +30,7 @@ def main():
         interval=options[gns.service.OPTION_INTERVAL],
         host_list=options[gns.service.OPTION_ZOO_NODES],
         queue_timeout=options[gns.service.OPTION_QUEUE_TIMEOUT],
+        rules_path=options[gns.service.OPTION_RULES_DIR],
     )
     app.run()
 
