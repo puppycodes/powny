@@ -1,0 +1,28 @@
+<%
+    from urllib.parse import urlsplit, urlunsplit
+    from os.path import normpath, dirname
+
+    splitted = urlsplit(url)
+    prev_list = list(splitted)
+    prev_list[2] = dirname(normpath(prev_list[2]))
+    prev_url = urlunsplit(prev_list)
+    base_url = urlunsplit(splitted[:3] + ("", ""))
+    module = normpath(splitted[2])[1:].replace("/", ".")
+
+    objects = "<br>".join((
+            "<br>".join([ "<a href=\"%s\">%s/</a>" % (base_url+name, name) for name in modules_list ]),
+            "<br>".join([ "--- <a href=\"%s\">%s</a>()" % (base_url+name, name) for name in methods_list ]),
+        ))
+%>
+<html>
+<body style="font-family: monospace">
+
+API tree for <b>${module}</b>
+<hr>
+<a href="${prev_url}">../</a>
+<br>
+${objects}
+
+</body>
+</html>
+

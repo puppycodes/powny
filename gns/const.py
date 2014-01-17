@@ -9,3 +9,7 @@ UPSTREAM_URL = "https://github.com/yandex-sysmon/notify"
 CONFIG_FILE = "etc/gns/gns.conf"
 RULES_DIR   = "rules"
 
+
+###
+LOGGER_NAME = "gns"
+

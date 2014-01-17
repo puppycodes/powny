@@ -56,8 +56,12 @@ if __name__ == "__main__":
             "gns-collector.py",
             "gns-cli.py",
             "gns-reinit.py",
-            "gns-demo-api.py",
+            "gns-api.py",
         ),
+
+        package_data={
+            "gns": ["templates/*.html"],
+        },
 
         classifiers=( # http://pypi.python.org/pypi?:action=list_classifiers
             "Development Status :: 2 - Pre-Alpha",
@@ -73,6 +77,9 @@ if __name__ == "__main__":
         install_requires=(
             "kazoo >= 1.3.1",
             "ulib >= 0.19",
+            "cherrypy >= 3.2.4",
+            "mako >= 0.9.1",
+            "decorator >= 3.4.0",
         ),
 
         cmdclass = { "build": GnsBuild },
