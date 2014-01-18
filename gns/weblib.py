@@ -13,6 +13,7 @@ from . import const
 ##### Public constants #####
 ARGS_REQUIRED = "required"
 ARGS_OPTIONAL = "optional"
+ARGS_ALL      = "all"
 ARGS_VARIABLE = "variable"
 
 API_RETVAL = "retval"
@@ -77,7 +78,7 @@ class Module:
 
 ##### Private methods #####
 def _api_info(method):
-    (required_list, optional_dict, variable_flag) = _inspect_args(method)
+    (required_list, optional_dict, _, variable_flag) = _inspect_args(method)
     return _render_template(
         TEMPLATE_METHOD,
         url=cherrypy.url(),
@@ -88,11 +89,12 @@ def _api_info(method):
     ).encode()
 
 def _api_inspect(method):
-    (required_list, optional_dict, variable_flag) = _inspect_args(method)
+    (required_list, optional_dict, all_list, variable_flag) = _inspect_args(method)
     cherrypy.response.headers["Content-Type"] = "application/json"
     return json.dumps({
             ARGS_REQUIRED: required_list,
             ARGS_OPTIONAL: optional_dict,
+            ARGS_ALL:      all_list,
             ARGS_VARIABLE: variable_flag,
         }).encode()
 
@@ -115,7 +117,7 @@ def _inspect_args(method):
         required_list = args_spec.args[:-len(args_spec.defaults)]
         optional_dict = dict(zip(args_spec.args[len(args_spec.defaults)+1:], args_spec.defaults))
     required_list.remove("self")
-    return (required_list, optional_dict, ( args_spec.keywords is not None ))
+    return (required_list, optional_dict, args_spec.args, ( args_spec.keywords is not None ))
 
 def _invoke(method, args_dict):
     required_list = _inspect_args(method)[0]
