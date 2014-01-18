@@ -1,7 +1,5 @@
 #!/usr/bin/env pypy3
 
-#!/usr/bin/env pypy3
-
 
 import cherrypy
 import ulib.optconf
