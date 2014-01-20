@@ -11,7 +11,7 @@ from raava import rules
 
 
 ##### Public classes #####
-class Api(server.Module):
+class Api(grpc.server.Module):
     def __init__(self, hosts_list):
         self._hosts_list = hosts_list
 
