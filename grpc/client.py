@@ -1,6 +1,25 @@
 import socket
 import urllib.request
+import urllib.error
 import json
+
+from . import const
+
+
+##### Exceptions #####
+class ApiError(Exception):
+    def __init__(self, name, text):
+        self._name = name
+        self._text = text
+
+    def get_name(self):
+        return self._name
+
+    def get_text(self):
+        return self._text
+
+    def __str__(self):
+        return "%s: %s" % (self._name, self._text)
 
 
 ##### Public classes #####
@@ -27,15 +46,23 @@ class Proxy:
             { "Content-Type": "application/json" },
         )
         opener = urllib.request.build_opener()
-        response = opener.open(request, timeout=self._timeout)
-        return json.loads(response.read().decode())
+        try:
+            response = opener.open(request, timeout=self._timeout)
+        except urllib.error.HTTPError as err:
+            if err.code == 500:
+                result_dict = json.loads(err.read().decode())
+                raise ApiError(*result_dict[const.API_EXCEPTION])
+            else:
+                raise
+        result_dict = json.loads(response.read().decode())
+        return result_dict[const.API_RETVAL]
 
     def _inspect_args(self, path):
         if path in self._inspect_cache_dict:
             return self._inspect_cache_dict[path]
         opener = urllib.request.build_opener()
-        response = opener.open("%s/%s?action=inspect" % (self._url, path), timeout=self._timeout)
-        args_tuple = tuple(json.loads(response.read().decode())["all"])
+        response = opener.open("%s/%s?action=%s" % (self._url, path, const.ACTION.INSPECT), timeout=self._timeout)
+        args_tuple = tuple(json.loads(response.read().decode())[const.ARGS_ALL])
         self._inspect_cache_dict[path] = args_tuple
         return args_tuple
 

@@ -1,3 +1,4 @@
+import sys
 import cherrypy
 import types
 import inspect
@@ -10,24 +11,11 @@ import logging
 from . import const
 
 
-##### Public constants #####
-ARGS_REQUIRED = "required"
-ARGS_OPTIONAL = "optional"
-ARGS_ALL      = "all"
-ARGS_VARIABLE = "variable"
-
-API_RETVAL = "retval"
-
-class ACTION:
-    INFO    = "info"
-    INSPECT = "inspect"
-
-
 ##### Private constants #####
 _API_METHOD = "_api_method"
 
-TEMPLATE_MODULE = ("grpc", "templates/module.html")
-TEMPLATE_METHOD = ("grpc", "templates/method.html")
+_TEMPLATE_MODULE = ("grpc", "templates/module.html")
+_TEMPLATE_METHOD = ("grpc", "templates/method.html")
 
 
 ##### Private objects #####
@@ -40,9 +28,9 @@ def api(method):
     @cherrypy.tools.allow(methods=("GET", "POST"))
     def wrap(self, action = None):
         if cherrypy.request.method == "GET":
-            if action is None or action == ACTION.INFO:
+            if action is None or action == const.ACTION.INFO:
                 return _api_info(method)
-            elif action == ACTION.INSPECT:
+            elif action == const.ACTION.INSPECT:
                 return _api_inspect(method)
             else:
                 raise cherrypy.HTTPError(400, "Invalid action")
@@ -55,7 +43,17 @@ def api(method):
 
 
 ##### Public classess #####
+def _error_page(status, message, traceback, version):
+    (err, text) = sys.exc_info()[:2]
+    return json.dumps({
+            const.API_EXCEPTION: (err.__name__, str(text)),
+        })
+
 class Module:
+    _cp_config = {
+        "error_page.default": _error_page,
+    }
+
     @cherrypy.expose
     def index(self):
         modules_list = []
@@ -69,7 +67,7 @@ class Module:
                     continue
                 methods_list.append(name)
         return _render_template(
-            TEMPLATE_MODULE,
+            _TEMPLATE_MODULE,
             url=cherrypy.url(),
             modules_list=modules_list,
             methods_list=methods_list,
@@ -80,7 +78,7 @@ class Module:
 def _api_info(method):
     (required_list, optional_dict, _, variable_flag) = _inspect_args(method)
     return _render_template(
-        TEMPLATE_METHOD,
+        _TEMPLATE_METHOD,
         url=cherrypy.url(),
         doc=textwrap.dedent(method.__doc__ or ""),
         required_list=required_list,
@@ -92,10 +90,10 @@ def _api_inspect(method):
     (required_list, optional_dict, all_list, variable_flag) = _inspect_args(method)
     cherrypy.response.headers["Content-Type"] = "application/json"
     return json.dumps({
-            ARGS_REQUIRED: required_list,
-            ARGS_OPTIONAL: optional_dict,
-            ARGS_ALL:      all_list,
-            ARGS_VARIABLE: variable_flag,
+            const.ARGS_REQUIRED: required_list,
+            const.ARGS_OPTIONAL: optional_dict,
+            const.ARGS_ALL:      all_list,
+            const.ARGS_VARIABLE: variable_flag,
         }).encode()
 
 def _api_invoke(obj, method):
@@ -104,7 +102,7 @@ def _api_invoke(obj, method):
     args_dict["self"] = obj
     cherrypy.response.headers["Content-Type"] = "application/json"
     return json.dumps({
-            API_RETVAL: _invoke(method, args_dict),
+            const.API_RETVAL: _invoke(method, args_dict),
         }).encode()
 
 ###
@@ -128,11 +126,7 @@ def _invoke(method, args_dict):
         raise cherrypy.HTTPError(400, message)
 
     _logger.info("HTTP call: %s.%s(%s)", method.__module__, method.__name__, args_dict)
-    try:
-        return method(**args_dict)
-    except ValueError as err:
-        _logger.exception("Incorrect client message")
-        raise cherrypy.HTTPError(400, str(err))
+    return method(**args_dict)
 
 def _render_template(template_tuple, **kwargs_dict):
     return mako.template.Template(pkgutil.get_data(*template_tuple)).render(**kwargs_dict)
