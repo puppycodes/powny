@@ -7,7 +7,7 @@ import ulib.optconf
 
 import gns.const
 import gns.service
-import gns.grpc
+import grpc.client
 
 
 ##### Public methods #####
@@ -30,7 +30,7 @@ def main():
     options = parser.sync(("main", "rcli"))[0]
 
     gns.service.init_logging(options)
-    proxy = gns.grpc.Proxy(options.api_url)
+    proxy = grpc.client.Proxy(options.api_url)
 
     if options.add_flag:
         method = ( lambda: proxy.api.v1.events.add(**json.loads(input())) )

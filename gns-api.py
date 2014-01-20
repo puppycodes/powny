@@ -5,8 +5,8 @@ import cherrypy
 import ulib.optconf
 
 import raava.zoo
+import grpc.server
 
-import gns.weblib
 import gns.service
 import gns.api.events
 
@@ -31,9 +31,9 @@ def main():
     with raava.zoo.Connect(options[gns.service.OPTION_ZOO_NODES]) as client:
         raava.zoo.init(client)
 
-    root = gns.weblib.Module()
-    root.api = gns.weblib.Module()
-    root.api.v1 = gns.weblib.Module()
+    root = grpc.server.Module()
+    root.api = grpc.server.Module()
+    root.api.v1 = grpc.server.Module()
     root.api.v1.events = gns.api.events.Api(options[gns.service.OPTION_ZOO_NODES])
 
     cherrypy.quickstart(root, config={

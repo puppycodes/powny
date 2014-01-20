@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
         packages=(
             "gns",
+            "grpc",
             "raava",
             "raava/apps",
         ),
@@ -60,7 +61,7 @@ if __name__ == "__main__":
         ),
 
         package_data={
-            "gns": ["templates/*.html"],
+            "grpc": ["templates/*.html"],
         },
 
         classifiers=( # http://pypi.python.org/pypi?:action=list_classifiers

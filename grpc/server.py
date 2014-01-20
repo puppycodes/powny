@@ -26,8 +26,8 @@ class ACTION:
 ##### Private constants #####
 _API_METHOD = "_api_method"
 
-TEMPLATE_MODULE = ("gns", "templates/module.html")
-TEMPLATE_METHOD = ("gns", "templates/method.html")
+TEMPLATE_MODULE = ("grpc", "templates/module.html")
+TEMPLATE_METHOD = ("grpc", "templates/method.html")
 
 
 ##### Private objects #####
