@@ -1,4 +1,4 @@
-#!/usr/bin/env pypy3
+#!/usr/bin/env python
 
 
 # pylint: disable=W0401,W0614
