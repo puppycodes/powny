@@ -22,6 +22,18 @@ _TEMPLATE_METHOD = ("grpc", "templates/method.html")
 _logger = logging.getLogger(const.LOGGER_NAME)
 
 
+##### Exceptions #####
+class BadRequestError(cherrypy.HTTPError):
+    def __init__(self, text):
+        cherrypy.HTTPError.__init__(self, 400, text)
+
+class ActionError(BadRequestError):
+    pass
+
+class InvokeError(BadRequestError):
+    pass
+
+
 ##### Public methods #####
 def api(method):
     @cherrypy.expose
@@ -33,10 +45,10 @@ def api(method):
             elif action == const.ACTION.INSPECT:
                 return _api_inspect(method)
             else:
-                raise cherrypy.HTTPError(400, "Invalid action")
+                raise ActionError("Invalid GET action")
         else: # POST
             if action is not None:
-                raise cherrypy.HTTPError(400, "Invalid action")
+                raise ActionError("Invalid POST action")
             return _api_invoke(self, method)
     setattr(wrap, _API_METHOD, None)
     return wrap
@@ -92,10 +104,12 @@ def _api_inspect(method):
     (required_list, optional_dict, all_list, variable_flag) = _inspect_args(method)
     cherrypy.response.headers["Content-Type"] = "application/json"
     return json.dumps({
-            const.ARGS_REQUIRED: required_list,
-            const.ARGS_OPTIONAL: optional_dict,
-            const.ARGS_ALL:      all_list,
-            const.ARGS_VARIABLE: variable_flag,
+            const.API_RETVAL: {
+                const.ARGS_REQUIRED: required_list,
+                const.ARGS_OPTIONAL: optional_dict,
+                const.ARGS_ALL:      all_list,
+                const.ARGS_VARIABLE: variable_flag,
+            },
         }).encode()
 
 def _api_invoke(obj, method):
@@ -125,7 +139,7 @@ def _invoke(method, args_dict):
     if len(missing_list) != 0:
         message = "Missing required arguments: %s" % (", ".join(missing_list))
         _logger.error(message)
-        raise cherrypy.HTTPError(400, message)
+        raise InvokeError(message)
 
     _logger.info("HTTP call: %s.%s(%s)", method.__module__, method.__name__, args_dict)
     return method(**args_dict)

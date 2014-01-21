@@ -24,8 +24,9 @@ class ApiError(Exception):
 
 ##### Public classes #####
 class Proxy:
-    def __init__(self, url, timeout = socket._GLOBAL_DEFAULT_TIMEOUT): # pylint: disable=W0212
+    def __init__(self, url, opener = None, timeout = socket._GLOBAL_DEFAULT_TIMEOUT): # pylint: disable=W0212
         self._url = url
+        self._opener = ( opener or urllib.request.build_opener() )
         self._timeout = timeout
         self._inspect_cache_dict = {}
 
@@ -39,33 +40,29 @@ class Proxy:
             for count in range(len(args_tuple))
         }
         args_dict.update(kwargs_dict)
-
         request = urllib.request.Request(
             "%s/%s" % (self._url, path),
             json.dumps(args_dict).encode(),
             { "Content-Type": "application/json" },
         )
-        opener = urllib.request.build_opener()
-        try:
-            response = opener.open(request, timeout=self._timeout)
-        except urllib.error.HTTPError as err:
-            if err.code == 500:
-                result_dict = json.loads(err.read().decode())
-                raise ApiError(*result_dict[const.API_EXCEPTION])
-            else:
-                raise
-        result_dict = json.loads(response.read().decode())
-        return result_dict[const.API_RETVAL]
+        return self._api_request(request)
 
     def _inspect_args(self, path):
         if path in self._inspect_cache_dict:
             return self._inspect_cache_dict[path]
-        opener = urllib.request.build_opener()
-        response = opener.open("%s/%s?action=%s" % (self._url, path, const.ACTION.INSPECT), timeout=self._timeout)
-        args_tuple = tuple(json.loads(response.read().decode())[const.ARGS_ALL])
+        request = urllib.request.Request("%s/%s?action=%s" % (self._url, path, const.ACTION.INSPECT))
+        args_tuple = self._api_request(request)[const.ARGS_ALL]
         self._inspect_cache_dict[path] = args_tuple
         return args_tuple
 
+    def _api_request(self, request):
+        try:
+            response = self._opener.open(request, timeout=self._timeout)
+        except urllib.error.HTTPError as err:
+            result_dict = json.loads(err.read().decode())
+            raise ApiError(*result_dict[const.API_EXCEPTION])
+        result_dict = json.loads(response.read().decode())
+        return result_dict[const.API_RETVAL]
 
 ##### Private classes #####
 class _Object:
