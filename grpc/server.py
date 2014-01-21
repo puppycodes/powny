@@ -45,9 +45,11 @@ def api(method):
 ##### Public classess #####
 def _error_page(status, message, traceback, version):
     (err, text) = sys.exc_info()[:2]
-    return json.dumps({
+    data = json.dumps({
             const.API_EXCEPTION: (err.__name__, str(text)),
         })
+    cherrypy.response.headers["Content-Type"] = "application/json"
+    return data
 
 class Module:
     _cp_config = {
