@@ -14,8 +14,8 @@ from . import const
 ##### Private constants #####
 _API_METHOD = "_api_method"
 
-_TEMPLATE_MODULE = ("grpc", "templates/module.html")
-_TEMPLATE_METHOD = ("grpc", "templates/method.html")
+_TEMPLATE_MODULE = (__package__, "templates/module.html")
+_TEMPLATE_METHOD = (__package__, "templates/method.html")
 
 
 ##### Private objects #####

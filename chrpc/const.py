@@ -13,5 +13,5 @@ class ACTION:
 
 
 ###
-LOGGER_NAME = "grpc"
+LOGGER_NAME = "chrpc"
 
