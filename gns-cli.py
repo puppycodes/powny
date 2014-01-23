@@ -1,16 +1,13 @@
-#!/usr/bin/env pypy3
+#!/usr/bin/env python
 
 
 import json
 
 import ulib.optconf
 
-import raava.zoo
-import raava.events
-import raava.rules
-
 import gns.const
 import gns.service
+import chrpc.client
 
 
 ##### Public methods #####
@@ -25,24 +22,27 @@ def main():
         gns.service.ARG_LOG_FORMAT,
         gns.service.ARG_ZOO_NODES,
     )
-    parser.add_raw_argument("--add",    dest="add_handler_type", action="store", metavar="<handler_type>")
-    parser.add_raw_argument("--cancel", dest="cancel_job_id",    action="store", metavar="<uuid>")
-    parser.add_raw_argument("--info",   dest="info_job_id",      action="store", metavar="<uuid>")
+    parser.add_raw_argument("--api-url", dest="api_url",       action="store", default="http://localhost:8080", metavar="<url>")
+    parser.add_raw_argument("--add",     dest="add_flag",      action="store_true")
+    parser.add_raw_argument("--cancel",  dest="cancel_job_id", action="store", metavar="<uuid>")
+    parser.add_raw_argument("--info",    dest="info_job_id",   action="store", metavar="<uuid>")
+    parser.add_raw_argument("--jobs",    dest="jobs_flag",     action="store_true")
     options = parser.sync(("main", "rcli"))[0]
 
     gns.service.init_logging(options)
+    proxy = chrpc.client.Proxy(options.api_url)
 
-    client = raava.zoo.connect(options[gns.service.OPTION_ZOO_NODES])
-
-    if options.add_handler_type is not None:
-        raava.zoo.init(client)
-        print(raava.events.add(client, raava.rules.EventRoot(json.loads(input())), options.add_handler_type))
+    if options.add_flag:
+        method = ( lambda: proxy.api.v1.events.add(**json.loads(input())) )
     elif options.cancel_job_id is not None:
-        raava.zoo.init(client)
-        raava.events.cancel(client, options.cancel_job_id)
+        method = ( lambda: proxy.api.v1.events.cancel(options.cancel_job_id) )
     elif options.info_job_id is not None:
-        raava.zoo.init(client)
-        print(json.dumps(raava.events.get_info(client, options.info_job_id), sort_keys=True, indent=4))
+        method = ( lambda: proxy.api.v1.events.get_info(options.info_job_id) )
+    elif options.jobs_flag:
+        method = proxy.api.v1.events.get_jobs
+    else:
+        raise RuntimeError("Required method option")
+    print(json.dumps(method(), sort_keys=True, indent=4))
 
 
 ##### Main #####

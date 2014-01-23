@@ -1,4 +1,3 @@
-import copy
 import uuid
 import pickle
 import time
@@ -33,7 +32,7 @@ def add(client, event_root, handler_type, parents_list = None):
         parents_list = []
 
     job_id = str(uuid.uuid4())
-    event_root = copy.copy(event_root)
+    event_root = event_root.copy()
     event_root.get_extra()[rules.EXTRA.HANDLER] = handler_type
     event_root.get_extra()[rules.EXTRA.JOB_ID] = job_id
 
@@ -65,6 +64,9 @@ def cancel(client, job_id):
         raise NoJobError
     except zoo.NodeExistsError:
         pass
+
+def get_jobs(client):
+    return client.get_children(zoo.CONTROL_JOBS_PATH)
 
 def get_finished(client, job_id):
     with client.Lock(zoo.CONTROL_LOCK_PATH):
