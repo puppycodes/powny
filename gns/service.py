@@ -3,6 +3,7 @@ import os
 import yaml
 import argparse
 import logging
+import logging.config
 import warnings
 
 from ulib import typetools
@@ -26,9 +27,7 @@ O_ZOO_NODES  = "zoo-nodes"
 O_RULES_DIR  = "rules-dir"
 O_RULES_HEAD = "rules-head"
 
-O_LOG_LEVEL  = "log-level"
-O_LOG_FILE   = "log-file"
-O_LOG_FORMAT = "log-format"
+O_VERSION = "version"
 
 O_WORKERS   = "workers"
 O_DIE_AFTER = "die-after"
@@ -45,17 +44,6 @@ O_PORT              = "port"
 
 
 ###
-class _Option:
-    def __init__(self, default, validator):
-        self._default = default
-        self._validator = validator
-
-    def get_default(self):
-        return self._default
-
-    def get_validator(self):
-        return self._validator
-
 _DAEMON_MAP = {
     O_WORKERS:   (10,   lambda arg: validators.common.valid_number(arg, 1)),
     O_DIE_AFTER: (100,  lambda arg: validators.common.valid_number(arg, 1)),
@@ -71,9 +59,7 @@ CONFIG_MAP = {
     },
 
     S_LOGGING: {
-        O_LOG_LEVEL:  ("INFO", str),
-        O_LOG_FILE:   (None,   validators.common.valid_empty),
-        O_LOG_FORMAT: ("%(asctime)s %(process)d %(threadName)s - %(levelname)s -- %(message)s", str),
+        O_VERSION: (1, validators.common.validNumber),
     },
 
     S_SPLITTER: typetools.merge_dicts({
@@ -117,29 +103,10 @@ def init(**kwargs_dict):
 
 ##### Private methods #####
 def _init_logging(config_dict):
-    level = config_dict[S_LOGGING][O_LOG_LEVEL]
-    log_file_path = config_dict[S_LOGGING][O_LOG_FILE]
-    line_format = config_dict[S_LOGGING][O_LOG_FORMAT]
-
-    root = logging.getLogger("raava")
-    root.setLevel(level)
-    if line_format is None:
-        line_format = "%(asctime)s %(process)d %(threadName)s - %(levelname)s -- %(message)s"
-    formatter = logging.Formatter(line_format)
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(level)
-    stream_handler.setFormatter(formatter)
-    root.addHandler(stream_handler)
-
-    if log_file_path is not None:
-        file_handler = logging.handlers.WatchedFileHandler(log_file_path)
-        file_handler.setLevel(level)
-        file_handler.setFormatter(formatter)
-        root.addHandler(file_handler)
+    logging.config.dictConfig(config_dict[S_LOGGING])
 
     def log_warning(message, category, filename, lineno, file=None, line=None) : # pylint: disable=W0622
-        root.warning("Python warning: %s", warnings.formatwarning(message, category, filename, lineno, line))
+        logging.getLogger().warning("Python warning: %s", warnings.formatwarning(message, category, filename, lineno, line))
 
     warnings.showwarning = log_warning
 
