@@ -1,36 +1,31 @@
 #!/usr/bin/env python
 
 
-import raava.rules
-import raava.handlers
-import raava.apps.worker
+from raava import rules
+from raava import handlers
+from raava.apps.worker import Worker
 
-import gns.service
-import gns.stub
+from gns import service
+from gns import stub
 
 
 ##### Public methods #####
 def main():
-    options = gns.service.parse_options(
-        app_section="worker",
-        args_list=(
-            gns.service.ARG_RULES_DIR,
-            gns.service.ARG_QUEUE_TIMEOUT,
-        ),
-    )
-    gns.service.init_logging(options)
+    config_dict = service.init(description="GNS Worker")[0]
+    core_dict = config_dict[service.S_CORE]
+    app_dict = config_dict[service.S_WORKER]
 
-    raava.rules.setup_builtins(gns.stub.WORKER_BUILTINS_MAP)
-    raava.handlers.setup_path(options[gns.service.OPTION_RULES_DIR])
+    rules.setup_builtins(stub.WORKER_BUILTINS_MAP)
+    handlers.setup_path(core_dict[service.O_RULES_DIR])
 
-    app = raava.apps.worker.Worker(
-        workers=options[gns.service.OPTION_WORKERS],
-        die_after=options[gns.service.OPTION_DIE_AFTER],
-        quit_wait=options[gns.service.OPTION_QUIT_WAIT],
-        interval=options[gns.service.OPTION_INTERVAL],
-        host_list=options[gns.service.OPTION_ZOO_NODES],
-        queue_timeout=options[gns.service.OPTION_QUEUE_TIMEOUT],
-        rules_path=options[gns.service.OPTION_RULES_DIR],
+    app = Worker(
+        workers       = app_dict[service.O_WORKERS],
+        die_after     = app_dict[service.O_DIE_AFTER],
+        quit_wait     = app_dict[service.O_QUIT_WAIT],
+        interval      = app_dict[service.O_RECHECK],
+        host_list     = core_dict[service.O_ZOO_NODES],
+        queue_timeout = app_dict[service.O_QUEUE_TIMEOUT],
+        rules_path    = core_dict[service.O_RULES_DIR],
     )
     app.run()
 

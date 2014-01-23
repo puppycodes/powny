@@ -1,80 +1,127 @@
+import sys
 import os
+import yaml
+import argparse
 import logging
 import warnings
 
-from ulib import optconf
+from ulib import typetools
 from ulib import validators
 import ulib.validators.common # pylint: disable=W0611
+import ulib.validators.network
 import ulib.validators.fs
 
 from . import const
 
 
 ##### Public constants #####
-# Common
-OPTION_LOG_LEVEL  = ("log-level",  "log_level",     "INFO",            str)
-OPTION_LOG_FILE   = ("log-file",   "log_file_path", None,              validators.common.valid_empty)
-OPTION_LOG_FORMAT = ("log-format", "log_format",    "%(asctime)s %(process)d %(threadName)s - %(levelname)s -- %(message)s", str)
-OPTION_ZOO_NODES  = ("zoo-nodes",  "nodes_list",    ("localhost",),    validators.common.valid_string_list)
-OPTION_RULES_DIR  = ("rules-dir",  "rules_dir",     const.RULES_DIR,   lambda arg: os.path.normpath(validators.fs.validAccessiblePath(arg + "/.")))
-OPTION_RULES_HEAD = ("rules-head", "rules-head",    "HEAD",            str)
-OPTION_WORKERS    = ("workers",    "workers",       10,                lambda arg: validators.common.valid_number(arg, 1))
-OPTION_DIE_AFTER  = ("die-after",  "die_after",     100,               lambda arg: validators.common.valid_number(arg, 1))
-OPTION_QUIT_WAIT  = ("quit-wait",  "quit_wait",     10,                lambda arg: validators.common.valid_number(arg, 0))
-OPTION_INTERVAL   = ("interval",   "interval",      0.01,              lambda arg: validators.common.valid_number(arg, 0, value_type=float))
-# Splitter/Worker
-OPTION_QUEUE_TIMEOUT = ("queue-timeout", "queue_timeout", 1, lambda arg: validators.common.valid_number(arg, 0, value_type=float))
-# Collector
-OPTION_POLL_INTERVAL     = ("poll-interval",     "poll_interval",     10, lambda arg: validators.common.valid_number(arg, 1))
-OPTION_ACQUIRE_DELAY     = ("acquire-delay",     "acquire_delay",     5,  lambda arg: validators.common.valid_number(arg, 1))
-OPTION_RECYCLED_PRIORITY = ("recycled-priority", "recycled_priority", 0,  lambda arg: validators.common.valid_number(arg, 0))
-OPTION_GARBAGE_LIFETIME  = ("garbage-lifetime",  "garbage_lifetime",  0,  lambda arg: validators.common.valid_number(arg, 0))
+S_CORE      = "core"
+S_LOGGING   = "logging"
+S_SPLITTER  = "splitter"
+S_WORKER    = "worker"
+S_COLLECTOR = "collector"
+S_API       = "api"
 
-ALL_OPTIONS = [ value for (key, value) in globals().items() if key.startswith("OPTION_") ]
+O_ZOO_NODES  = "zoo-nodes"
+O_RULES_DIR  = "rules-dir"
+O_RULES_HEAD = "rules-head"
 
-ARG_LOG_FILE   = (("-l", OPTION_LOG_FILE[0],),   OPTION_LOG_FILE,   { "action" : "store", "metavar" : "<file>" })
-ARG_LOG_LEVEL  = (("-L", OPTION_LOG_LEVEL[0],),  OPTION_LOG_LEVEL,  { "action" : "store", "metavar" : "<level>" })
-ARG_LOG_FORMAT = (("-F", OPTION_LOG_FORMAT[0],), OPTION_LOG_FORMAT, { "action" : "store", "metavar" : "<format>" })
-ARG_ZOO_NODES  = (("-z", OPTION_ZOO_NODES[0],),  OPTION_ZOO_NODES,  { "nargs"  : "+",     "metavar" : "<hosts>" })
-ARG_RULES_DIR  = (("-r", OPTION_RULES_DIR[0],),  OPTION_RULES_DIR,  { "action" : "store", "metavar" : "<dir>" })
-ARG_RULES_HEAD = (("-R", OPTION_RULES_HEAD[0],), OPTION_RULES_HEAD, { "action" : "store", "metavar" : "<name>" })
-ARG_WORKERS    = (("-w", OPTION_WORKERS[0],),    OPTION_WORKERS,    { "action" : "store", "metavar" : "<number>" })
-ARG_DIE_AFTER  = (("-d", OPTION_DIE_AFTER[0],),  OPTION_DIE_AFTER,  { "action" : "store", "metavar" : "<seconds>" })
-ARG_QUIT_WAIT  = (("-q", OPTION_QUIT_WAIT[0],),  OPTION_QUIT_WAIT,  { "action" : "store", "metavar" : "<seconds>" })
-ARG_INTERVAL   = (("-i", OPTION_INTERVAL[0],),   OPTION_INTERVAL,   { "action" : "store", "metavar" : "<seconds>" })
-# Splitter/Worker
-ARG_QUEUE_TIMEOUT = ((OPTION_QUEUE_TIMEOUT[0],), OPTION_QUEUE_TIMEOUT, { "action" : "store", "metavar" : "<seconds>" })
+O_LOG_LEVEL  = "log-level"
+O_LOG_FILE   = "log-file"
+O_LOG_FORMAT = "log-format"
 
-# Collector
-ARG_POLL_INTERVAL     = ((OPTION_POLL_INTERVAL[0],),     OPTION_POLL_INTERVAL,     { "action" : "store", "metavar" : "<seconds>" })
-ARG_ACQUIRE_DELAY     = ((OPTION_ACQUIRE_DELAY[0],),     OPTION_ACQUIRE_DELAY,     { "action" : "store", "metavar" : "<seconds>" })
-ARG_RECYCLED_PRIORITY = ((OPTION_RECYCLED_PRIORITY[0],), OPTION_RECYCLED_PRIORITY, { "action" : "store", "metavar" : "<number>" })
-ARG_GARBAGE_LIFETIME  = ((OPTION_GARBAGE_LIFETIME[0],),  OPTION_GARBAGE_LIFETIME,  { "action" : "store", "metavar" : "<seconds>" })
+O_WORKERS   = "workers"
+O_DIE_AFTER = "die-after"
+O_QUIT_WAIT = "quit-wait"
+O_RECHECK   = "recheck"
+
+O_QUEUE_TIMEOUT     = "queue-timeout"
+O_ACQUIRE_DELAY     = "acquire-delay"
+O_POLL_INTERVAL     = "poll-interval"
+O_RECYCLED_PRIORITY = "recycled-priority"
+O_GARBAGE_LIFETIME  = "garbage-lifetime"
+O_HOST              = "host"
+O_PORT              = "port"
+
+
+###
+class _Option:
+    def __init__(self, default, validator):
+        self._default = default
+        self._validator = validator
+
+    def get_default(self):
+        return self._default
+
+    def get_validator(self):
+        return self._validator
+
+_DAEMON_MAP = {
+    O_WORKERS:   (10,   lambda arg: validators.common.valid_number(arg, 1)),
+    O_DIE_AFTER: (100,  lambda arg: validators.common.valid_number(arg, 1)),
+    O_QUIT_WAIT: (10,   lambda arg: validators.common.valid_number(arg, 0)),
+    O_RECHECK:   (0.01, lambda arg: validators.common.valid_number(arg, 0, value_type=float)),
+}
+
+CONFIG_MAP = {
+    S_CORE: {
+        O_ZOO_NODES:  (("localhost",),  validators.common.valid_string_list),
+        O_RULES_DIR:  (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.validAccessiblePath(arg + "/."))),
+        O_RULES_HEAD: ("HEAD",          str),
+    },
+
+    S_LOGGING: {
+        O_LOG_LEVEL:  ("INFO", str),
+        O_LOG_FILE:   (None,   validators.common.valid_empty),
+        O_LOG_FORMAT: ("%(asctime)s %(process)d %(threadName)s - %(levelname)s -- %(message)s", str),
+    },
+
+    S_SPLITTER: typetools.merge_dicts({
+            O_QUEUE_TIMEOUT: (1, lambda arg: validators.common.valid_number(arg, 0, value_type=float)),
+        }, dict(_DAEMON_MAP)),
+
+    S_WORKER: typetools.merge_dicts({
+            O_QUEUE_TIMEOUT: (1, lambda arg: validators.common.valid_number(arg, 0, value_type=float)),
+        }, dict(_DAEMON_MAP)),
+
+    S_COLLECTOR: typetools.merge_dicts({
+            O_POLL_INTERVAL:     (10, lambda arg: validators.common.valid_number(arg, 1)),
+            O_ACQUIRE_DELAY:     (5,  lambda arg: validators.common.valid_number(arg, 1)),
+            O_RECYCLED_PRIORITY: (0,  lambda arg: validators.common.valid_number(arg, 0)),
+            O_GARBAGE_LIFETIME:  (0,  lambda arg: validators.common.valid_number(arg, 0)),
+        }, dict(_DAEMON_MAP)),
+
+    S_API: {
+            O_HOST: ("0.0.0.0", lambda arg: validators.network.valid_ip_or_host(arg)[0]),
+            O_PORT: (7887,      validators.network.valid_port),
+        },
+}
 
 
 ##### Public methods #####
-def parse_options(app_section, args_list, config_file_path=const.CONFIG_FILE):
-    parser = optconf.OptionsConfig(ALL_OPTIONS, config_file_path)
-    for arg_tuple in (
-            ARG_LOG_FILE,
-            ARG_LOG_LEVEL,
-            ARG_LOG_FORMAT,
-            ARG_ZOO_NODES,
-            ARG_WORKERS,
-            ARG_DIE_AFTER,
-            ARG_QUIT_WAIT,
-            ARG_INTERVAL,
-        ) + tuple(args_list) :
-        parser.add_argument(arg_tuple)
-    options = parser.sync(("main", app_section))[0]
-    return options
+def init(**kwargs_dict):
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=const.CONFIG_DIR, metavar="<dir>",
+        type=( lambda arg: os.path.normpath(validators.fs.validAccessiblePath(arg + "/.")) ))
+    (options, remaining_list) = parser.parse_known_args()
 
-def init_logging(options):
-    level = options[OPTION_LOG_LEVEL]
-    log_file_path = options[OPTION_LOG_FILE]
-    line_format = options[OPTION_LOG_FORMAT]
+    config_dict = _load_config(options.config_dir_path)
+    _init_logging(config_dict)
 
-    root = logging.getLogger()
+    kwargs_dict.update({
+            "formatter_class" : argparse.RawDescriptionHelpFormatter,
+            "parents"         : [parser],
+        })
+    return (config_dict, argparse.ArgumentParser(**kwargs_dict), remaining_list)
+
+
+##### Private methods #####
+def _init_logging(config_dict):
+    level = config_dict[S_LOGGING][O_LOG_LEVEL]
+    log_file_path = config_dict[S_LOGGING][O_LOG_FILE]
+    line_format = config_dict[S_LOGGING][O_LOG_FORMAT]
+
+    root = logging.getLogger("raava")
     root.setLevel(level)
     if line_format is None:
         line_format = "%(asctime)s %(process)d %(threadName)s - %(levelname)s -- %(message)s"
@@ -95,4 +142,42 @@ def init_logging(options):
         root.warning("Python warning: %s", warnings.formatwarning(message, category, filename, lineno, line))
 
     warnings.showwarning = log_warning
+
+
+###
+def _load_config(config_dir_path):
+    config_dict = _make_default_config()
+    for name in sorted(os.listdir(config_dir_path)) :
+        if not name.endswith(".conf"):
+            continue
+        config_file_path = os.path.join(config_dir_path, name)
+        with open(config_file_path) as config_file:
+            try:
+                typetools.merge_dicts(config_dict, yaml.load(config_file.read()))
+            except Exception:
+                print("Incorrect config: %s\n-----" % (config_file_path), file=sys.stderr)
+                raise
+    _validate_config(config_dict)
+    return config_dict
+
+def _make_default_config(start_dict = CONFIG_MAP):
+    default_dict = {}
+    for (key, value) in start_dict.items():
+        if isinstance(value, dict):
+            default_dict[key] = _make_default_config(value)
+        elif isinstance(value, tuple):
+            default_dict[key] = value[0]
+        else:
+            raise RuntimeError("Invalid CONFIG_MAP")
+    return default_dict
+
+def _validate_config(config_dict, std_dict = CONFIG_MAP, keys_list = []):
+    for (key, pair) in std_dict.items():
+        if isinstance(pair, dict):
+            current_list = keys_list + [key]
+            if not isinstance(config_dict[key], dict):
+                raise RuntimeError("The section \"%s\" must be a dict" % (".".join(current_list)))
+            _validate_config(config_dict[key], std_dict[key], current_list)
+        else: # tuple
+            config_dict[key] = pair[1](config_dict[key])
 
