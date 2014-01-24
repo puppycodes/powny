@@ -6,8 +6,8 @@ from raava import handlers
 from raava.apps.splitter import Splitter
 
 from gns import service
-from gns import builts
-import gns.builts.const # pylint: disable=W0611
+from gns.builts import const
+from gns.builts import maps
 
 
 ##### Public methods #####
@@ -16,16 +16,16 @@ def main():
     core_dict = config_dict[service.S_CORE]
     app_dict = config_dict[service.S_SPLITTER]
 
-    rules.setup_builtins(builts.MATCHER_BUILTINS_MAP)
+    rules.setup_builtins(maps.MATCHER_BUILTINS_MAP)
     handlers.setup_path(core_dict[service.O_RULES_DIR])
 
     loader = handlers.Loader(
         core_dict[service.O_RULES_DIR],
         core_dict[service.O_RULES_HEAD],
         (
-            builts.const.HANDLER.ON_EVENT,
-            builts.const.HANDLER.ON_NOTIFY,
-            builts.const.HANDLER.ON_SEND,
+            const.HANDLER.ON_EVENT,
+            const.HANDLER.ON_NOTIFY,
+            const.HANDLER.ON_SEND,
         ),
     )
 
