@@ -18,7 +18,7 @@ class GnsBuild(distutils.command.build.build):
     def run(self):
         distutils.command.build.build.run(self)
         self._write_lib("gns", "const_site.py", """
-                CONFIG_FILE = "%(etc)s/gns/gns.conf"
+                CONFIG_DIR = "%(etc)s/gns"
                 RULES_DIR   = "%(varlib)s/gns/rules"
             """ % {
                 "etc":    ETC_DIR,
@@ -77,7 +77,8 @@ if __name__ == "__main__":
 
         install_requires=(
             "kazoo >= 1.3.1",
-            "ulib >= 0.19",
+            "ulib >= 0.23",
+            "pyyaml >= 3.10",
             "cherrypy >= 3.2.4",
             "mako >= 0.9.1",
             "decorator >= 3.4.0",

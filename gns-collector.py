@@ -1,34 +1,26 @@
 #!/usr/bin/env python
 
 
-import raava.apps.collector
-import gns.service
+from raava.apps.collector import Collector
+from gns import service
 
 
 ##### Public methods #####
 def main():
-    options = gns.service.parse_options(
-        app_section="collector",
-        args_list=(
-            gns.service.ARG_POLL_INTERVAL,
-            gns.service.ARG_ACQUIRE_DELAY,
-            gns.service.ARG_RECYCLED_PRIORITY,
-            gns.service.ARG_GARBAGE_LIFETIME,
-        ),
-    )
+    config_dict = service.init(description="GNS Collector")[0]
+    core_dict = config_dict[service.S_CORE]
+    app_dict = config_dict[service.S_COLLECTOR]
 
-    gns.service.init_logging(options)
-
-    app = raava.apps.collector.Collector(
-        workers=options[gns.service.OPTION_WORKERS],
-        die_after=options[gns.service.OPTION_DIE_AFTER],
-        quit_wait=options[gns.service.OPTION_QUIT_WAIT],
-        interval=options[gns.service.OPTION_INTERVAL],
-        host_list=options[gns.service.OPTION_ZOO_NODES],
-        poll_interval=options[gns.service.OPTION_POLL_INTERVAL],
-        delay=options[gns.service.OPTION_ACQUIRE_DELAY],
-        recycled_priority=options[gns.service.OPTION_RECYCLED_PRIORITY],
-        garbage_lifetime=options[gns.service.OPTION_GARBAGE_LIFETIME],
+    app = Collector(
+        workers           = app_dict[service.O_WORKERS],
+        die_after         = app_dict[service.O_DIE_AFTER],
+        quit_wait         = app_dict[service.O_QUIT_WAIT],
+        interval          = app_dict[service.O_RECHECK],
+        host_list         = core_dict[service.O_ZOO_NODES],
+        poll_interval     = app_dict[service.O_POLL_INTERVAL],
+        delay             = app_dict[service.O_ACQUIRE_DELAY],
+        recycled_priority = app_dict[service.O_RECYCLED_PRIORITY],
+        garbage_lifetime  = app_dict[service.O_GARBAGE_LIFETIME],
     )
     app.run()
 
