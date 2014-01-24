@@ -22,6 +22,7 @@ S_SPLITTER  = "splitter"
 S_WORKER    = "worker"
 S_COLLECTOR = "collector"
 S_API       = "api"
+S_CHERRY    = "cherry"
 
 O_ZOO_NODES  = "zoo-nodes"
 O_RULES_DIR  = "rules-dir"
@@ -77,10 +78,14 @@ CONFIG_MAP = {
             O_GARBAGE_LIFETIME:  (0,  lambda arg: validators.common.valid_number(arg, 0)),
         }, dict(_DAEMON_MAP)),
 
-    S_API: {
-            O_HOST: ("0.0.0.0", lambda arg: validators.network.valid_ip_or_host(arg)[0]),
-            O_PORT: (7887,      validators.network.valid_port),
+    S_API: {},
+
+    S_CHERRY: {
+        "global": {
+            "server.socket_host": ("0.0.0.0", lambda arg: validators.network.valid_ip_or_host(arg)[0]),
+            "server.socket_port": (7887,      validators.network.valid_port),
         },
+    },
 }
 
 

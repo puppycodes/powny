@@ -3,7 +3,8 @@ import ulib.validators.extra
 
 import chrpc.server
 
-from .. import stub
+from .. import service
+from ..builts import const
 
 from raava import zoo
 from raava import events
@@ -12,15 +13,15 @@ from raava import rules
 
 ##### Public classes #####
 class Api(chrpc.server.Module):
-    def __init__(self, hosts_list):
-        self._hosts_list = hosts_list
+    def __init__(self, config_dict):
+        self._hosts_list = config_dict[service.S_CORE][service.O_ZOO_NODES]
 
     @chrpc.server.api
     def add(self, **kwargs_dict):
         """ Submit event """
         event_root = rules.EventRoot(kwargs_dict)
         with zoo.Connect(self._hosts_list) as client:
-            return events.add(client, event_root, stub.HANDLER.ON_EVENT)
+            return events.add(client, event_root, const.HANDLER.ON_EVENT)
 
     @chrpc.server.api
     def cancel(self, job_id):

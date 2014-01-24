@@ -2,34 +2,41 @@
 
 
 import cherrypy
+#from raava import zoo
+from gns import service
+from chrpc.server import Module
 
-import raava.zoo
-import chrpc.server
-
-import gns.service
-import gns.api.events
+from gns import api
+import gns.api.events # pylint: disable=W0611
 
 
 ##### Public methods #####
-def main():
-    config_dict = gns.service.init(description="GNS HTTP API")[0]
-    with raava.zoo.Connect(config_dict[gns.service.S_CORE][gns.service.O_ZOO_NODES]) as client:
-        raava.zoo.init(client)
+def application(environ, start_response):
+    (root, config_dict) = _init()
+    cherrypy.tree.mount(root, "/", ( config_dict[service.S_API] or None ))
+    return cherrypy.tree(environ, start_response)
 
-    root = chrpc.server.Module()
-    root.api = chrpc.server.Module()
-    root.api.v1 = chrpc.server.Module()
-    root.api.v1.events = gns.api.events.Api(config_dict[gns.service.S_CORE][gns.service.O_ZOO_NODES])
+def run_local():
+    (root, config_dict) = _init()
+    cherrypy.quickstart(root, config=( config_dict[service.S_CHERRY] or None ))
 
-    cherrypy.quickstart(root, config={
-            "global": {
-                "server.socket_host": config_dict[gns.service.S_API][gns.service.O_HOST],
-                "server.socket_port": config_dict[gns.service.S_API][gns.service.O_PORT],
-            },
-        })
+
+##### Private methods #####
+def _init():
+    config_dict = service.init(description="GNS HTTP API")[0]
+    #with zoo.Connect(config_dict[service.S_CORE][service.O_ZOO_NODES]) as client:
+    #    zoo.init(client)
+    return (_make_tree(config_dict), config_dict)
+
+def _make_tree(config_dict):
+    root = Module()
+    root.api = Module()
+    root.api.v1 = Module()
+    root.api.v1.events = api.events.Api(config_dict)
+    return root
 
 
 ##### Main #####
 if __name__ == "__main__":
-    main()
+    run_local()
 
