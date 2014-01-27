@@ -2,7 +2,6 @@
 
 
 from raava import zoo
-from gns import const
 from gns import service
 
 

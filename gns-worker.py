@@ -6,7 +6,7 @@ from raava import handlers
 from raava.apps.worker import Worker
 
 from gns import service
-from gns import stub
+from gns.builts import maps
 
 
 ##### Public methods #####
@@ -15,7 +15,7 @@ def main():
     core_dict = config_dict[service.S_CORE]
     app_dict = config_dict[service.S_WORKER]
 
-    rules.setup_builtins(stub.WORKER_BUILTINS_MAP)
+    rules.setup_builtins(maps.WORKER_BUILTINS_MAP)
     handlers.setup_path(core_dict[service.O_RULES_DIR])
 
     app = Worker(
