@@ -4,7 +4,7 @@ import ulib.validators.extra
 import chrpc.server
 
 from .. import service
-from ..builts import const
+from .. import gnsint
 
 from raava import zoo
 from raava import events
@@ -21,7 +21,7 @@ class Api(chrpc.server.Module):
         """ Submit event """
         event_root = rules.EventRoot(kwargs_dict)
         with zoo.Connect(self._hosts_list) as client:
-            return events.add(client, event_root, const.HANDLER.ON_EVENT)
+            return events.add(client, event_root, gnsint.MAIN)
 
     @chrpc.server.api
     def cancel(self, job_id):
