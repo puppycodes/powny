@@ -24,8 +24,9 @@ _config_dict = None
 ##### Public methods #####
 def load(config_dict):
     global _config_dict
-    _load_builtins(config_dict)
+    builtins_dict = _load_builtins(config_dict)
     _config_dict = config_dict
+    return builtins_dict
 
 
 ###
@@ -44,10 +45,18 @@ def get_config(*keys_list, default=None):
 ##### Private methods #####
 def _load_builtins(config_dict):
     builtins_dict = {}
+
     for file_name in os.listdir(bltins.__path__[0]):
-        if file_name[0] in (".", "_") or not file_name.lower().endswith(".py"):
+        if file_name[0] in (".", "_") or not file_name.startswith("bmod_"):
             continue
-        module_name = file_name[:file_name.lower().index(".py")]
+        if os.path.isdir(os.path.join(bltins.__path__[0], file_name)):
+            module_name = file_name
+        elif file_name.lower().endswith(".py"):
+            module_name = file_name[:file_name.lower().index(".py")]
+        else:
+            continue
+
+        module = importlib.import_module("gns.bltins." + module_name)
         module = importlib.import_module("gns.bltins." + module_name)
 
         typetools.merge_dicts(builtins_dict, getattr(module, "BUILTINS_MAP"))
@@ -56,5 +65,6 @@ def _load_builtins(config_dict):
             default_dict = service.make_default_config(std_dict)
             typetools.merge_dicts(config_dict, typetools.merge_dicts(default_dict, config_dict))
             service.validate_config(config_dict, std_dict)
-    rules.setup_builtins(builtins_dict)
+
+    return builtins_dict
 
