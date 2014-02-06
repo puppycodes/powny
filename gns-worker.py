@@ -6,6 +6,7 @@ from raava import handlers
 from raava.apps.worker import Worker
 
 from gns import service
+from gns import bltins
 from gns import env
 
 
@@ -15,7 +16,8 @@ def main():
     core_dict = config_dict[service.S_CORE]
     app_dict = config_dict[service.S_WORKER]
 
-    rules.setup_builtins(env.load(config_dict))
+    rules.setup_builtins(bltins.load_builtins(config_dict))
+    env.setup_config(config_dict)
     handlers.setup_path(core_dict[service.O_RULES_DIR])
 
     app = Worker(

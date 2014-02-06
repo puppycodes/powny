@@ -1,5 +1,5 @@
 from raava import rules
-from .. import env
+from .. import chain
 
 
 ##### Public constants #####
@@ -39,6 +39,6 @@ BUILTINS_MAP = {
     "STATUS":  STATUS,
     "URGENCY": URGENCY,
     "METHOD":  METHOD,
-    "HANDLER": env.HANDLER,
+    "HANDLER": chain.HANDLER,
 }
 
