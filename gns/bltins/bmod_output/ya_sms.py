@@ -63,6 +63,8 @@ def _send_sms(task, to_list, event_root):
         except urllib.error.HTTPError as err:
             result = err.read().decode().strip()
             _logger.exception("Failed to send SMS to %s, response: %s", to_list, result)
+        except Exception:
+            _logger.exception("Failed to send SMS to %s", to_list)
     else:
         _logger.info("SMS sent to Golem (noop) to %s", to_list)
 
