@@ -1,3 +1,7 @@
+import textwrap
+import mako.template
+
+
 ##### Private objects #####
 _config_dict = None
 
@@ -19,4 +23,9 @@ def get_config(*keys_list, default=None):
         else:
             return default
     return value
+
+
+###
+def format_event(template, event_root):
+    return mako.template.Template(textwrap.dedent(template).strip()).render(event=event_root)
 

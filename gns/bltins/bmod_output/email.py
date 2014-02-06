@@ -3,8 +3,6 @@ import email.mime.multipart
 import email.mime.text
 import email.utils
 
-import pprint
-import time
 import logging
 
 from ulib import validators
@@ -14,7 +12,6 @@ import ulib.validators.network
 from raava import worker
 
 from . import common
-from .. import bmod_const
 from ... import env
 
 
@@ -44,21 +41,46 @@ CONFIG_MAP = {
 }
 
 
+###
+DEFAULT_SUBJECT_TEMPLATE = """
+    GNS message: ${event.get("host", "<Host?>")}:${event.get("service", "<Service?>")}
+"""
+
+DEFAULT_TEXT_TEMPLATE = """
+    <%
+        import yaml
+        host = event.get("host", "<Host?>")
+        service = event.get("service", "<Service?>")
+        status = event.get("status", "<Status?>")
+        dumper = ( lambda arg: yaml.dump(arg, default_flow_style=False, indent=4).strip() )
+        data = dumper(dict(event))
+        extra = dumper(event.get_extra())
+    %>
+    The event ${host}:${service} is ${status}.
+    See this event in Golem: https://golem.yandex-team.ru/events.sbml?object=${host}&eventtype=${service}&downtime=show
+
+    Event:
+    =====
+    ${data}
+    =====
+
+    Extra information:
+    =====
+    ${extra}
+    =====
+"""
+
+
 ##### Private objects #####
 _logger = logging.getLogger(common.LOGGER_NAME)
 
 
 ##### Private methods #####
-def _send_email(task, to_list, event_root):
-    if not isinstance(to_list, (list, tuple)):
+def _send_raw(task, to_list, subject, text):
+    if isinstance(to_list, tuple):
+        to_list = list(to_list)
+    elif not isinstance(to_list, list):
         to_list = [str(to_list)]
-
-    subject = "GNS message: %s:%s = %s" % (
-        event_root.get(bmod_const.EVENT.HOST),
-        event_root.get(bmod_const.EVENT.SERVICE),
-        event_root.get(bmod_const.EVENT.STATUS),
-    )
-    text = "Event extra:\n\n%s\n\nEvent dump:\n\n%s" % (pprint.pformat(event_root.get_extra()), pprint.pformat(event_root))
 
     send_from = env.get_config(common.S_OUTPUT, S_EMAIL, O_FROM)
     cc_list = env.get_config(common.S_OUTPUT, S_EMAIL, O_CC)
@@ -78,7 +100,6 @@ def _send_email(task, to_list, event_root):
     _logger.debug("Sending email to: %s; cc: %s; via SMTP %s@%s", to_list, cc_list, user, server_host)
 
     task.checkpoint()
-
     if not env.get_config(common.S_OUTPUT, common.O_NOOP):
         smtp_class = ( smtplib.SMTP_SSL if env.get_config(common.S_OUTPUT, S_EMAIL, O_SSL) else smtplib.SMTP )
         try:
@@ -93,12 +114,20 @@ def _send_email(task, to_list, event_root):
             server.close()
     else:
         _logger.info("Email sent to: %s; cc: %s (noop)", to_list, cc_list)
-
     task.checkpoint()
+
+def _send_event(task, to_list, event, subject = DEFAULT_SUBJECT_TEMPLATE, text = DEFAULT_TEXT_TEMPLATE):
+    _send_raw(task, to_list, env.format_event(subject, event), env.format_event(text, event))
+
+
+##### Private classes #####
+class _Email:
+    send_raw = worker.make_task_builtin(_send_raw)
+    send = worker.make_task_builtin(_send_event)
 
 
 ##### Public constants #####
 BUILTINS_MAP = {
-    "send_email": worker.make_task_builtin(_send_email),
+    "email": _Email,
 }
 
