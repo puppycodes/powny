@@ -9,7 +9,7 @@ from raava import worker
 
 from . import common
 from .. import bmod_const
-from ... import gnsint
+from ... import env
 
 
 ##### Public constants #####
@@ -45,7 +45,7 @@ def _send_sms(task, to_list, event_root):
     )
 
     request = urllib.request.Request(
-        gnsint.get_config(common.S_OUTPUT, S_SMS, O_SEND_URL),
+        env.get_config(common.S_OUTPUT, S_SMS, O_SEND_URL),
         data=urllib.parse.urlencode({
                 "resps": ",".join(to_list),
                 "msg":   message,
@@ -56,7 +56,7 @@ def _send_sms(task, to_list, event_root):
 
     task.checkpoint()
 
-    if not gnsint.get_config(common.S_OUTPUT, common.O_NOOP):
+    if not env.get_config(common.S_OUTPUT, common.O_NOOP):
         try:
             result = opener.open(request).read().decode().strip()
             _logger.info("SMS sent to Golem to %s, response: %s", to_list, result)

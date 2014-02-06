@@ -1,5 +1,5 @@
 from raava import rules
-from .. import gnsint
+from .. import env
 
 
 ##### Public constants #####
@@ -39,6 +39,6 @@ BUILTINS_MAP = {
     "STATUS":  STATUS,
     "URGENCY": URGENCY,
     "METHOD":  METHOD,
-    "HANDLER": gnsint.HANDLER,
+    "HANDLER": env.HANDLER,
 }
 

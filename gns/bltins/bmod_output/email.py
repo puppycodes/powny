@@ -15,7 +15,7 @@ from raava import worker
 
 from . import common
 from .. import bmod_const
-from ... import gnsint
+from ... import env
 
 
 ##### Public constants #####
@@ -60,8 +60,8 @@ def _send_email(task, to_list, event_root):
     )
     text = "Event extra:\n\n%s\n\nEvent dump:\n\n%s" % (pprint.pformat(event_root.get_extra()), pprint.pformat(event_root))
 
-    send_from = gnsint.get_config(common.S_OUTPUT, S_EMAIL, O_FROM)
-    cc_list = gnsint.get_config(common.S_OUTPUT, S_EMAIL, O_CC)
+    send_from = env.get_config(common.S_OUTPUT, S_EMAIL, O_FROM)
+    cc_list = env.get_config(common.S_OUTPUT, S_EMAIL, O_CC)
 
     message = email.mime.multipart.MIMEMultipart()
     message["From"] = send_from
@@ -72,19 +72,19 @@ def _send_email(task, to_list, event_root):
     message["Subject"] = subject
     message.attach(email.mime.text.MIMEText(text))
 
-    server_host = gnsint.get_config(common.S_OUTPUT, S_EMAIL, O_SERVER)
-    user = gnsint.get_config(common.S_OUTPUT, S_EMAIL, O_USER)
+    server_host = env.get_config(common.S_OUTPUT, S_EMAIL, O_SERVER)
+    user = env.get_config(common.S_OUTPUT, S_EMAIL, O_USER)
 
     _logger.debug("Sending email to: %s; cc: %s; via SMTP %s@%s", to_list, cc_list, user, server_host)
 
     task.checkpoint()
 
-    if not gnsint.get_config(common.S_OUTPUT, common.O_NOOP):
-        smtp_class = ( smtplib.SMTP_SSL if gnsint.get_config(common.S_OUTPUT, S_EMAIL, O_SSL) else smtplib.SMTP )
+    if not env.get_config(common.S_OUTPUT, common.O_NOOP):
+        smtp_class = ( smtplib.SMTP_SSL if env.get_config(common.S_OUTPUT, S_EMAIL, O_SSL) else smtplib.SMTP )
         try:
             server = smtp_class(server_host)
             if user is not None:
-                server.login(user, gnsint.get_config(common.S_OUTPUT, S_EMAIL, O_PASSWD))
+                server.login(user, env.get_config(common.S_OUTPUT, S_EMAIL, O_PASSWD))
             server.sendmail(send_from, to_list + cc_list, message.as_string())
             _logger.info("Email sent to: %s; cc: %s", to_list, cc_list)
         except Exception:
