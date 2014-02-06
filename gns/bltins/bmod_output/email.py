@@ -81,8 +81,8 @@ def _send_email(task, to_list, event_root):
 
     if not gnsint.get_config(common.S_OUTPUT, common.O_NOOP):
         smtp_class = ( smtplib.SMTP_SSL if gnsint.get_config(common.S_OUTPUT, S_EMAIL, O_SSL) else smtplib.SMTP )
-        server = smtplib.SMTP_SSL(server_host)
         try:
+            server = smtp_class(server_host)
             if user is not None:
                 server.login(user, gnsint.get_config(common.S_OUTPUT, S_EMAIL, O_PASSWD))
             server.sendmail(send_from, to_list + cc_list, message.as_string())
