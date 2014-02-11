@@ -51,14 +51,7 @@ if __name__ == "__main__":
             "raava/apps",
         ),
 
-        scripts=(
-            "gns-splitter.py",
-            "gns-worker.py",
-            "gns-collector.py",
-            "gns-cli.py",
-            "gns-reinit.py",
-            "gns-api.py",
-        ),
+        scripts=["scripts/gns-{}.py".format(name) for name in ["splitter", "worker", "collector", "cli", "reinit", "api"]],
 
         package_data={
             "chrpc": ["templates/*.html"],

@@ -3,7 +3,8 @@
 
 from raava import rules
 from raava import handlers
-from raava.apps.worker import Worker
+from raava import application
+from raava import worker
 
 from gns import service
 from gns import bltins
@@ -20,12 +21,13 @@ def main():
     env.setup_config(config_dict)
     handlers.setup_path(core_dict[service.O_RULES_DIR])
 
-    app = Worker(
+    app = application.Application(
+        thread_class  = worker.WorkerThread,
         workers       = app_dict[service.O_WORKERS],
         die_after     = app_dict[service.O_DIE_AFTER],
         quit_wait     = app_dict[service.O_QUIT_WAIT],
         interval      = app_dict[service.O_RECHECK],
-        host_list     = core_dict[service.O_ZOO_NODES],
+        zoo_nodes     = core_dict[service.O_ZOO_NODES],
         queue_timeout = app_dict[service.O_QUEUE_TIMEOUT],
         rules_path    = core_dict[service.O_RULES_DIR],
     )
