@@ -3,17 +3,17 @@ import importlib
 
 from ulib import typetools
 
-from .. import service
+from . import service
 
 
 ##### Public methods #####
-def load_plugins(config_dict, package_prefix, module_prefix, mapper):
+def load_plugins(config_dict, path, package_prefix, module_prefix, mapper):
     plugins_dict = {}
 
-    for file_name in os.listdir(__path__[0]):
+    for file_name in os.listdir(path):
         if file_name[0] in (".", "_") or not file_name.startswith(module_prefix):
             continue
-        if os.path.isdir(os.path.join(__path__[0], file_name)):
+        if os.path.isdir(os.path.join(path, file_name)):
             module_name = file_name
         elif file_name.lower().endswith(".py"):
             module_name = file_name[:file_name.lower().index(".py")]
