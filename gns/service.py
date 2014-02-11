@@ -92,10 +92,10 @@ CONFIG_MAP = {
 ##### Public methods #####
 def init(**kwargs_dict):
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=const.CONFIG_DIR, metavar="<dir>",
-        type=( lambda arg: os.path.normpath(validators.fs.validAccessiblePath(arg + "/.")) ))
+    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=const.CONFIG_DIR, metavar="<dir>")
     (options, remaining_list) = parser.parse_known_args()
 
+    options.config_dir_path = os.path.normpath(validators.fs.validAccessiblePath(options.config_dir_path + "/."))
     config_dict = _load_config(options.config_dir_path)
     _init_logging(config_dict)
 
@@ -118,7 +118,7 @@ def _init_logging(config_dict):
 
 ###
 def _load_config(config_dir_path):
-    config_dict = _make_default_config()
+    config_dict = make_default_config(CONFIG_MAP)
     for name in sorted(os.listdir(config_dir_path)) :
         if not name.endswith(".conf"):
             continue
@@ -129,27 +129,27 @@ def _load_config(config_dir_path):
             except Exception:
                 print("Incorrect config: %s\n-----" % (config_file_path), file=sys.stderr)
                 raise
-    _validate_config(config_dict)
+    validate_config(config_dict, CONFIG_MAP)
     return config_dict
 
-def _make_default_config(start_dict = CONFIG_MAP):
+def make_default_config(start_dict):
     default_dict = {}
     for (key, value) in start_dict.items():
         if isinstance(value, dict):
-            default_dict[key] = _make_default_config(value)
+            default_dict[key] = make_default_config(value)
         elif isinstance(value, tuple):
             default_dict[key] = value[0]
         else:
             raise RuntimeError("Invalid CONFIG_MAP")
     return default_dict
 
-def _validate_config(config_dict, std_dict = CONFIG_MAP, keys_list = []):
+def validate_config(config_dict, std_dict, keys_list = []):
     for (key, pair) in std_dict.items():
         if isinstance(pair, dict):
             current_list = keys_list + [key]
             if not isinstance(config_dict[key], dict):
                 raise RuntimeError("The section \"%s\" must be a dict" % (".".join(current_list)))
-            _validate_config(config_dict[key], std_dict[key], current_list)
+            validate_config(config_dict[key], std_dict[key], current_list)
         else: # tuple
             config_dict[key] = pair[1](config_dict[key])
 

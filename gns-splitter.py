@@ -6,8 +6,9 @@ from raava import handlers
 from raava.apps.splitter import Splitter
 
 from gns import service
-from gns.builts import const
-from gns.builts import maps
+from gns import bltins
+from gns import chain
+from gns import env
 
 
 ##### Public methods #####
@@ -16,16 +17,17 @@ def main():
     core_dict = config_dict[service.S_CORE]
     app_dict = config_dict[service.S_SPLITTER]
 
-    rules.setup_builtins(maps.MATCHER_BUILTINS_MAP)
+    rules.setup_builtins(bltins.load_builtins(config_dict))
+    env.setup_config(config_dict)
     handlers.setup_path(core_dict[service.O_RULES_DIR])
 
     loader = handlers.Loader(
         core_dict[service.O_RULES_DIR],
         core_dict[service.O_RULES_HEAD],
         (
-            const.HANDLER.ON_EVENT,
-            const.HANDLER.ON_NOTIFY,
-            const.HANDLER.ON_SEND,
+            chain.HANDLER.ON_EVENT,
+            chain.HANDLER.ON_NOTIFY,
+            chain.HANDLER.ON_SEND,
         ),
     )
 

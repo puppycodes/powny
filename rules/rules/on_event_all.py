@@ -1,4 +1,4 @@
-def on_event(event) :
-    notify(event, user="mdevaev", wait=2)
-    notify(event, user="nbryskin")
+def on_event(event):
+    email.send("mdevaev@yandex-team.ru", event)
+    email.send("nbryskin@yandex-team.ru", event)
 

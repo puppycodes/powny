@@ -1,11 +1,12 @@
 from raava import rules
+from .. import chain
 
 
 ##### Public constants #####
 class EVENT:
     HOST    = "host"
     SERVICE = "service"
-    LEVEL   = "level"
+    STATUS  = "status"
     INFO    = "info"
 
 class EXTRA(rules.EXTRA):
@@ -15,7 +16,7 @@ class EXTRA(rules.EXTRA):
 
 
 ###
-class LEVEL:
+class STATUS:
     CRIT   = 0
     WARN   = 1
     OK     = 2
@@ -31,8 +32,13 @@ class METHOD:
     EMAIL = "email"
     SMS   = "sms"
 
-class HANDLER:
-    ON_EVENT  = "on_event"
-    ON_NOTIFY = "on_notify"
-    ON_SEND   = "on_send"
+###
+BUILTINS_MAP = {
+    "EVENT":   EVENT,
+    "EXTRA":   EXTRA,
+    "STATUS":  STATUS,
+    "URGENCY": URGENCY,
+    "METHOD":  METHOD,
+    "HANDLER": chain.HANDLER,
+}
 
