@@ -36,9 +36,14 @@ def main():
     if not options.do_flag: # pylint: disable=E1101
         raise RuntimeError("Specify option --do-it-now to process")
 
+    fetcher_name = config_dict[service.S_CORE][service.O_FETCHER]
+    if fetcher_name is None:
+        _logger.debug("No fetcher")
+        return
+
     try:
         fetchers_dict = fetchers.load_fetchers(config_dict)
-        fetcher = fetchers_dict[config_dict[service.S_CORE][service.O_FETCHER]]
+        fetcher = fetchers_dict[fetcher_name]
         _replace_head(
             config_dict[service.S_CORE][service.O_RULES_DIR],
             config_dict[service.S_CORE][service.O_RULES_HEAD],
