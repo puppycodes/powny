@@ -63,7 +63,7 @@ def _git_cleanup(rules_path, prefix, modules_list):
             shutil.rmtree(os.path.join(rules_path, module_name))
 
 def _git_update_rules(config_dict):
-    _shell_exec("{git} -C {repo} pull".format(
+    _shell_exec("{git} --work-tree {repo} --git-dir {repo}/.git pull".format(
             git=config_dict[S_GIT][O_GIT_BIN],
             repo=config_dict[S_GIT][O_REPO_DIR],
         ))
@@ -72,7 +72,7 @@ def _git_update_rules(config_dict):
     prefix = config_dict[S_GIT][O_PREFIX]
 
     modules_list = []
-    commits_list = _shell_exec("{git} -C {repo} log -n {limit} --pretty=format:%H".format(
+    commits_list = _shell_exec("{git} --work-tree {repo} --git-dir {repo}/.git log -n {limit} --pretty=format:%H".format(
             git=config_dict[S_GIT][O_GIT_BIN],
             repo=config_dict[S_GIT][O_REPO_DIR],
             limit=config_dict[S_GIT][O_REVISIONS],
@@ -92,7 +92,7 @@ def _git_update_rules(config_dict):
         os.mkdir(tmp_path)
 
         _logger.info("Checkout %s --> %s", commit, module_path)
-        _shell_exec("{git} -C {repo} archive {commit} | {tar} -x -C {tmp}".format(
+        _shell_exec("{git} --work-tree {repo} --git-dir {repo}/.git archive {commit} | {tar} -x -C {tmp}".format(
                 git=config_dict[S_GIT][O_GIT_BIN],
                 repo=config_dict[S_GIT][O_REPO_DIR],
                 commit=commit,
