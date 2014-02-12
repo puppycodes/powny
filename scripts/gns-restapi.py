@@ -32,22 +32,22 @@ class Jobs:
         event_root = rules.EventRoot(kwargs)
         with zoo.Connect(self._zoo_nodes) as client:
             job_id = events.add(client, event_root, chain.MAIN)
-        return {'status': 'ok', 'id': job_id}
+        return {"status": "ok", "id": job_id}
 
     @cherrypy.tools.json_out()
     def DELETE(self, job_id):
         job_id = validators.extra.valid_uuid(job_id)
         with zoo.Connect(self._zoo_nodes) as client:
             events.cancel(client, job_id)
-        return {'status': 'ok'}
+        return {"status": "ok"}
 
 
 def main():
     config = service.init(description="GNS HTTP API")[0]
     zoo_nodes = config[service.S_CORE][service.O_ZOO_NODES]
     app_config = config[service.S_CHERRY]
-    app_config.update({'/': {'request.dispatch': cherrypy.dispatch.MethodDispatcher()}})
-    cherrypy.quickstart(Jobs(zoo_nodes), '/api/v2/jobs', app_config)
+    app_config.update({"/": {"request.dispatch": cherrypy.dispatch.MethodDispatcher()}})
+    cherrypy.quickstart(Jobs(zoo_nodes), "/api/v2/jobs", app_config)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
