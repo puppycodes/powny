@@ -22,7 +22,7 @@ class Jobs:
             if job_id == None:
                 return events.get_jobs(client)
             else:
-                job_id = validators.extra.validUuid(job_id)
+                job_id = validators.extra.valid_uuid(job_id)
                 return events.get_info(client, job_id)
 
     @cherrypy.tools.json_out()
@@ -36,7 +36,7 @@ class Jobs:
 
     @cherrypy.tools.json_out()
     def DELETE(self, job_id):
-        job_id = validators.extra.validUuid(job_id)
+        job_id = validators.extra.valid_uuid(job_id)
         with zoo.Connect(self._zoo_nodes) as client:
             events.cancel(client, job_id)
         return {'status': 'ok'}
