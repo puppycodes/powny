@@ -3,7 +3,8 @@
 
 from raava import rules
 from raava import handlers
-from raava.apps.splitter import Splitter
+from raava import application
+from raava import splitter
 
 from gns import service
 from gns import bltins
@@ -31,12 +32,13 @@ def main():
         ),
     )
 
-    app = Splitter(
+    app = application.Application(
+        thread_class  = splitter.SplitterThread,
         workers       = app_dict[service.O_WORKERS],
         die_after     = app_dict[service.O_DIE_AFTER],
         quit_wait     = app_dict[service.O_QUIT_WAIT],
         interval      = app_dict[service.O_RECHECK],
-        host_list     = core_dict[service.O_ZOO_NODES],
+        zoo_nodes     = core_dict[service.O_ZOO_NODES],
         loader        = loader,
         queue_timeout = app_dict[service.O_QUEUE_TIMEOUT],
     )
