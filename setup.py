@@ -51,7 +51,16 @@ if __name__ == "__main__":
             "raava/apps",
         ),
 
-        scripts=["scripts/gns-{}.py".format(name) for name in ["splitter", "worker", "collector", "cli", "reinit", "api", "restapi"]],
+        scripts=[ "scripts/gns-{}.py".format(name) for name in (
+                "splitter",
+                "worker",
+                "collector",
+                "cli",
+                "reinit",
+                "fetch-rules",
+                "api",
+                "restapi",
+            )],
 
         package_data={
             "chrpc": ["templates/*.html"],
@@ -75,6 +84,7 @@ if __name__ == "__main__":
             "cherrypy >= 3.2.4",
             "mako >= 0.9.1",
             "decorator >= 3.4.0",
+            "pygit2 >= 0.20.2",
         ),
 
         cmdclass = { "build": GnsBuild },

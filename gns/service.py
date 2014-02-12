@@ -27,6 +27,7 @@ S_CHERRY    = "cherry"
 O_ZOO_NODES  = "zoo-nodes"
 O_RULES_DIR  = "rules-dir"
 O_RULES_HEAD = "rules-head"
+O_FETCHER    = "fetcher"
 
 O_VERSION = "version"
 
@@ -40,6 +41,7 @@ O_ACQUIRE_DELAY     = "acquire-delay"
 O_POLL_INTERVAL     = "poll-interval"
 O_RECYCLED_PRIORITY = "recycled-priority"
 O_GARBAGE_LIFETIME  = "garbage-lifetime"
+
 O_HOST              = "host"
 O_PORT              = "port"
 
@@ -57,6 +59,7 @@ CONFIG_MAP = {
         O_ZOO_NODES:  (("localhost",),  validators.common.valid_string_list),
         O_RULES_DIR:  (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.validAccessiblePath(arg + "/."))),
         O_RULES_HEAD: ("HEAD",          str),
+        O_FETCHER:    (None,            validators.common.valid_empty), # TODO: valid_python_name
     },
 
     S_LOGGING: {
