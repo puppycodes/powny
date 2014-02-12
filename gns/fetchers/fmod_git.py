@@ -1,7 +1,6 @@
 import os
 import subprocess
 import shutil
-import pygit2
 import logging
 
 from ulib import validators
@@ -53,6 +52,7 @@ def _shell_exec(args):
         raise RuntimeError("Command error")
     else:
         _logger.debug(message)
+    return proc_stdout
 
 def _git_cleanup(rules_path, prefix, modules_list):
     for module_name in os.listdir(rules_path):
@@ -67,19 +67,19 @@ def _git_update_rules(config_dict):
             git=config_dict[S_GIT][O_GIT_BIN],
             repo=config_dict[S_GIT][O_REPO_DIR],
         ))
-    repo = pygit2.Repository(config_dict[S_GIT][O_REPO_DIR])
 
     rules_path = config_dict[service.S_CORE][service.O_RULES_DIR]
     prefix = config_dict[S_GIT][O_PREFIX]
 
     modules_list = []
-    revisions = config_dict[S_GIT][O_REVISIONS]
-    for commit in repo.walk(repo.head.get_object().id, pygit2.GIT_SORT_NONE):
-        if revisions == 0:
-            break
-        revisions -= 1
-
-        module_name = prefix + commit.id.hex
+    commits_list = _shell_exec("{git} -C {repo} log -n {limit} --pretty=format:%H".format(
+            git=config_dict[S_GIT][O_GIT_BIN],
+            repo=config_dict[S_GIT][O_REPO_DIR],
+            limit=config_dict[S_GIT][O_REVISIONS],
+        )).decode().strip().split("\n")
+    assert len(commits_list) > 0
+    for commit in commits_list:
+        module_name = prefix + commit
         modules_list.append(module_name)
 
         module_path = os.path.join(rules_path, module_name)
@@ -91,11 +91,11 @@ def _git_update_rules(config_dict):
             shutil.rmtree(tmp_path)
         os.mkdir(tmp_path)
 
-        _logger.info("Checkout %s --> %s", commit.id.hex, module_path)
+        _logger.info("Checkout %s --> %s", commit, module_path)
         _shell_exec("{git} -C {repo} archive {commit} | {tar} -x -C {tmp}".format(
                 git=config_dict[S_GIT][O_GIT_BIN],
                 repo=config_dict[S_GIT][O_REPO_DIR],
-                commit=commit.id,
+                commit=commit,
                 tar=config_dict[S_GIT][O_TAR_BIN],
                 tmp=tmp_path,
             ))
@@ -103,7 +103,7 @@ def _git_update_rules(config_dict):
 
     _git_cleanup(rules_path, prefix, modules_list)
 
-    return prefix + repo.head.get_object().id.hex
+    return prefix + commits_list[0]
 
 
 ##### Public constants #####
