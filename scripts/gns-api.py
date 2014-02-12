@@ -2,12 +2,11 @@
 
 
 import cherrypy
-#from raava import zoo
 from gns import service
 from chrpc.server import Module
 
 from gns import api
-import gns.api.events # pylint: disable=W0611
+import gns.api.rpc.events # pylint: disable=W0611
 
 
 ##### Public methods #####
@@ -24,15 +23,14 @@ def run_local():
 ##### Private methods #####
 def _init():
     config_dict = service.init(description="GNS HTTP API")[0]
-    #with zoo.Connect(config_dict[service.S_CORE][service.O_ZOO_NODES]) as client:
-    #    zoo.init(client)
     return (_make_tree(config_dict), config_dict)
 
 def _make_tree(config_dict):
     root = Module()
     root.api = Module()
-    root.api.v1 = Module()
-    root.api.v1.events = api.events.Api(config_dict)
+    root.api.rpc = Module()
+    root.api.rpc.v1 = Module()
+    root.api.rpc.v1.events = api.rpc.events.Api(config_dict)
     return root
 
 

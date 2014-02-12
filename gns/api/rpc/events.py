@@ -3,8 +3,8 @@ import ulib.validators.extra
 
 import chrpc.server
 
-from .. import service
-from .. import chain
+from ... import service
+from ... import chain
 
 from raava import zoo
 from raava import events
