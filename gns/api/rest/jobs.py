@@ -1,7 +1,8 @@
 import cherrypy
-
+import decorator
 import chrpc.server
 
+from ulib import validatorlib
 from ulib import validators
 import ulib.validators.common # pylint: disable=W0611
 import ulib.validators.extra
@@ -14,6 +15,18 @@ from ... import service
 from ... import chain
 
 
+##### Private methods #####
+def _raise_http(method):
+    def wrap(method, *args_tuple, **kwargs_dict):
+        try:
+            return method(*args_tuple, **kwargs_dict)
+        except validatorlib.ValidatorError as err:
+            raise cherrypy.HTTPError(400, str(err))
+        except events.NoJobError:
+            raise cherrypy.HTTPError(404, "No job")
+    return decorator.decorator(wrap, method)
+
+
 ##### Public classes #####
 class Jobs(chrpc.server.WebObject):
     exposed = True
@@ -21,6 +34,7 @@ class Jobs(chrpc.server.WebObject):
     def __init__(self, config_dict):
         self._nodes_list = config_dict[service.S_CORE][service.O_ZOO_NODES]
 
+    @_raise_http
     @cherrypy.tools.json_out()
     def GET(self, job_id = None):
         job_id = validators.common.valid_maybe_empty(job_id, validators.extra.valid_uuid)
@@ -38,6 +52,7 @@ class Jobs(chrpc.server.WebObject):
             job_id = events.add(client, event_root, chain.MAIN)
         return {"status": "ok", "id": job_id}
 
+    @_raise_http
     @cherrypy.tools.json_out()
     def DELETE(self, job_id):
         job_id = validators.extra.valid_uuid(job_id)
