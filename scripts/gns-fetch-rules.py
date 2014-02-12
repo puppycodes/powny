@@ -16,6 +16,9 @@ _logger = logging.getLogger(const.LOGGER_NAME)
 ##### Private methods #####
 def _replace_head(rules_path, head_name, module_name):
     head_path = os.path.join(rules_path, head_name)
+    if os.readlink(head_path) == module_name:
+        _logger.debug("HEAD does not need to be updated")
+        return
     tmp_path = os.path.join(rules_path, module_name + ".tmp")
     _logger.info("Updating the rules HEAD: %s -> %s", os.readlink(head_path), module_name)
     os.symlink(module_name, tmp_path)
