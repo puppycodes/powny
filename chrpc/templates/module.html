@@ -11,6 +11,7 @@
 
     objects = "<br>".join((
             "<br>".join([ "<a href=\"%s\">%s/</a>" % (base_url+name, name) for name in modules_list ]),
+            "<br>".join([ "--- &lt;<a href=\"%s\">%s</a>&gt;" % (base_url+name, name) for name in objects_list ]),
             "<br>".join([ "--- <a href=\"%s\">%s</a>()" % (base_url+name, name) for name in methods_list ]),
         ))
 %>
