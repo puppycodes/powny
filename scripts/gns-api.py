@@ -10,6 +10,7 @@ from gns import service
 from gns import api
 import gns.api.rpc.events # pylint: disable=W0611
 import gns.api.rest.jobs
+import gns.api.compat.golem
 
 
 ##### Public methods #####
@@ -43,8 +44,14 @@ def _make_tree(config_dict):
     root.api.rest.v1 = Module()
     root.api.rest.v1.jobs = api.rest.jobs.Jobs(config_dict)
 
+    root.api.compat = Module()
+    root.api.compat.golem = Module()
+    root.api.compat.golem.submit = api.compat.golem.Submit(config_dict)
+
+    disp = ( lambda: {"request.dispatch": cherrypy.dispatch.MethodDispatcher()} )
     return (root, {
-            "/api/rest/v1/jobs": {"request.dispatch": cherrypy.dispatch.MethodDispatcher()},
+            "/api/rest/v1/jobs":        disp(),
+            "/api/compat/golem/submit": disp(),
         })
 
 
