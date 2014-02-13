@@ -58,7 +58,6 @@ if __name__ == "__main__":
                 "reinit",
                 "fetch-rules",
                 "api",
-                "restapi",
             )],
 
         package_data={

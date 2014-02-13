@@ -38,7 +38,7 @@ def main():
         die_after     = app_dict[service.O_DIE_AFTER],
         quit_wait     = app_dict[service.O_QUIT_WAIT],
         interval      = app_dict[service.O_RECHECK],
-        zoo_nodes     = core_dict[service.O_ZOO_NODES],
+        nodes_list    = core_dict[service.O_ZOO_NODES],
         loader        = loader,
         queue_timeout = app_dict[service.O_QUEUE_TIMEOUT],
     )

@@ -63,7 +63,10 @@ def _error_page(status, message, traceback, version):
     cherrypy.response.headers["Content-Type"] = "application/json"
     return data
 
-class Module:
+class WebObject:
+    pass
+
+class Module(WebObject):
     _cp_config = {
         "error_page.default": _error_page,
     }
@@ -71,11 +74,14 @@ class Module:
     @cherrypy.expose
     def index(self):
         modules_list = []
+        objects_list = []
         methods_list = []
         for name in dir(self):
             item = getattr(self, name)
             if isinstance(item, Module):
                 modules_list.append(name)
+            elif isinstance(item, WebObject):
+                objects_list.append(name)
             elif isinstance(item, types.MethodType):
                 if name == "index" or not hasattr(item, _API_METHOD):
                     continue
@@ -84,6 +90,7 @@ class Module:
             _TEMPLATE_MODULE,
             url=cherrypy.url(),
             modules_list=modules_list,
+            objects_list=objects_list,
             methods_list=methods_list,
         ).encode()
 
