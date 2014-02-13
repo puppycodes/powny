@@ -48,10 +48,10 @@ def _make_tree(config_dict):
     root.api.compat.golem = Module()
     root.api.compat.golem.submit = api.compat.golem.Submit(config_dict)
 
-    disp = ( lambda: {"request.dispatch": cherrypy.dispatch.MethodDispatcher()} )
+    disp_dict = { "request.dispatch": cherrypy.dispatch.MethodDispatcher() }
     return (root, {
-            "/api/rest/v1/jobs":        disp(),
-            "/api/compat/golem/submit": disp(),
+            "/api/rest/v1/jobs":        disp_dict,
+            "/api/compat/golem/submit": disp_dict,
         })
 
 
