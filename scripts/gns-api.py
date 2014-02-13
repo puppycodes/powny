@@ -15,38 +15,38 @@ import gns.api.compat.golem
 
 ##### Public methods #####
 def application(environ, start_response):
-    (root, server_dict) = _init(service.S_API)
-    cherrypy.tree.mount(root, "/", server_dict)
+    (root, server_opts) = _init(service.S_API)
+    cherrypy.tree.mount(root, "/", server_opts)
     return cherrypy.tree(environ, start_response)
 
 def run_local():
-    (root, server_dict) = _init(service.S_CHERRY)
-    cherrypy.quickstart(root, config=server_dict)
+    (root, server_opts) = _init(service.S_CHERRY)
+    cherrypy.quickstart(root, config=server_opts)
 
 
 ##### Private methods #####
 def _init(section):
-    config_dict = service.init(description="GNS HTTP API")[0]
-    (root, app_dict) = _make_tree(config_dict)
-    server_dict = copy.deepcopy(config_dict[section])
-    server_dict.update(app_dict)
-    return (root, server_dict)
+    config = service.init(description="GNS HTTP API")[0]
+    (root, app_opts) = _make_tree(config)
+    server_opts = copy.deepcopy(config[section])
+    server_opts.update(app_opts)
+    return (root, server_opts)
 
-def _make_tree(config_dict):
+def _make_tree(config):
     root = Module()
     root.api = Module()
 
     root.api.rpc = Module()
     root.api.rpc.v1 = Module()
-    root.api.rpc.v1.events = api.rpc.events.Api(config_dict)
+    root.api.rpc.v1.events = api.rpc.events.EventsApi(config)
 
     root.api.rest = Module()
     root.api.rest.v1 = Module()
-    root.api.rest.v1.jobs = api.rest.jobs.Jobs(config_dict)
+    root.api.rest.v1.jobs = api.rest.jobs.JobsApi(config)
 
     root.api.compat = Module()
     root.api.compat.golem = Module()
-    root.api.compat.golem.submit = api.compat.golem.Submit(config_dict)
+    root.api.compat.golem.submit = api.compat.golem.SubmitApi(config)
 
     disp_dict = { "request.dispatch": cherrypy.dispatch.MethodDispatcher() }
     return (root, {

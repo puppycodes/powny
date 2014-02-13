@@ -12,7 +12,7 @@ from ... import chain
 
 
 ##### Public classes #####
-class Api(chrpc.server.Module):
+class EventsApi(chrpc.server.Module):
     def __init__(self, config_dict):
         self._nodes_list = config_dict[service.S_CORE][service.O_ZOO_NODES]
 
