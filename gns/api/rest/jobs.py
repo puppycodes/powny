@@ -28,7 +28,7 @@ def _raise_http(method):
 
 
 ##### Public classes #####
-class JobsApi(chrpc.server.WebObject):
+class JobsResource(chrpc.server.WebObject):
     exposed = True
 
     def __init__(self, config_dict):

@@ -41,7 +41,7 @@ def _make_tree(config):
 
     root.api.rest = Module()
     root.api.rest.v1 = Module()
-    root.api.rest.v1.jobs = api.rest.jobs.JobsApi(config)
+    root.api.rest.v1.jobs = api.rest.jobs.JobsResource(config)
 
     root.api.compat = Module()
     root.api.compat.golem = Module()

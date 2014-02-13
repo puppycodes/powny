@@ -27,7 +27,7 @@ def _error_page(status, message, traceback, version):
 
 ##### Public classes #####
 class SubmitApi(chrpc.server.WebObject):
-    """ For compatibility with http://nda.ya.ru/3QTLzG """
+    """ This class implements compatibility with handle http://nda.ya.ru/3QTLzG """
 
     exposed = True
     _cp_config = {
@@ -38,7 +38,7 @@ class SubmitApi(chrpc.server.WebObject):
         self._zoo_nodes = config[service.S_CORE][service.O_ZOO_NODES]
 
 
-    ##### Private #####
+    ##### Override #####
 
     def GET(self, **kwargs):
         return self._handle(kwargs)
@@ -49,7 +49,7 @@ class SubmitApi(chrpc.server.WebObject):
                 kwargs[key] = value[-1]
         return self._handle(kwargs)
 
-    ###
+    ##### Private #####
 
     def _handle(self, request):
         event_root = rules.EventRoot({
@@ -67,7 +67,8 @@ class SubmitApi(chrpc.server.WebObject):
                     }[request.get("status", "critical")],
                     "description": request["info"],
                 })
-        return "ok job_id:" + self._replace_event(event_root)
+        job_id = self._replace_event(event_root)
+        return "ok job_id:" + job_id
 
     def _replace_event(self, event_root):
         check_id = typetools.object_hash((event_root["host_name"], event_root["service_name"]))
