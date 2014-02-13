@@ -27,6 +27,7 @@ S_CHERRY    = "cherry"
 O_ZOO_NODES  = "zoo-nodes"
 O_RULES_DIR  = "rules-dir"
 O_RULES_HEAD = "rules-head"
+O_FETCHER    = "fetcher"
 
 O_VERSION = "version"
 
@@ -40,6 +41,7 @@ O_ACQUIRE_DELAY     = "acquire-delay"
 O_POLL_INTERVAL     = "poll-interval"
 O_RECYCLED_PRIORITY = "recycled-priority"
 O_GARBAGE_LIFETIME  = "garbage-lifetime"
+
 O_HOST              = "host"
 O_PORT              = "port"
 
@@ -55,12 +57,13 @@ _DAEMON_MAP = {
 CONFIG_MAP = {
     S_CORE: {
         O_ZOO_NODES:  (("localhost",),  validators.common.valid_string_list),
-        O_RULES_DIR:  (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.validAccessiblePath(arg + "/."))),
+        O_RULES_DIR:  (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.valid_accessible_path(arg + "/."))),
         O_RULES_HEAD: ("HEAD",          str),
+        O_FETCHER:    (None,            validators.common.valid_empty), # TODO: valid_python_name
     },
 
     S_LOGGING: {
-        O_VERSION: (1, validators.common.validNumber),
+        O_VERSION: (1, validators.common.valid_number),
     },
 
     S_SPLITTER: typetools.merge_dicts({
@@ -95,7 +98,7 @@ def init(**kwargs_dict):
     parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=const.CONFIG_DIR, metavar="<dir>")
     (options, remaining_list) = parser.parse_known_args()
 
-    options.config_dir_path = os.path.normpath(validators.fs.validAccessiblePath(options.config_dir_path + "/."))
+    options.config_dir_path = os.path.normpath(validators.fs.valid_accessible_path(options.config_dir_path + "/."))
     config_dict = _load_config(options.config_dir_path)
     _init_logging(config_dict)
 

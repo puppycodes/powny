@@ -26,7 +26,7 @@ class Api(chrpc.server.Module):
     @chrpc.server.api
     def cancel(self, job_id):
         """ Cancel event by job id """
-        job_id = validators.extra.validUuid(job_id)
+        job_id = validators.extra.valid_uuid(job_id)
         with zoo.Connect(self._hosts_list) as client:
             events.cancel(client, job_id)
 
@@ -39,14 +39,14 @@ class Api(chrpc.server.Module):
     @chrpc.server.api
     def get_finished(self, job_id):
         """ True if the job is finished else false """
-        job_id = validators.extra.validUuid(job_id)
+        job_id = validators.extra.valid_uuid(job_id)
         with zoo.Connect(self._hosts_list) as client:
             return events.get_finished(client, job_id)
 
     @chrpc.server.api
     def get_info(self, job_id):
         """ Job info """
-        job_id = validators.extra.validUuid(job_id)
+        job_id = validators.extra.valid_uuid(job_id)
         with zoo.Connect(self._hosts_list) as client:
             return events.get_info(client, job_id)
 
