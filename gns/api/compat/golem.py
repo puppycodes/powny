@@ -27,6 +27,8 @@ def _error_page(status, message, traceback, version):
 
 ##### Public classes #####
 class SubmitApi(chrpc.server.WebObject):
+    """ For compatibility with http://nda.ya.ru/3QTLzG """
+
     exposed = True
     _cp_config = {
         "error_page.default": _error_page,

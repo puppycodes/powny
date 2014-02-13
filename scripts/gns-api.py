@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 
-import copy
 import cherrypy
 
 from chrpc.server import Module
@@ -28,7 +27,7 @@ def run_local():
 def _init(section):
     config = service.init(description="GNS HTTP API")[0]
     (root, app_opts) = _make_tree(config)
-    server_opts = copy.deepcopy(config[section])
+    server_opts = config[section].copy()
     server_opts.update(app_opts)
     return (root, server_opts)
 
