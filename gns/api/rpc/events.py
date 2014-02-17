@@ -1,7 +1,7 @@
 import chrpc.server
 
 from ulib import validators
-import ulib.validators.extra
+import ulib.validators.extra # pylint: disable=W0611
 
 from raava import zoo
 from raava import events

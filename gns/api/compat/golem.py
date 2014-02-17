@@ -5,7 +5,7 @@ import cherrypy
 import chrpc.server
 
 from ulib import validators
-import ulib.validators.common
+import ulib.validators.common # pylint: disable=W0611
 
 from raava import zoo
 from raava import events
