@@ -146,10 +146,10 @@ def make_default_config(start_dict):
             raise RuntimeError("Invalid CONFIG_MAP")
     return default_dict
 
-def validate_config(config_dict, std_dict, keys_list = []):
+def validate_config(config_dict, std_dict, keys_list = ()):
     for (key, pair) in std_dict.items():
         if isinstance(pair, dict):
-            current_list = keys_list + [key]
+            current_list = list(keys_list) + [key]
             if not isinstance(config_dict[key], dict):
                 raise RuntimeError("The section \"%s\" must be a dict" % (".".join(current_list)))
             validate_config(config_dict[key], std_dict[key], current_list)

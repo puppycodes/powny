@@ -9,6 +9,7 @@ from . import const
 ##### Exceptions #####
 class ApiError(Exception):
     def __init__(self, name, text):
+        super(ApiError, self).__init__()
         self._name = name
         self._text = text
 

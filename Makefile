@@ -4,6 +4,9 @@ all:
 pylint:
 	pypy3 `which pylint` --rcfile=pylint.ini \
 		raava \
+		chrpc \
+		gns \
+		scripts/*.py \
 		*.py \
 		--output-format=colorized 2>&1 | less -SR
 
