@@ -9,8 +9,7 @@ from .. import env
 
 
 ##### Private constants #####
-class _STATE:
-    PREV = "prev"
+_EXTRA_PREV = "prev"
 
 
 ##### Private methods #####
@@ -29,21 +28,21 @@ def _save_prev(*fields):
                     pass
                 prev_event = client.pget(check_path)
 
-            event_root.get_extra()[_STATE.PREV] = prev_event
+            event_root.get_extra()[_EXTRA_PREV] = prev_event
             try:
                 return method(event_root)
             finally:
                 with zoo.Connect(zoo_nodes) as client:
                     prev_event = event_root.copy()
-                    if _STATE.PREV in prev_event.get_extra():
-                        del prev_event.get_extra()[_STATE.PREV]
+                    if _EXTRA_PREV in prev_event.get_extra():
+                        del prev_event.get_extra()[_EXTRA_PREV]
                     client.pset(check_path, prev_event)
 
         return decorator.decorator(wrap, method)
     return make_method
 
 def _field_is_changed(event_root, prev, current, field = "status"):
-    prev_event = event_root.get_extra().get(_STATE.PREV)
+    prev_event = event_root.get_extra().get(_EXTRA_PREV)
     if prev_event is None:
         return True
 
