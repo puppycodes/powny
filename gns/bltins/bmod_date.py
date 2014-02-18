@@ -27,7 +27,7 @@ class _Date:
         return (self or _Date()).get_datetime().weekday()
 
     def get_month(self = None):
-        return (self or _Date()).get_datetime().month()
+        return (self or _Date()).get_datetime().month
 
 for (name, value) in zip(
         ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec") +
