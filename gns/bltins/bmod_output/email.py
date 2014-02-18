@@ -76,14 +76,11 @@ _logger = logging.getLogger(common.LOGGER_NAME)
 
 
 ##### Private methods #####
-def _send_raw(task, to, subject, body):
-    if isinstance(to, tuple):
-        to = list(to)
-    elif not isinstance(to, list):
-        to = [str(to)]
+def _send_raw(task, to, subject, body, cc = ()):
+    to = validators.common.validStringList(to)
+    cc = validators.common.validStringList(cc) + env.get_config(common.S_OUTPUT, S_EMAIL, O_CC)
 
     send_from = env.get_config(common.S_OUTPUT, S_EMAIL, O_FROM)
-    cc = env.get_config(common.S_OUTPUT, S_EMAIL, O_CC)
 
     message = email.mime.multipart.MIMEMultipart()
     message["From"] = send_from
@@ -116,8 +113,8 @@ def _send_raw(task, to, subject, body):
         _logger.info("Email sent to: %s; cc: %s (noop)", to, cc)
     task.checkpoint()
 
-def _send_event(task, to, event, subject = DEFAULT_SUBJECT_TEMPLATE, body = DEFAULT_BODY_TEMPLATE):
-    _send_raw(task, to, env.format_event(subject, event), env.format_event(body, event))
+def _send_event(task, to, event, subject = DEFAULT_SUBJECT_TEMPLATE, body = DEFAULT_BODY_TEMPLATE, cc = ()):
+    _send_raw(task, to, env.format_event(subject, event), env.format_event(body, event), cc)
 
 
 ##### Private classes #####
