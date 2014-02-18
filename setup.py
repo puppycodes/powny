@@ -82,6 +82,7 @@ if __name__ == "__main__":
             "cherrypy >= 3.2.4",
             "mako >= 0.9.1",
             "decorator >= 3.4.0",
+            "dateutil >= 2.2",
         ),
 
         cmdclass = { "build": GnsBuild },
