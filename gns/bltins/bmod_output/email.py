@@ -46,7 +46,7 @@ DEFAULT_SUBJECT_TEMPLATE = """
     GNS message: ${event.get("host", "<Host?>")}:${event.get("service", "<Service?>")}
 """
 
-DEFAULT_TEXT_TEMPLATE = """
+DEFAULT_BODY_TEMPLATE = """
     <%
         import yaml
         host = event.get("host", "<Host?>")
@@ -76,28 +76,28 @@ _logger = logging.getLogger(common.LOGGER_NAME)
 
 
 ##### Private methods #####
-def _send_raw(task, to_list, subject, text):
-    if isinstance(to_list, tuple):
-        to_list = list(to_list)
-    elif not isinstance(to_list, list):
-        to_list = [str(to_list)]
+def _send_raw(task, to, subject, body):
+    if isinstance(to, tuple):
+        to = list(to)
+    elif not isinstance(to, list):
+        to = [str(to)]
 
     send_from = env.get_config(common.S_OUTPUT, S_EMAIL, O_FROM)
-    cc_list = env.get_config(common.S_OUTPUT, S_EMAIL, O_CC)
+    cc = env.get_config(common.S_OUTPUT, S_EMAIL, O_CC)
 
     message = email.mime.multipart.MIMEMultipart()
     message["From"] = send_from
-    message["To"] = ", ".join(to_list)
-    if len(cc_list) != 0:
-        message["CC"] = ", ".join(cc_list)
+    message["To"] = ", ".join(to)
+    if len(cc) != 0:
+        message["CC"] = ", ".join(cc)
     message["Date"] = email.utils.formatdate(localtime=True)
     message["Subject"] = subject
-    message.attach(email.mime.text.MIMEText(text))
+    message.attach(email.mime.text.MIMEText(body))
 
     server_host = env.get_config(common.S_OUTPUT, S_EMAIL, O_SERVER)
     user = env.get_config(common.S_OUTPUT, S_EMAIL, O_USER)
 
-    _logger.debug("Sending email to: %s; cc: %s; via SMTP %s@%s", to_list, cc_list, user, server_host)
+    _logger.debug("Sending email to: %s; cc: %s; via SMTP %s@%s", to, cc, user, server_host)
 
     task.checkpoint()
     if not env.get_config(common.S_OUTPUT, common.O_NOOP):
@@ -106,18 +106,18 @@ def _send_raw(task, to_list, subject, text):
             server = smtp_class(server_host)
             if user is not None:
                 server.login(user, env.get_config(common.S_OUTPUT, S_EMAIL, O_PASSWD))
-            server.sendmail(send_from, to_list + cc_list, message.as_string())
-            _logger.info("Email sent to: %s; cc: %s", to_list, cc_list)
+            server.sendmail(send_from, to + cc, message.as_string())
+            _logger.info("Email sent to: %s; cc: %s", to, cc)
         except Exception:
-            _logger.exception("Failed to send email to: %s; cc: %s", to_list, cc_list)
+            _logger.exception("Failed to send email to: %s; cc: %s", to, cc)
         finally:
             server.close()
     else:
-        _logger.info("Email sent to: %s; cc: %s (noop)", to_list, cc_list)
+        _logger.info("Email sent to: %s; cc: %s (noop)", to, cc)
     task.checkpoint()
 
-def _send_event(task, to_list, event, subject = DEFAULT_SUBJECT_TEMPLATE, text = DEFAULT_TEXT_TEMPLATE):
-    _send_raw(task, to_list, env.format_event(subject, event), env.format_event(text, event))
+def _send_event(task, to, event, subject = DEFAULT_SUBJECT_TEMPLATE, body = DEFAULT_BODY_TEMPLATE):
+    _send_raw(task, to, env.format_event(subject, event), env.format_event(body, event))
 
 
 ##### Private classes #####
