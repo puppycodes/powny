@@ -14,7 +14,8 @@ _EXTRA_PREV = "prev"
 
 ##### Private methods #####
 def _save_prev(*fields):
-    fields = sorted(fields or ("host_name", "service_name"))
+    assert len(fields) != 0, "Required fields list"
+    fields = sorted(fields)
     def make_method(method):
         def wrap(method, event_root):
             zoo_nodes = env.get_config(service.S_CORE, service.O_ZOO_NODES)
@@ -41,7 +42,7 @@ def _save_prev(*fields):
         return decorator.decorator(wrap, method)
     return make_method
 
-def _field_is_changed(event_root, prev, current, field = "status"):
+def _field_is_changed(event_root, prev, current, field):
     prev_event = event_root.get_extra().get(_EXTRA_PREV)
     if prev_event is None:
         return True
