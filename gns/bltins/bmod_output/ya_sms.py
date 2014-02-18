@@ -30,19 +30,6 @@ CONFIG_MAP = {
 }
 
 
-###
-DEFAULT_BODY_TEMPLATE = """
-    <%
-        import time
-        now = time.strftime("%H:%M.%S %d-%m-%Y")
-        host = event.get("host", "<Host?>")
-        service = event.get("service", "<Service?>")
-        status = event.get("status", "<Status?>")
-    %>
-    ${now} ${host}:${service} = ${status}
-"""
-
-
 ##### Private objects #####
 _logger = logging.getLogger(common.LOGGER_NAME)
 
@@ -75,14 +62,10 @@ def _send_raw(task, to, body):
         _logger.info("SMS sent to Golem (noop) to %s", to)
     task.checkpoint()
 
-def _send_event(task, to, event, body = DEFAULT_BODY_TEMPLATE):
-    _send_raw(task, to, env.format_event(body, event))
-
 
 ##### Private classes #####
 class _Sms:
     send_raw = worker.make_task_builtin(_send_raw)
-    send = worker.make_task_builtin(_send_event)
 
 
 ##### Public constants #####
