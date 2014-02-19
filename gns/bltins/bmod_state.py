@@ -1,64 +1,46 @@
-import decorator
-import pickle
+# required:
+#   - bmod_storage
+
+
+import builtins
+
 from ulib import typetools
 
 from raava import zoo
 
-from .. import service
-from .. import env
-
-
-##### Private constants #####
-_EXTRA_PREV = "prev"
-
 
 ##### Private methods #####
-def _save_prev(*fields):
-    assert len(fields) != 0, "Required fields list"
-    fields = sorted(fields)
+def _add_prev(*fields):
+    fields = sorted( fields or ("host_name", "service_name") )
     def make_method(method):
-        def wrap(method, event_root):
-            zoo_nodes = env.get_config(service.S_CORE, service.O_ZOO_NODES)
+        def wrap(event_root, **kwargs):
+            kwargs = {}
             check_id = typetools.object_hash([ event_root.get(field) for field in fields ])
-            check_path = zoo.join("/state", check_id)
-
-            with zoo.Connect(zoo_nodes) as client:
-                try:
-                    client.create(check_path, pickle.dumps(None), makepath=True)
-                except zoo.NodeExistsError:
-                    pass
-                prev_event = client.pget(check_path)
-
-            event_root.get_extra()[_EXTRA_PREV] = prev_event
+            check_path = zoo.join("_state", check_id)
+            kwargs["prev"] = builtins.storage.get(check_path, None) # pylint: disable=E1101
             try:
-                return method(event_root)
+                result = method(event_root, **kwargs)
             finally:
-                with zoo.Connect(zoo_nodes) as client:
-                    prev_event = event_root.copy()
-                    if _EXTRA_PREV in prev_event.get_extra():
-                        del prev_event.get_extra()[_EXTRA_PREV]
-                    client.pset(check_path, prev_event)
-
-        return decorator.decorator(wrap, method)
+                builtins.storage.set(check_path, event_root) # pylint: disable=E1101
+            return result
+        return wrap
     return make_method
 
-def _field_is_changed(event_root, prev, current, field):
-    prev_event = event_root.get_extra().get(_EXTRA_PREV)
-    if prev_event is None:
+def _is_changed(prev, current, frm, to, field = "status"):
+    if prev is None:
         return True
-
     is_changed = (
-        (prev is None or ( prev is not None and prev == prev_event.get(field) )) and
-        (current is None or ( current is not None and current == event_root.get(field) )) and
-        prev_event[field] != event_root[field]
+        (frm is None or ( frm is not None and frm == prev.get(field) )) and
+        (to is None or ( to is not None and to == current.get(field) )) and
+        prev[field] != current[field]
     )
     return is_changed
 
 
 ##### Private classes #####
 class _State:
-    save_prev = _save_prev
-    is_changed = _field_is_changed
+    add_prev = _add_prev
+    is_changed = _is_changed
 
 
 ##### Public constants #####
