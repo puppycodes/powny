@@ -51,8 +51,8 @@ class SubmitApi(chrpc.server.WebObject):
 
     def _handle(self, request):
         event_root = rules.EventRoot({
-                "host_name":    request["object"],
-                "service_name": request["eventtype"],
+                "host":    request["object"],
+                "service": request["eventtype"],
             })
         if validators.common.valid_bool(request.get("json", False)):
             event_root.update(json.loads(request["info"]))
