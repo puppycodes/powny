@@ -1,4 +1,5 @@
 # required:
+#   - bmod_const
 #   - bmod_storage
 
 
@@ -11,7 +12,10 @@ from raava import zoo
 
 ##### Private methods #####
 def _add_prev(*fields):
-    fields = sorted( fields or ("host_name", "service_name") )
+    fields = sorted( fields or (
+            builtins.EVENT.HOST, # pylint: disable=E1101
+            builtins.EVENT.SERVICE, # pylint: disable=E1101
+        ))
     def make_method(method):
         def wrap(event_root, **kwargs):
             kwargs = {}
@@ -26,7 +30,7 @@ def _add_prev(*fields):
         return wrap
     return make_method
 
-def _is_changed(prev, current, frm, to, field = "status"):
+def _is_changed(prev, current, frm, to, field = builtins.EVENT.STATUS): # pylint: disable=E1101
     if prev is None:
         return True
     is_changed = (
