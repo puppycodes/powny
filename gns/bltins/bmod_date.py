@@ -32,3 +32,9 @@ for (name, value) in zip(
     ):
     setattr(_Date, name, value)
 
+
+##### Public constants #####
+BUILTINS_MAP = {
+    "date": _Date,
+}
+
