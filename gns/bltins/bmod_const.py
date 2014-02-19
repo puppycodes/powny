@@ -8,10 +8,10 @@ class _EVENT:
 
 ###
 class _STATUS:
-    CRIT   = 0
-    WARN   = 1
-    OK     = 2
-    CUSTOM = 3
+    OK   = "OK"
+    INFO = "INFO"
+    WARN = "WARN"
+    CRIT = "CRIT"
 
 ###
 BUILTINS_MAP = {
