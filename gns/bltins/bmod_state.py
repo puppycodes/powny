@@ -27,14 +27,14 @@ def _add_previous(*fields):
         return wrap
     return make_method
 
-def _is_changed(previous, current, from_, to, field = None):
+def _is_changed(previous, current, from_, to, field=None):
     if previous is None:
         return True
     if field is None:
         field = builtins.EVENT.STATUS # pylint: disable=E1101
     is_changed = (
-        (from_ is None or from_ == previous.get(field) ) and
-        (to is None or to == current.get(field) ) and
+        (from_ is None or from_ == previous.get(field)) and
+        (to is None or to == current.get(field)) and
         previous[field] != current[field]
     )
     return is_changed
