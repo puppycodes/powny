@@ -82,7 +82,7 @@ def _send_event(task, to, event, body = DEFAULT_BODY_TEMPLATE):
 ##### Private classes #####
 class _Sms:
     send_raw = worker.make_task_builtin(_send_raw)
-    send = worker.make_task_builtin(_send_event)
+    send_event = worker.make_task_builtin(_send_event)
 
 
 ##### Public constants #####

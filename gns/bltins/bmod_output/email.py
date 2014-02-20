@@ -52,7 +52,7 @@ DEFAULT_BODY_TEMPLATE = """
         host = event.get("host", "<Host?>")
         service = event.get("service", "<Service?>")
         status = event.get("status", "<Status?>")
-        dumper = ( lambda arg: yaml.dump(arg, default_flow_style=False, indent=4).strip() )
+        dumper = lambda arg: yaml.dump(arg, default_flow_style=False, indent=4).strip()
         data = dumper(dict(event))
         extra = dumper(event.get_extra())
     %>
@@ -119,7 +119,7 @@ def _send_event(task, to, event, subject = DEFAULT_SUBJECT_TEMPLATE, body = DEFA
 ##### Private classes #####
 class _Email:
     send_raw = worker.make_task_builtin(_send_raw)
-    send = worker.make_task_builtin(_send_event)
+    send_event = worker.make_task_builtin(_send_event)
 
 
 ##### Public constants #####
