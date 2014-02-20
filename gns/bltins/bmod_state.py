@@ -11,7 +11,7 @@ from raava import zoo
 
 
 ##### Private methods #####
-def _add_prev(*fields):
+def _add_previous(*fields):
     fields = sorted( fields or (
             builtins.EVENT.HOST, # pylint: disable=E1101
             builtins.EVENT.SERVICE, # pylint: disable=E1101
@@ -21,7 +21,7 @@ def _add_prev(*fields):
             kwargs = {}
             check_id = typetools.object_hash([ event_root.get(field) for field in fields ])
             check_path = zoo.join("_state", check_id)
-            kwargs["prev"] = builtins.storage.get(check_path, None) # pylint: disable=E1101
+            kwargs["previous"] = builtins.storage.get(check_path, None) # pylint: disable=E1101
             try:
                 result = method(event_root, **kwargs)
             finally:
@@ -30,20 +30,20 @@ def _add_prev(*fields):
         return wrap
     return make_method
 
-def _is_changed(prev, current, frm, to, field = builtins.EVENT.STATUS): # pylint: disable=E1101
-    if prev is None:
+def _is_changed(previous, current, from_, to, field = builtins.EVENT.STATUS): # pylint: disable=E1101
+    if previous is None:
         return True
     is_changed = (
-        (frm is None or ( frm is not None and frm == prev.get(field) )) and
+        (from_ is None or ( from_ is not None and from_ == previous.get(field) )) and
         (to is None or ( to is not None and to == current.get(field) )) and
-        prev[field] != current[field]
+        previous[field] != current[field]
     )
     return is_changed
 
 
 ##### Private classes #####
 class _State:
-    add_prev = _add_prev
+    add_previous = _add_previous
     is_changed = _is_changed
 
 
