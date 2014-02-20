@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-from raava import rules
+from raava import rhooks
 from raava import handlers
 from raava import application
 from raava import splitter
@@ -18,7 +18,7 @@ def main():
     core_dict = config_dict[service.S_CORE]
     app_dict = config_dict[service.S_SPLITTER]
 
-    rules.setup_builtins(bltins.load_builtins(config_dict))
+    rhooks.setup_builtins(bltins.load_builtins(config_dict))
     env.setup_config(config_dict)
     handlers.setup_path(core_dict[service.O_RULES_DIR])
 

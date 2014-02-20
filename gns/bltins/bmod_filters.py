@@ -1,17 +1,18 @@
 from raava import rules
+from raava import comparators
 
 
 ##### Private classes #####
 class _Cmp:
-    eq = rules.EqComparator # XXX: eq: key=value
-    ne = rules.NeComparator
-    ge = rules.GeComparator
-    gt = rules.GtComparator
-    le = rules.LeComparator
-    lt = rules.LtComparator
-    in_list = rules.InListComparator
-    not_in_list = rules.NotInListComparator
-    regexp = rules.RegexpComparator
+    eq = comparators.EqComparator # XXX: eq: key=value
+    ne = comparators.NeComparator
+    ge = comparators.GeComparator
+    gt = comparators.GtComparator
+    le = comparators.LeComparator
+    lt = comparators.LtComparator
+    in_list = comparators.InListComparator
+    not_in_list = comparators.NotInListComparator
+    regexp = comparators.RegexpComparator
 
 
 ##### Public constants #####
