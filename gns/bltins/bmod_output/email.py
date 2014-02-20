@@ -41,6 +41,35 @@ CONFIG_MAP = {
 }
 
 
+###
+DEFAULT_SUBJECT_TEMPLATE = """
+    GNS message: ${event.get("host", "<Host?>")}:${event.get("service", "<Service?>")}
+"""
+
+DEFAULT_BODY_TEMPLATE = """
+    <%
+        import yaml
+        host = event.get("host", "<Host?>")
+        service = event.get("service", "<Service?>")
+        status = event.get("status", "<Status?>")
+        dumper = lambda arg: yaml.dump(arg, default_flow_style=False, indent=4).strip()
+        data = dumper(dict(event))
+        extra = dumper(event.get_extra())
+    %>
+    The event ${host}:${service} is ${status}.
+
+    Event:
+    =====
+    ${data}
+    =====
+
+    Extra information:
+    =====
+    ${extra}
+    =====
+"""
+
+
 ##### Private objects #####
 _logger = logging.getLogger(common.LOGGER_NAME)
 
@@ -83,10 +112,14 @@ def _send_raw(task, to, subject, body, cc = ()):
         _logger.info("Email sent to: %s; cc: %s (noop)", to, cc)
     task.checkpoint()
 
+def _send_event(task, to, event, subject = DEFAULT_SUBJECT_TEMPLATE, body = DEFAULT_BODY_TEMPLATE, cc = ()):
+    _send_raw(task, to, env.format_event(subject, event), env.format_event(body, event), cc)
+
 
 ##### Private classes #####
 class _Email:
     send_raw = worker.make_task_builtin(_send_raw)
+    send_event = worker.make_task_builtin(_send_event)
 
 
 ##### Public constants #####
