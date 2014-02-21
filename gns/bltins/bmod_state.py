@@ -4,10 +4,16 @@
 
 
 import builtins
+import logging
 
 from ulib import typetools
 
 from raava import zoo
+from raava import rules
+
+
+##### Private objects #####
+_logger = logging.getLogger(__name__)
 
 
 ##### Private methods #####
@@ -22,7 +28,10 @@ def _add_previous(*fields):
             check_path = zoo.join("_state", check_id)
             with builtins.storage.lock(check_path): # pylint: disable=E1101
                 kwargs["previous"] = builtins.storage.get(check_path, None) # pylint: disable=E1101
-                builtins.storage.set(check_path, event_root) # pylint: disable=E1101
+                version = event_root.get_extra()[rules.EXTRA.COUNTER]
+                if not builtins.storage.set(check_path, event_root, version): # pylint: disable=E1101
+                    _logger.debug("Can't save event value (by fields %s) with version %d because the storage contains a newer version",
+                        { key: event_root[key] for key in fields }, version)
             return method(event_root, **kwargs)
         return wrap
     return make_method
