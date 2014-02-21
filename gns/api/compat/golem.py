@@ -37,10 +37,10 @@ class SubmitApi(chrpc.server.WebObject):
 
     ##### Override #####
 
-    def GET(self, **kwargs):
+    def GET(self, **kwargs): # pylint: disable=C0103
         return self._handle(kwargs)
 
-    def POST(self, **kwargs):
+    def POST(self, **kwargs): # pylint: disable=C0103
         for (key, value) in kwargs.items():
             if isinstance(value, (list, tuple)):
                 kwargs[key] = value[-1]
