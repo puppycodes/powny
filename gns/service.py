@@ -60,7 +60,7 @@ CONFIG_MAP = {
         O_ZOO_NODES:    (("localhost",),  validators.common.valid_string_list),
         O_RULES_DIR:    (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.valid_accessible_path(arg + "/."))),
         O_RULES_HEAD:   ("HEAD",          str),
-        O_IMPORT_ALIAS: ("rules",         validators.common.valid_empty), # TODO: valid_python_name
+        O_IMPORT_ALIAS: (None,            validators.common.valid_empty), # TODO: valid_python_name
         O_FETCHER:      (None,            validators.common.valid_empty), # TODO: valid_python_name
     },
 
