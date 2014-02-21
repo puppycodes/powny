@@ -4,15 +4,9 @@ from raava import comparators
 
 ##### Private classes #####
 class _Cmp:
-    eq = comparators.EqComparator # XXX: eq: key=value
-    ne = comparators.NeComparator
-    ge = comparators.GeComparator
-    gt = comparators.GtComparator
-    le = comparators.LeComparator
-    lt = comparators.LtComparator
-    in_list = comparators.InListComparator
-    not_in_list = comparators.NotInListComparator
-    regexp = comparators.RegexpComparator
+    pass
+for (name, comparator) in comparators.COMPARATORS_MAP.items():
+    setattr(_Cmp, name, comparator)
 
 
 ##### Public constants #####
