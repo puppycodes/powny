@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 
 
-from raava import rhooks
 from raava import handlers
 from raava import application
 from raava import splitter
 
 from gns import service
-from gns import bltins
+from gns import core
 from gns import chain
-from gns import env
 
 
 ##### Public methods #####
@@ -18,9 +16,7 @@ def main():
     core_attrs = config[service.S_CORE]
     app_attrs = config[service.S_SPLITTER]
 
-    rhooks.setup_builtins(bltins.load_builtins(config))
-    env.setup_config(config)
-    handlers.setup_path(core_attrs[service.O_RULES_DIR])
+    core.init_rules_environment(config)
 
     loader = handlers.Loader(
         core_attrs[service.O_RULES_DIR],
