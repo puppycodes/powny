@@ -33,14 +33,20 @@ def _client_context():
 
 
 ###
-def _set_value(path, value):
+def _set_value(path, value, version=-1):
     data = pickle.dumps(value)
     path = zoo.join(_USER_PATH, path)
     with _client_context() as client:
         try:
             client.create(path, data, makepath=True)
         except zoo.NodeExistsError:
-            client.set(path, data)
+            try:
+                client.set(path, data, version)
+                _logger.debug("Can't rewrite %s with version %d", path, version)
+                result = True
+            except zoo.BadVersionError:
+                result = False
+    return result
 
 def _get_value(path, default=_NoDefault):
     path = zoo.join(_USER_PATH, path)
