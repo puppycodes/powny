@@ -65,7 +65,7 @@ class _Lock:
 
     def __enter__(self):
         self._client = zoo.connect(_client_opts())
-        self._lock = self._client.Lock(zoo.join(_USER_PATH, self._path, "lock"))
+        self._lock = self._client.Lock(zoo.join(_USER_PATH, self._path, zoo.LOCK))
         self._lock.acquire()
 
     def __exit__(self, type, value, traceback): # pylint: disable=W0622
