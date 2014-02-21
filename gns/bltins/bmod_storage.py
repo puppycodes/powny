@@ -7,16 +7,12 @@ from .. import service
 from .. import env
 
 
-##### Public constants #####
-LOGGER_NAME = "user-storage"
-
-
 ##### Private constants #####
 _USER_PATH = "/user_storage"
 
 
 ##### Private objects #####
-_logger = logging.getLogger(LOGGER_NAME)
+_logger = logging.getLogger(__name__)
 
 
 ##### Private classes #####
