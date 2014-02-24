@@ -55,7 +55,7 @@ class Proxy:
 
     def _api_request(self, request):
         try:
-            response = self._opener.open(request, timeout = self._timeout)
+            response = self._opener.open(request, timeout=self._timeout)
         except urllib.error.HTTPError as err:
             result = json.loads(err.read().decode())
             raise ApiError(*result[const.API_EXCEPTION])
