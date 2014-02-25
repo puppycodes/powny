@@ -83,6 +83,7 @@ if __name__ == "__main__":
             "mako >= 0.9.1",
             "decorator >= 3.4.0",
             "dateutil >= 2.2",
+            "six == 1.4.1",
         ),
 
         cmdclass = { "build": GnsBuild },
