@@ -12,7 +12,7 @@ PYTHONPATH=. pypy3 scripts/gns-splitter.py
 ```
 
 ###Basic API usage###
-Compatibility layer with ("Golem submit.sbml" http://nda.ya.ru/3QTLzG):
+Compatibility layer with [Golem/submit.sbml](http://nda.ya.ru/3QTLzG):
 ```
 curl --data 'info=test' http://localhost:7887/api/compat/golem/submit?object=foo&eventtype=bar&info=test&status=critical'
 ```
