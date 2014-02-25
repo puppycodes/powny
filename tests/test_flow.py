@@ -12,6 +12,7 @@ class TestFlow(unittest.TestCase):
     def setUp(self):
         env = dict(os.environ)
         env.update({ "LC_ALL": "C", "PYTHONPATH": "." })
+        subprocess.check_output(("python3", "scripts/gns-reinit.py", "--do-it-now"), env=env)
         self._services = [
             subprocess.Popen(cmd, env=env)
             for cmd in (
