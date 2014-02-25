@@ -1,5 +1,6 @@
 import os
 import subprocess
+import threading
 import http.server
 import urllib.request
 import json
@@ -8,7 +9,7 @@ import time
 
 
 ##### Public classes #####
-class TestFlow(unittest.TestCase):
+class TestFlow(unittest.TestCase): # pylint: disable=R0904
     def setUp(self):
         env = dict(os.environ)
         env.update({ "LC_ALL": "C", "PYTHONPATH": "." })
@@ -37,24 +38,45 @@ class TestFlow(unittest.TestCase):
             "service": "foo",
             "custom":  123,
         }
-        request = urllib.request.Request(
-            "http://localhost:7887/api/rest/v1/jobs",
-            data=json.dumps(event).encode(),
-            headers={ "Content-Type": "application/json" })
-        opener = urllib.request.build_opener()
+        self.assertEqual(_send_recv_event(event), event)
+
+
+##### Private methods #####
+def _send_recv_event(event):
+    request = urllib.request.Request(
+        "http://localhost:7887/api/rest/v1/jobs",
+        data=json.dumps(event).encode(),
+        headers={ "Content-Type": "application/json" },
+    )
+    opener = urllib.request.build_opener()
+    server = _ShotServer("localhost", 7888)
+    server.start()
+    time.sleep(1)
+    try:
         opener.open(request)
-        self.assertEqual(json.loads(self._get_post().decode()), event)
+    finally:
+        server.stop()
+    return json.loads(server.get_result().decode())
 
 
-    ### Private ###
+##### Private classes #####
+class _ShotServer(threading.Thread):
+    def __init__(self, host_name, port):
+        threading.Thread.__init__(self)
+        self._server = http.server.HTTPServer((host_name, port), _ShotHandler)
 
-    def _get_post(self):
-        class shot_handler(http.server.BaseHTTPRequestHandler):
-            result = None
-            def do_POST(self):
-                shot_handler.result = self.rfile.read(int(self.headers["Content-Length"]))
-                self.send_response(200)
-        server = http.server.HTTPServer(("localhost", 7888), shot_handler)
-        server.handle_request()
-        return shot_handler.result
+    def run(self):
+        self._server.serve_forever()
+
+    def stop(self):
+        self._server.shutdown()
+        self._server.socket.close()
+
+    def get_result(self):
+        return self._server.result # pylint: disable=E1101
+
+class _ShotHandler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        self.server.result = self.rfile.read(int(self.headers["Content-Length"]))
+        self.send_response(200)
 
