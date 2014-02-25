@@ -1,30 +1,26 @@
 #!/usr/bin/env python
 
 
-from raava import rules
 from raava import handlers
 from raava import application
 from raava import splitter
 
 from gns import service
-from gns import bltins
+from gns import core
 from gns import chain
-from gns import env
 
 
 ##### Public methods #####
 def main():
-    config_dict = service.init(description="GNS Splitter")[0]
-    core_dict = config_dict[service.S_CORE]
-    app_dict = config_dict[service.S_SPLITTER]
+    config = service.init(description="GNS Splitter")[0]
+    core_attrs = config[service.S_CORE]
+    app_attrs = config[service.S_SPLITTER]
 
-    rules.setup_builtins(bltins.load_builtins(config_dict))
-    env.setup_config(config_dict)
-    handlers.setup_path(core_dict[service.O_RULES_DIR])
+    core.init_rules_environment(config)
 
     loader = handlers.Loader(
-        core_dict[service.O_RULES_DIR],
-        core_dict[service.O_RULES_HEAD],
+        core_attrs[service.O_RULES_DIR],
+        core_attrs[service.O_RULES_HEAD],
         (
             chain.HANDLER.ON_EVENT,
             chain.HANDLER.ON_NOTIFY,
@@ -34,13 +30,13 @@ def main():
 
     app = application.Application(
         thread_class  = splitter.SplitterThread,
-        workers       = app_dict[service.O_WORKERS],
-        die_after     = app_dict[service.O_DIE_AFTER],
-        quit_wait     = app_dict[service.O_QUIT_WAIT],
-        interval      = app_dict[service.O_RECHECK],
-        nodes_list    = core_dict[service.O_ZOO_NODES],
+        workers       = app_attrs[service.O_WORKERS],
+        die_after     = app_attrs[service.O_DIE_AFTER],
+        quit_wait     = app_attrs[service.O_QUIT_WAIT],
+        interval      = app_attrs[service.O_RECHECK],
+        nodes_list    = core_attrs[service.O_ZOO_NODES],
         loader        = loader,
-        queue_timeout = app_dict[service.O_QUEUE_TIMEOUT],
+        queue_timeout = app_attrs[service.O_QUEUE_TIMEOUT],
     )
     app.run()
 

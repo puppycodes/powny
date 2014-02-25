@@ -1,17 +1,12 @@
 from raava import rules
+from raava import comparators
 
 
 ##### Private classes #####
 class _Cmp:
-    eq = rules.EqComparator # XXX: eq: key=value
-    ne = rules.NeComparator
-    ge = rules.GeComparator
-    gt = rules.GtComparator
-    le = rules.LeComparator
-    lt = rules.LtComparator
-    in_list = rules.InListComparator
-    not_in_list = rules.NotInListComparator
-    regexp = rules.RegexpComparator
+    pass
+for (name, comparator) in comparators.COMPARATORS_MAP.items():
+    setattr(_Cmp, name, comparator)
 
 
 ##### Public constants #####

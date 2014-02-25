@@ -24,10 +24,11 @@ S_COLLECTOR = "collector"
 S_API       = "api"
 S_CHERRY    = "cherry"
 
-O_ZOO_NODES  = "zoo-nodes"
-O_RULES_DIR  = "rules-dir"
-O_RULES_HEAD = "rules-head"
-O_FETCHER    = "fetcher"
+O_ZOO_NODES    = "zoo-nodes"
+O_RULES_DIR    = "rules-dir"
+O_RULES_HEAD   = "rules-head"
+O_IMPORT_ALIAS = "import-alias"
+O_FETCHER      = "fetcher"
 
 O_VERSION = "version"
 
@@ -56,10 +57,11 @@ _DAEMON_MAP = {
 
 CONFIG_MAP = {
     S_CORE: {
-        O_ZOO_NODES:  (("localhost",),  validators.common.valid_string_list),
-        O_RULES_DIR:  (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.valid_accessible_path(arg + "/."))),
-        O_RULES_HEAD: ("HEAD",          str),
-        O_FETCHER:    (None,            validators.common.valid_empty), # TODO: valid_python_name
+        O_ZOO_NODES:    (("localhost",),  validators.common.valid_string_list),
+        O_RULES_DIR:    (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.valid_accessible_path(arg + "/."))),
+        O_RULES_HEAD:   ("HEAD",          str),
+        O_IMPORT_ALIAS: (None,            validators.common.valid_empty), # TODO: valid_python_name
+        O_FETCHER:      (None,            validators.common.valid_empty), # TODO: valid_python_name
     },
 
     S_LOGGING: {
