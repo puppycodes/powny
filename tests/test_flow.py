@@ -13,9 +13,9 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
     def setUp(self):
         env = dict(os.environ)
         env.update({ "LC_ALL": "C", "PYTHONPATH": "." })
-        subprocess.check_output(("python3", "scripts/gns-reinit.py", "--do-it-now"), env=env)
+        subprocess.check_output(("python3", "scripts/gns-reinit.py", "--do-it-now", "--quiet"), env=env)
         self._services = [
-            subprocess.Popen(cmd, env=env)
+            subprocess.Popen(cmd + ("--quiet",), env=env)
             for cmd in (
                 ("python3", "scripts/gns-api.py"),
                 ("pypy3",   "scripts/gns-splitter.py"),
