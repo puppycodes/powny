@@ -40,22 +40,39 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
         }
         self.assertEqual(_send_recv_event(event), event)
 
+    def test_flow_previous_state(self):
+        events = [
+            {
+                "host":   "test_state",
+                "custom": count,
+            } for count in range(6)
+        ]
+        for (current, previous) in zip(events, [None] + events):
+            self.assertEqual(_send_recv_event(current), [current, previous])
+
 
 ##### Private methods #####
-def _send_recv_event(event):
-    request = urllib.request.Request(
+def _make_event_request(event):
+    return urllib.request.Request(
         "http://localhost:7887/api/rest/v1/jobs",
         data=json.dumps(event).encode(),
         headers={ "Content-Type": "application/json" },
     )
+
+def _send_recv_event(event):
+    stub = _make_event_request({ "_stub": None })
+    request = _make_event_request(event)
     opener = urllib.request.build_opener()
     server = _ShotServer("localhost", 7888)
     server.start()
-    time.sleep(1)
+    time.sleep(4)
     try:
+        opener.open(stub)
+        time.sleep(1)
         opener.open(request)
     finally:
         server.stop()
+    time.sleep(1)
     return json.loads(server.get_result().decode())
 
 
@@ -73,10 +90,14 @@ class _ShotServer(threading.Thread):
         self._server.socket.close()
 
     def get_result(self):
+        assert hasattr(self._server, "result"), "No result readed"
         return self._server.result # pylint: disable=E1101
 
 class _ShotHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         self.server.result = self.rfile.read(int(self.headers["Content-Length"]))
         self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"ok")
 

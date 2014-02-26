@@ -1,4 +1,3 @@
-import pickle
 import logging
 
 from raava import zoo
@@ -12,7 +11,7 @@ LOGGER_NAME = "user-storage"
 
 
 ##### Private constants #####
-_USER_PATH = "/user_storage"
+_STORAGE_PATH = zoo.join(zoo.USER_PATH, __name__)
 
 
 ##### Private objects #####
@@ -20,7 +19,15 @@ _logger = logging.getLogger(LOGGER_NAME)
 
 
 ##### Private classes #####
-class _NoDefault:
+class _NoValue:
+    pass
+
+
+##### Exceptions #####
+class NoValueError(Exception):
+    pass
+
+class VersionError(Exception):
     pass
 
 
@@ -33,60 +40,56 @@ def _client_context():
 
 
 ###
-def _set_value(path, value, version=-1):
-    data = pickle.dumps(value)
-    path = zoo.join(_USER_PATH, path)
+def _replace_value(path, value=_NoValue, default=_NoValue, version=None, fatal_write=True):
+    """
+        _replace_value() - implementation of CAS, stores the new value if it is superior to the
+        existing version. Standard kazoo set() require strict comparison and incremented
+        version of the data themselves.
+    """
+
     with _client_context() as client:
-        try:
-            client.create(path, data, makepath=True)
-        except zoo.NodeExistsError:
+        path = zoo.join(_STORAGE_PATH, path)
+        with client.Lock(zoo.join(path, zoo.LOCK)):
             try:
-                client.set(path, data, version)
-                _logger.debug("Can't rewrite %s with version %d", path, version)
-                result = True
-            except zoo.BadVersionError:
-                result = False
-    return result
+                (old_value, old_version) = client.pget(path)
+            except EOFError as err:
+                if default is _NoValue:
+                    raise NoValueError from err
+                (old_value, old_version) = (default, None)
 
-def _get_value(path, default=_NoDefault):
-    path = zoo.join(_USER_PATH, path)
-    with _client_context() as client:
-        try:
-            result = client.pget(path)
-        except (zoo.NoNodeError, EOFError):
-            if default is not _NoDefault:
-                result = default
-            else:
-                _logger.exception("Non-existent node: %s", path)
-                raise
-    return result
+            write_ok = None
+            if value is not _NoValue:
+                if version is not None and old_version is not None and version <= old_version:
+                    write_ok = False
+                    msg = ("Can't rewrite %s with version %d (old version: %d)", path, version, old_version)
+                    if not fatal_write:
+                        _logger.debug(*msg)
+                    else:
+                        raise VersionError(msg[0] % (msg[1:]))
+                else:
+                    client.pset(path, (value, version))
+                    write_ok = True
+    return (old_value, old_version, write_ok)
 
+def _set_value(path, value, version=None):
+    try:
+        _replace_value(path, value, None, version)
+        return True
+    except VersionError:
+        _logger.exception()
+        return False
 
-##### Private classes ####
-class _Lock:
-    def __init__(self, path):
-        self._path = path
-        self._client = None
-        self._lock = None
-
-    def __enter__(self):
-        self._client = zoo.connect(_client_opts())
-        self._lock = self._client.Lock(zoo.join(_USER_PATH, self._path, zoo.LOCK))
-        self._lock.acquire()
-
-    def __exit__(self, type, value, traceback): # pylint: disable=W0622
-        self._lock.release()
-        self._lock = None
-        self._client.stop()
-        self._client = None
-
+def _get_value(path, default=_NoValue):
+    return _replace_value(path, _NoValue, default)[:2]
 
 
 ##### Private classes #####
 class _Storage:
+    replace = _replace_value
     set = _set_value
     get = _get_value
-    lock = _Lock
+    NoValueError = NoValueError
+    VersionError = VersionError
 
 
 ##### Public constants #####

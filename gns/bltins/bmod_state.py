@@ -26,12 +26,17 @@ def _add_previous(*fields):
         def wrap(event_root, **kwargs):
             check_id = typetools.object_hash([ event_root.get(field) for field in fields ])
             check_path = zoo.join("_state", check_id)
-            with builtins.storage.lock(check_path): # pylint: disable=E1101
-                kwargs["previous"] = builtins.storage.get(check_path, None) # pylint: disable=E1101
-                version = event_root.get_extra()[rules.EXTRA.COUNTER]
-                if not builtins.storage.set(check_path, event_root, version): # pylint: disable=E1101
-                    _logger.debug("Can't save event value (by fields %s) with version %d because the storage contains a newer version",
-                        { key: event_root[key] for key in fields }, version)
+            version = event_root.get_extra()[rules.EXTRA.COUNTER]
+            (kwargs["previous"], old_version, write_ok) = builtins.storage.replace( # pylint: disable=E1101
+                path=check_path,
+                value=event_root,
+                default=None,
+                version=version,
+                fatal_write=False,
+            )
+            if not write_ok:
+                _logger.exception("Can't save event value (by fields %s) with version %d because the storage contains a newer version (%d)",
+                    { key: event_root[key] for key in fields }, version, old_version)
             return method(event_root, **kwargs)
         return wrap
     return make_method
