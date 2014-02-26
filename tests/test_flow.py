@@ -60,7 +60,9 @@ def _make_event_request(event):
     )
 
 def _send_recv_event(event):
+    # To save events had not numbered sequentially. Check that everything works to increase counter.
     stub = _make_event_request({ "_stub": None })
+
     request = _make_event_request(event)
     opener = urllib.request.build_opener()
     server = _ShotServer("localhost", 7888)
