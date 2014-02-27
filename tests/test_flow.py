@@ -6,10 +6,20 @@ import urllib.request
 import json
 import unittest
 import time
+import logging
+
+
+##### Private objects #####
+_logger = logging.getLogger(__name__)
 
 
 ##### Public classes #####
 class TestFlow(unittest.TestCase): # pylint: disable=R0904
+    _echo_attrs = {
+        "echo_host": "localhost",
+        "echo_port": 7888,
+    }
+
     def setUp(self):
         env = dict(os.environ)
         env.update({ "LC_ALL": "C", "PYTHONPATH": "." })
@@ -38,15 +48,18 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
             "service": "foo",
             "custom":  123,
         }
-        self.assertEqual(_send_recv_event(event), event)
+        event.update(self._echo_attrs)
+        self.assertEqual(_send_recv_event(event), [event])
 
     def test_flow_previous_state(self):
-        events = [
-            {
+        events = []
+        for count in range(6):
+            event = {
                 "host":   "test_state",
                 "custom": count,
-            } for count in range(6)
-        ]
+            }
+            event.update(self._echo_attrs)
+            events.append(event)
         for (current, previous) in zip(events, [None] + events):
             self.assertEqual(_send_recv_event(current), [current, previous])
 
@@ -60,40 +73,31 @@ def _make_event_request(event):
     )
 
 def _send_recv_event(event):
-    # To save events had not numbered sequentially. Check that everything works to increase counter.
-    stub = _make_event_request({ "_stub": None })
-
-    request = _make_event_request(event)
     opener = urllib.request.build_opener()
-    server = _ShotServer("localhost", 7888)
+    server = _ShotServer(event["echo_host"], event["echo_port"])
     server.start()
-    time.sleep(4)
-    try:
-        opener.open(stub)
-        time.sleep(1)
-        opener.open(request)
-    finally:
-        server.stop()
+    time.sleep(1)
+    # To save events had not numbered sequentially. Check that everything works to increase counter.
+    opener.open(_make_event_request({ "_stub": None }))
+    time.sleep(1)
+    opener.open(_make_event_request(event))
     time.sleep(1)
     return json.loads(server.get_result().decode())
 
 
 ##### Private classes #####
-class _ShotServer(threading.Thread):
+class _ShotServer(http.server.HTTPServer, threading.Thread):
     def __init__(self, host_name, port):
+        http.server.HTTPServer.__init__(self, (host_name, port), _ShotHandler)
         threading.Thread.__init__(self)
-        self._server = http.server.HTTPServer((host_name, port), _ShotHandler)
 
     def run(self):
-        self._server.serve_forever()
-
-    def stop(self):
-        self._server.shutdown()
-        self._server.socket.close()
+        self.handle_request()
+        self.server_close()
 
     def get_result(self):
-        assert hasattr(self._server, "result"), "No result readed"
-        return self._server.result # pylint: disable=E1101
+        assert hasattr(self, "result"), "No result readed"
+        return self.result # pylint: disable=E1101
 
 class _ShotHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
@@ -102,4 +106,7 @@ class _ShotHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write(b"ok")
+
+    def log_message(self, format, *args): # pylint: disable=W0622
+        _logger.debug("%s - - [%s] %s", self.address_string(), self.log_date_time_string, format % (args))
 
