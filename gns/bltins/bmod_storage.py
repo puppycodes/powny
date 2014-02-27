@@ -76,7 +76,7 @@ def _set_value(path, value, version=None):
         _replace_value(path, value, None, version)
         return True
     except VersionError:
-        _logger.exception()
+        _logger.exception("Can't set %s value with version %s", path, version)
         return False
 
 def _get_value(path, default=_NoValue):
