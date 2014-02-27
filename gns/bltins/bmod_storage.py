@@ -61,11 +61,11 @@ def _replace_value(path, value=_NoValue, default=_NoValue, version=None, fatal_w
             if value is not _NoValue:
                 if version is not None and old_version is not None and version <= old_version:
                     write_ok = False
-                    msg = ("Can't rewrite %s with version %d (old version: %d)", path, version, old_version)
+                    msg = "Can't rewrite %s with version %d (old version: %d)" % (path, version, old_version)
                     if not fatal_write:
-                        _logger.debug(*msg)
+                        _logger.debug(msg)
                     else:
-                        raise VersionError(msg[0] % (msg[1:]))
+                        raise VersionError(msg)
                 else:
                     client.pset(path, (value, version))
                     write_ok = True
