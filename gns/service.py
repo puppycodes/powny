@@ -10,6 +10,7 @@ from ulib import typetools
 from ulib import validators
 import ulib.validators.common # pylint: disable=W0611
 import ulib.validators.network
+import ulib.validators.python
 import ulib.validators.fs
 
 from . import const
@@ -57,6 +58,9 @@ def _valid_number_min_0(arg):
 def _valid_number_min_1(arg):
     return validators.common.valid_number(arg, 1)
 
+def _valid_maybe_empty_object(arg):
+    return validators.common.valid_maybe_empty(arg, validators.python.valid_object_name)
+
 _DAEMON_MAP = {
     O_WORKERS:   (10,   _valid_number_min_1),
     O_DIE_AFTER: (100,  _valid_number_min_1),
@@ -69,8 +73,8 @@ CONFIG_MAP = {
         O_ZOO_NODES:    (("localhost",),  validators.common.valid_string_list),
         O_RULES_DIR:    (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.valid_accessible_path(arg + "/."))),
         O_RULES_HEAD:   ("HEAD",          str),
-        O_IMPORT_ALIAS: (None,            validators.common.valid_empty), # TODO: valid_python_name
-        O_FETCHER:      (None,            validators.common.valid_empty), # TODO: valid_python_name
+        O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
+        O_FETCHER:      (None,            _valid_maybe_empty_object),
     },
 
     S_LOGGING: {
