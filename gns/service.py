@@ -97,7 +97,7 @@ CONFIG_MAP = {
 ##### Public methods #####
 def init(**kwargs_dict):
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=const.CONFIG_DIR, metavar="<dir>")
+    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=kwargs_dict.pop("config_dir_path", const.CONFIG_DIR), metavar="<dir>")
     (options, remaining_list) = parser.parse_known_args()
 
     options.config_dir_path = os.path.normpath(validators.fs.valid_accessible_path(options.config_dir_path + "/."))
