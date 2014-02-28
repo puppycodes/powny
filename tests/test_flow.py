@@ -20,7 +20,8 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
         "echo_port": 7888,
     }
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         env = dict(os.environ)
         env.update({ "LC_ALL": "C", "PYTHONPATH": "." })
         conf_opt = ("-c", "etc/gns-test.d")
@@ -36,7 +37,8 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
         ]
         time.sleep(3)
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         for service in self._services:
             service.kill()
 
@@ -77,10 +79,10 @@ def _send_recv_event(event):
     opener = urllib.request.build_opener()
     server = _ShotServer(event["echo_host"], event["echo_port"])
     server.start()
-    time.sleep(1)
+    time.sleep(0.1)
     # To save events had not numbered sequentially. Check that everything works to increase counter.
     opener.open(_make_event_request({ "_stub": None }))
-    time.sleep(1)
+    time.sleep(0.1)
     opener.open(_make_event_request(event))
     time.sleep(1)
     return json.loads(server.get_result().decode())
