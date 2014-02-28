@@ -44,7 +44,7 @@ DEFAULT_BODY_TEMPLATE = """
 
 
 ##### Private objects #####
-_logger = logging.getLogger(common.LOGGER_NAME)
+_logger = logging.getLogger(__name__)
 
 
 ##### Private methods #####

@@ -36,7 +36,7 @@ class JobsResource(chrpc.server.WebObject):
 
     @_raise_http
     @cherrypy.tools.json_out()
-    def GET(self, job_id = None):
+    def GET(self, job_id = None): # pylint: disable=C0103
         job_id = validators.common.valid_maybe_empty(job_id, validators.extra.valid_uuid)
         with zoo.Connect(self._nodes_list) as client:
             if job_id is None:
@@ -46,7 +46,7 @@ class JobsResource(chrpc.server.WebObject):
 
     @cherrypy.tools.json_in()
     @cherrypy.tools.json_out()
-    def POST(self):
+    def POST(self): # pylint: disable=C0103
         event_root = rules.EventRoot(cherrypy.request.json)
         with zoo.Connect(self._nodes_list) as client:
             job_id = events.add(client, event_root, chain.MAIN)
@@ -54,7 +54,7 @@ class JobsResource(chrpc.server.WebObject):
 
     @_raise_http
     @cherrypy.tools.json_out()
-    def DELETE(self, job_id):
+    def DELETE(self, job_id): # pylint: disable=C0103
         job_id = validators.extra.valid_uuid(job_id)
         with zoo.Connect(self._nodes_list) as client:
             events.cancel(client, job_id)

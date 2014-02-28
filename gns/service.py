@@ -10,6 +10,7 @@ from ulib import typetools
 from ulib import validators
 import ulib.validators.common # pylint: disable=W0611
 import ulib.validators.network
+import ulib.validators.python
 import ulib.validators.fs
 
 from . import const
@@ -48,11 +49,23 @@ O_PORT              = "port"
 
 
 ###
+def _valid_float_min_0(arg):
+    return validators.common.valid_number(arg, 0, value_type=float)
+
+def _valid_number_min_0(arg):
+    return validators.common.valid_number(arg, 0)
+
+def _valid_number_min_1(arg):
+    return validators.common.valid_number(arg, 1)
+
+def _valid_maybe_empty_object(arg):
+    return validators.common.valid_maybe_empty(arg, validators.python.valid_object_name)
+
 _DAEMON_MAP = {
-    O_WORKERS:   (10,   lambda arg: validators.common.valid_number(arg, 1)),
-    O_DIE_AFTER: (100,  lambda arg: validators.common.valid_number(arg, 1)),
-    O_QUIT_WAIT: (10,   lambda arg: validators.common.valid_number(arg, 0)),
-    O_RECHECK:   (0.01, lambda arg: validators.common.valid_number(arg, 0, value_type=float)),
+    O_WORKERS:   (10,   _valid_number_min_1),
+    O_DIE_AFTER: (100,  _valid_number_min_1),
+    O_QUIT_WAIT: (10,   _valid_number_min_0),
+    O_RECHECK:   (0.01, _valid_float_min_0),
 }
 
 CONFIG_MAP = {
@@ -60,8 +73,8 @@ CONFIG_MAP = {
         O_ZOO_NODES:    (("localhost",),  validators.common.valid_string_list),
         O_RULES_DIR:    (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.valid_accessible_path(arg + "/."))),
         O_RULES_HEAD:   ("HEAD",          str),
-        O_IMPORT_ALIAS: (None,            validators.common.valid_empty), # TODO: valid_python_name
-        O_FETCHER:      (None,            validators.common.valid_empty), # TODO: valid_python_name
+        O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
+        O_FETCHER:      (None,            _valid_maybe_empty_object),
     },
 
     S_LOGGING: {
@@ -69,18 +82,18 @@ CONFIG_MAP = {
     },
 
     S_SPLITTER: typetools.merge_dicts({
-            O_QUEUE_TIMEOUT: (1, lambda arg: validators.common.valid_number(arg, 0, value_type=float)),
+            O_QUEUE_TIMEOUT: (1, _valid_float_min_0),
         }, dict(_DAEMON_MAP)),
 
     S_WORKER: typetools.merge_dicts({
-            O_QUEUE_TIMEOUT: (1, lambda arg: validators.common.valid_number(arg, 0, value_type=float)),
+            O_QUEUE_TIMEOUT: (1, _valid_float_min_0),
         }, dict(_DAEMON_MAP)),
 
     S_COLLECTOR: typetools.merge_dicts({
-            O_POLL_INTERVAL:     (10, lambda arg: validators.common.valid_number(arg, 1)),
-            O_ACQUIRE_DELAY:     (5,  lambda arg: validators.common.valid_number(arg, 1)),
-            O_RECYCLED_PRIORITY: (0,  lambda arg: validators.common.valid_number(arg, 0)),
-            O_GARBAGE_LIFETIME:  (0,  lambda arg: validators.common.valid_number(arg, 0)),
+            O_POLL_INTERVAL:     (10, _valid_number_min_1),
+            O_ACQUIRE_DELAY:     (5,  _valid_number_min_1),
+            O_RECYCLED_PRIORITY: (0,  _valid_number_min_0),
+            O_GARBAGE_LIFETIME:  (0,  _valid_number_min_0),
         }, dict(_DAEMON_MAP)),
 
     S_API: {},
