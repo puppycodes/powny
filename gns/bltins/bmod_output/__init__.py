@@ -10,8 +10,6 @@ from . import ya_sms
 
 
 ##### Public constants #####
-LOGGER_NAME = "output"
-
 S_OUTPUT = "output"
 O_NOOP = "noop"
 
