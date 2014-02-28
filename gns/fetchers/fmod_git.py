@@ -11,10 +11,6 @@ from .. import service
 
 
 ##### Public constants #####
-LOGGER_NAME = "git"
-
-
-###
 S_GIT = "git"
 
 O_REPO_URL  = "repo-url"
@@ -24,7 +20,7 @@ O_PREFIX    = "prefix"
 
 
 ##### Private objects #####
-_logger = logging.getLogger(LOGGER_NAME)
+_logger = logging.getLogger(__name__)
 
 
 ##### Private methods #####
