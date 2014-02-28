@@ -22,6 +22,7 @@
     /control/jobs/<job_uuid>/tasks/<task_uuid>/finished    # The task completion time.
     /control/jobs/<job_uuid>/tasks/<task_uuid>/status      # The task status (new/ready/finished).
     /control/jobs/<job_uuid>/tasks/<task_uuid>/stack       # Stack of the task.
+    /control/jobs/<job_uuid>/tasks/<task_uuid>/exc         # If the handler is crashed, contains an exception as string.
 
     /ready    # LockingQueue(); Queue for worker with the ready to run tasks.
 
@@ -75,6 +76,7 @@ CONTROL_TASK_RECYCLED  = "recycled"
 CONTROL_TASK_FINISHED  = "finished"
 CONTROL_TASK_STATUS    = "status"
 CONTROL_TASK_STACK     = "stack"
+CONTROL_TASK_EXC       = "exc"
 CONTROL_CANCEL         = "cancel"
 CONTROL_LOCK_PATH      = join(CONTROL_PATH, LOCK)
 

@@ -49,23 +49,25 @@ class SplitterThread(application.Thread):
         handlers_set = rules.get_handlers(input_dict[zoo.INPUT_EVENT], handlers_dict)
         _logger.info("Split job %s to %d tasks (head: %s)", job_id, len(handlers_set), head)
 
-        trans = self._client.transaction()
-        trans.pcreate(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_VERSION), head)
-        trans.pcreate(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_SPLITTED), time.time())
-        trans.create(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS))
+        job_path = zoo.join(zoo.CONTROL_JOBS_PATH, job_id)
 
-        tasks_dict = {}
+        trans = self._client.transaction()
+        trans.pcreate(zoo.join(job_path, zoo.CONTROL_VERSION), head)
+        trans.pcreate(zoo.join(job_path, zoo.CONTROL_SPLITTED), time.time())
+        trans.create(zoo.join(job_path, zoo.CONTROL_TASKS))
+
         for handler in handlers_set:
             task_id = str(uuid.uuid4())
-            trans.create(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id))
+            trans.create(zoo.join(job_path, zoo.CONTROL_TASKS, task_id))
             for (node, value) in (
                     (zoo.CONTROL_TASK_CREATED,  None),
                     (zoo.CONTROL_TASK_RECYCLED, None),
                     (zoo.CONTROL_TASK_FINISHED, None),
                     (zoo.CONTROL_TASK_STATUS,   zoo.TASK_STATUS.NEW),
                     (zoo.CONTROL_TASK_STACK,    None),
+                    (zoo.CONTROL_TASK_EXC,      None),
                 ):
-                trans.pcreate(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, node), value)
+                trans.pcreate(zoo.join(job_path, zoo.CONTROL_TASKS, task_id, node), value)
 
             trans.lq_put(zoo.READY_PATH, pickle.dumps({
                     zoo.READY_JOB_ID:  job_id,
@@ -73,15 +75,16 @@ class SplitterThread(application.Thread):
                     zoo.READY_HANDLER: self._make_handler_pickle(handler, input_dict[zoo.INPUT_EVENT]),
                     zoo.READY_STATE:   None,
                 }))
-            tasks_dict[task_id] = handler
+            _logger.info("... splitting %s --> %s; handler: %s.%s", job_id, task_id, handler.__module__, handler.__name__)
 
         zoo.check_transaction("split_input", trans.commit())
-        for (task_id, handler) in tasks_dict.items():
-            _logger.info("... splitted %s --> %s; handler: %s.%s", job_id, task_id, handler.__module__, handler.__name__)
+        _logger.info("Split of %s successfully completed", job_id)
 
     def _make_handler_pickle(self, handler, event_root):
         event_root = event_root.copy()
         def new_handler():
             return handler(event_root)
+        # XXX: Unpickling can fail if the service that makes unpacking knows nothing about handlers (has no PATH for rules).
+        # For example, the collector. Services that need a stack or handler explicitly unpickle it.
         return pickle.dumps(new_handler)
 
