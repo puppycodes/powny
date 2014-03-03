@@ -77,12 +77,12 @@ if __name__ == "__main__":
 
         install_requires=(
             "kazoo >= 1.3.1",
-            "ulib >= 0.23",
+            "ulib >= 0.24",
             "pyyaml >= 3.10",
             "cherrypy >= 3.2.4",
             "mako >= 0.9.1",
             "decorator >= 3.4.0",
-            "dateutil >= 2.2",
+            "python-dateutil >= 2.2",
 
             "six == 1.4.1",
             # FIXME: Added strict dependence six == 1.4.1, because newer versions contain a bug
