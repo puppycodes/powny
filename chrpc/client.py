@@ -1,6 +1,7 @@
 import socket
 import urllib.request
 import urllib.error
+import functools
 import json
 import pprint
 import logging
@@ -35,7 +36,6 @@ class Proxy:
         self._url = url
         self._opener = ( opener or urllib.request.build_opener() )
         self._timeout = timeout
-        self._inspect_cache = {}
 
     def __getattr__(self, name):
         return _Object(self, name)
@@ -57,15 +57,11 @@ class Proxy:
             _logger.debug("... ->\n%s", pprint.pformat(result))
         return result
 
+    @functools.lru_cache(maxsize=1024)
     def _inspect_args(self, path):
-        if path in self._inspect_cache:
-            _logger.debug("Introspection data for method \"%s\" has been found in the cache", path)
-            return self._inspect_cache[path]
-
         request = urllib.request.Request("%s/%s?action=%s" % (self._url, path, const.ACTION.INSPECT))
         _logger.debug("Getting information about the method \"%s\"...", path)
         args = self._api_request(request)[const.ARGS_ALL]
-        self._inspect_cache[path] = args
 
         _logger.debug("Received introspection:")
         if _logger.isEnabledFor(logging.DEBUG):
