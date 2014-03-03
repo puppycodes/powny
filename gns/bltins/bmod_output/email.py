@@ -109,7 +109,7 @@ def _send_raw(task, to, subject, body, cc = ()):
         except Exception:
             _logger.exception("Failed to send email to: %s; cc: %s", to, cc)
         finally:
-            server.close()
+            server.quit()
     else:
         _logger.info("Email sent to: %s; cc: %s (noop)", to, cc)
         ok = True
