@@ -19,7 +19,7 @@ _TEMPLATE_METHOD = (__package__, "templates/method.html")
 
 
 ##### Private objects #####
-_logger = logging.getLogger(const.LOGGER_NAME)
+_logger = logging.getLogger(__name__)
 
 
 ##### Exceptions #####

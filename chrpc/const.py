@@ -11,7 +11,3 @@ class ACTION:
     INFO    = "info"
     INSPECT = "inspect"
 
-
-###
-LOGGER_NAME = "chrpc"
-

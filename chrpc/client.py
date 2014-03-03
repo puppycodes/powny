@@ -1,9 +1,16 @@
 import socket
 import urllib.request
 import urllib.error
+import functools
 import json
+import pprint
+import logging
 
 from . import const
+
+
+##### Private objects #####
+_logger = logging.getLogger(__name__)
 
 
 ##### Exceptions #####
@@ -29,7 +36,6 @@ class Proxy:
         self._url = url
         self._opener = ( opener or urllib.request.build_opener() )
         self._timeout = timeout
-        self._inspect_cache = {}
 
     def __getattr__(self, name):
         return _Object(self, name)
@@ -38,19 +44,28 @@ class Proxy:
         inspected_args = self._inspect_args(path)
         body_attrs = dict(zip(inspected_args, args))
         body_attrs.update(kwargs)
+
         request = urllib.request.Request(
             "%s/%s" % (self._url, path),
             json.dumps(body_attrs).encode(),
             { "Content-Type": "application/json" },
         )
-        return self._api_request(request)
+        _logger.debug("RPC call to %s/%s(%s, %s)", self._url, path, args, kwargs)
+        result = self._api_request(request)
 
+        if _logger.isEnabledFor(logging.DEBUG):
+            _logger.debug("... ->\n%s", pprint.pformat(result))
+        return result
+
+    @functools.lru_cache(maxsize=1024)
     def _inspect_args(self, path):
-        if path in self._inspect_cache:
-            return self._inspect_cache[path]
         request = urllib.request.Request("%s/%s?action=%s" % (self._url, path, const.ACTION.INSPECT))
+        _logger.debug("Getting information about the method \"%s\"...", path)
         args = self._api_request(request)[const.ARGS_ALL]
-        self._inspect_cache[path] = args
+
+        _logger.debug("Received introspection:")
+        if _logger.isEnabledFor(logging.DEBUG):
+            _logger.debug(pprint.pformat(args))
         return args
 
     def _api_request(self, request):
@@ -61,6 +76,7 @@ class Proxy:
             raise ApiError(*result[const.API_EXCEPTION])
         result = json.loads(response.read().decode())
         return result[const.API_RETVAL]
+
 
 ##### Private classes #####
 class _Object:
