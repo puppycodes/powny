@@ -95,7 +95,6 @@ def _send_raw(task, to, subject, body, cc = ()):
 
     _logger.debug("Sending email to: %s; cc: %s; via SMTP %s@%s", to, cc, user, server_host)
 
-    task.checkpoint()
     ok = False
     if not env.get_config(common.S_OUTPUT, common.O_NOOP):
         smtp_class = ( smtplib.SMTP_SSL if env.get_config(common.S_OUTPUT, S_EMAIL, O_SSL) else smtplib.SMTP )

@@ -61,7 +61,6 @@ def _send_raw(task, to, body):
     opener = urllib.request.build_opener()
     _logger.debug("Sending to Golem SMS API: %s", to)
 
-    task.checkpoint()
     ok = False
     if not env.get_config(common.S_OUTPUT, common.O_NOOP):
         try:
