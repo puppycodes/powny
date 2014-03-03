@@ -62,10 +62,12 @@ def _send_raw(task, to, body):
     _logger.debug("Sending to Golem SMS API: %s", to)
 
     task.checkpoint()
+    ok = False
     if not env.get_config(common.S_OUTPUT, common.O_NOOP):
         try:
             result = opener.open(request).read().decode().strip()
             _logger.info("SMS sent to Golem to %s, response: %s", to, result)
+            ok = True
         except urllib.error.HTTPError as err:
             result = err.read().decode().strip()
             _logger.exception("Failed to send SMS to %s, response: %s", to, result)
@@ -73,10 +75,12 @@ def _send_raw(task, to, body):
             _logger.exception("Failed to send SMS to %s", to)
     else:
         _logger.info("SMS sent to Golem (noop) to %s", to)
+        ok = True
     task.checkpoint()
+    return ok
 
 def _send_event(task, to, event, body = DEFAULT_BODY_TEMPLATE):
-    _send_raw(task, to, env.format_event(body, event))
+    return _send_raw(task, to, env.format_event(body, event))
 
 
 ##### Private classes #####

@@ -96,6 +96,7 @@ def _send_raw(task, to, subject, body, cc = ()):
     _logger.debug("Sending email to: %s; cc: %s; via SMTP %s@%s", to, cc, user, server_host)
 
     task.checkpoint()
+    ok = False
     if not env.get_config(common.S_OUTPUT, common.O_NOOP):
         smtp_class = ( smtplib.SMTP_SSL if env.get_config(common.S_OUTPUT, S_EMAIL, O_SSL) else smtplib.SMTP )
         try:
@@ -104,16 +105,19 @@ def _send_raw(task, to, subject, body, cc = ()):
                 server.login(user, env.get_config(common.S_OUTPUT, S_EMAIL, O_PASSWD))
             server.sendmail(send_from, to + cc, message.as_string())
             _logger.info("Email sent to: %s; cc: %s", to, cc)
+            ok = True
         except Exception:
             _logger.exception("Failed to send email to: %s; cc: %s", to, cc)
         finally:
             server.close()
     else:
         _logger.info("Email sent to: %s; cc: %s (noop)", to, cc)
+        ok = True
     task.checkpoint()
+    return ok
 
 def _send_event(task, to, event, subject = DEFAULT_SUBJECT_TEMPLATE, body = DEFAULT_BODY_TEMPLATE, cc = ()):
-    _send_raw(task, to, env.format_event(subject, event), env.format_event(body, event), cc)
+    return _send_raw(task, to, env.format_event(subject, event), env.format_event(body, event), cc)
 
 
 ##### Private classes #####
