@@ -83,6 +83,7 @@ if __name__ == "__main__":
             "mako >= 0.9.1",
             "decorator >= 3.4.0",
             "python-dateutil >= 2.2",
+            "cffi >= 0.8.1",
 
             "six == 1.4.1",
             # FIXME: Added strict dependence six == 1.4.1, because newer versions contain a bug
