@@ -1,4 +1,6 @@
 import sys
+import socket
+import platform
 import logging
 
 try:
@@ -12,6 +14,8 @@ class LogRecord(logging.LogRecord):
     def __init__(self, *args, **kwargs):
         logging.LogRecord.__init__(self, *args, **kwargs)
         self.tid = _gettid()
+        self.fqdn = socket.getfqdn()
+        self.node = platform.uname()[1] # Nodename from uname
 
 
 ##### Private methods #####
