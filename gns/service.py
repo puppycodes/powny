@@ -128,7 +128,7 @@ def init(**kwargs_dict):
 
 ##### Private methods #####
 def _init_logging(config_dict):
-    logging.setLogRecordFactory(elog.records.LogRecord)
+    logging.setLogRecordFactory(elog.records.LogRecord) # This factory can keep the TID
     logging.config.dictConfig(config_dict[S_LOGGING])
 
     def log_warning(message, category, filename, lineno, file=None, line=None) : # pylint: disable=W0622
