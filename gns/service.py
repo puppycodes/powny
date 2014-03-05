@@ -4,7 +4,6 @@ import yaml
 import argparse
 import logging
 import logging.config
-import warnings
 
 from ulib import typetools
 from ulib import validators
@@ -12,6 +11,8 @@ import ulib.validators.common # pylint: disable=W0611
 import ulib.validators.network
 import ulib.validators.python
 import ulib.validators.fs
+
+import elog.records
 
 from . import const
 
@@ -126,12 +127,9 @@ def init(**kwargs_dict):
 
 ##### Private methods #####
 def _init_logging(config_dict):
+    logging.setLogRecordFactory(elog.records.LogRecord) # This factory can keep the TID
+    logging.captureWarnings(True)
     logging.config.dictConfig(config_dict[S_LOGGING])
-
-    def log_warning(message, category, filename, lineno, file=None, line=None) : # pylint: disable=W0622
-        logging.getLogger().warning("Python warning: %s", warnings.formatwarning(message, category, filename, lineno, line))
-
-    warnings.showwarning = log_warning
 
 
 ###
