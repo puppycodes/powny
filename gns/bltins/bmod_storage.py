@@ -35,7 +35,7 @@ def _replace_value(path, value=_NoValue, default=_NoValue, version=None, fatal_w
         version of the data themselves.
     """
 
-    with zclient.Connect(env.get_config()) as client:
+    with zclient.ClientContext(env.get_config()) as client:
         path = zoo.join(_STORAGE_PATH, path)
         with client.Lock(zoo.join(path, zoo.LOCK)):
             try:

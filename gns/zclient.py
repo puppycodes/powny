@@ -15,7 +15,7 @@ def connect(config):
     return client
 
 @contextlib.contextmanager
-def Connect(config): # pylint: disable=C0103
+def ClientContext(config): # pylint: disable=C0103
     client = connect(config)
     yield client
     client.stop()
