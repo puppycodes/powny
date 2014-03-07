@@ -64,7 +64,7 @@ class SubmitApi(chrpc.server.WebObject):
                     }[request.get("status", "critical")],
                     "description": request["info"],
                 })
-        with zclient.ClientContext(self._config) as client:
+        with zclient.get_context(self._config) as client:
             job_id = events.add(client, event_root, chain.MAIN)
         return "ok job_id:" + job_id
 
