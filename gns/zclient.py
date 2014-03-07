@@ -1,3 +1,5 @@
+import contextlib
+
 from raava import zoo
 from . import service
 
@@ -12,18 +14,9 @@ def connect(config):
     )
     return client
 
-
-##### Public classes #####
-class Connect:
-    def __init__(self, config):
-        self._config = config
-        self._client = None
-
-    def __enter__(self):
-        self._client = connect(self._config)
-        return self._client
-
-    def __exit__(self, type, value, traceback): # pylint: disable=W0622
-        self._client.stop()
-        self._client = None
+@contextlib.contextmanager
+def Connect(config): # pylint: disable=C0103
+    client = connect(config)
+    yield client
+    client.stop()
 
