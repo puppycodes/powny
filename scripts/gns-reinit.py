@@ -2,7 +2,9 @@
 
 
 from raava import zoo
+
 from gns import service
+from gns import zclient
 
 
 ##### Public methods #####
@@ -14,7 +16,7 @@ def main():
     if not options.do_flag: # pylint: disable=E1101
         raise RuntimeError("Specify option --do-it-now to process")
 
-    with zoo.Connect(config[service.S_CORE][service.O_ZOO_NODES]) as client:
+    with zclient.Connect(config) as client:
         zoo.drop(client, True)
         zoo.init(client, True)
 
