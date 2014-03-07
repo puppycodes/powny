@@ -3,26 +3,27 @@
 
 from raava import application
 from raava import collector
+
+from gns import zclient
 from gns import service
 
 
 ##### Public methods #####
 def main():
-    config_dict = service.init(description="GNS Collector")[0]
-    core_dict = config_dict[service.S_CORE]
-    app_dict = config_dict[service.S_COLLECTOR]
+    config = service.init(description="GNS Collector")[0]
+    app_opts = config[service.S_COLLECTOR]
 
     app = application.Application(
         thread_class      = collector.CollectorThread,
-        workers           = app_dict[service.O_WORKERS],
-        die_after         = app_dict[service.O_DIE_AFTER],
-        quit_wait         = app_dict[service.O_QUIT_WAIT],
-        interval          = app_dict[service.O_RECHECK],
-        nodes_list        = core_dict[service.O_ZOO_NODES],
-        poll_interval     = app_dict[service.O_POLL_INTERVAL],
-        delay             = app_dict[service.O_ACQUIRE_DELAY],
-        recycled_priority = app_dict[service.O_RECYCLED_PRIORITY],
-        garbage_lifetime  = app_dict[service.O_GARBAGE_LIFETIME],
+        zoo_connect       = lambda: zclient.connect(config),
+        workers           = app_opts[service.O_WORKERS],
+        die_after         = app_opts[service.O_DIE_AFTER],
+        quit_wait         = app_opts[service.O_QUIT_WAIT],
+        interval          = app_opts[service.O_RECHECK],
+        poll_interval     = app_opts[service.O_POLL_INTERVAL],
+        delay             = app_opts[service.O_ACQUIRE_DELAY],
+        recycled_priority = app_opts[service.O_RECYCLED_PRIORITY],
+        garbage_lifetime  = app_opts[service.O_GARBAGE_LIFETIME],
     )
     app.run()
 

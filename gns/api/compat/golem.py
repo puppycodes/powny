@@ -7,11 +7,10 @@ import chrpc.server
 from ulib import validators
 import ulib.validators.common # pylint: disable=W0611
 
-from raava import zoo
 from raava import events
 from raava import rules
 
-from ... import service
+from ... import zclient
 from ... import chain
 
 
@@ -32,7 +31,7 @@ class SubmitApi(chrpc.server.WebObject):
     }
 
     def __init__(self, config):
-        self._zoo_nodes = config[service.S_CORE][service.O_ZOO_NODES]
+        self._config = config
 
 
     ##### Override #####
@@ -65,7 +64,7 @@ class SubmitApi(chrpc.server.WebObject):
                     }[request.get("status", "critical")],
                     "description": request["info"],
                 })
-        with zoo.Connect(self._zoo_nodes) as client:
+        with zclient.get_context(self._config) as client:
             job_id = events.add(client, event_root, chain.MAIN)
         return "ok job_id:" + job_id
 

@@ -26,11 +26,13 @@ S_COLLECTOR = "collector"
 S_API       = "api"
 S_CHERRY    = "cherry"
 
-O_ZOO_NODES    = "zoo-nodes"
-O_RULES_DIR    = "rules-dir"
-O_RULES_HEAD   = "rules-head"
-O_IMPORT_ALIAS = "import-alias"
-O_FETCHER      = "fetcher"
+O_ZOO_NODES     = "zoo-nodes"
+O_ZOO_TIMEOUT   = "zoo-timeout"
+O_ZOO_RANDOMIZE = "zoo-randomize"
+O_RULES_DIR     = "rules-dir"
+O_RULES_HEAD    = "rules-head"
+O_IMPORT_ALIAS  = "import-alias"
+O_FETCHER       = "fetcher"
 
 O_VERSION = "version"
 
@@ -71,7 +73,10 @@ _DAEMON_MAP = {
 
 CONFIG_MAP = {
     S_CORE: {
-        O_ZOO_NODES:    (("localhost",),  validators.common.valid_string_list),
+        O_ZOO_NODES:     (("localhost",),  validators.common.valid_string_list),
+        O_ZOO_TIMEOUT:   (10,              lambda arg: validators.common.valid_number(arg, 0.1, value_type=float)),
+        O_ZOO_RANDOMIZE: (True,            validators.common.valid_bool),
+
         O_RULES_DIR:    (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.valid_accessible_path(arg + "/."))),
         O_RULES_HEAD:   ("HEAD",          str),
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
