@@ -37,7 +37,6 @@ def main():
         quit_wait     = app_opts[service.O_QUIT_WAIT],
         interval      = app_opts[service.O_RECHECK],
         loader        = loader,
-        queue_timeout = app_opts[service.O_QUEUE_TIMEOUT],
     )
     app.run()
 
