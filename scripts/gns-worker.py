@@ -24,7 +24,6 @@ def main():
         die_after     = app_opts[service.O_DIE_AFTER],
         quit_wait     = app_opts[service.O_QUIT_WAIT],
         interval      = app_opts[service.O_RECHECK],
-        queue_timeout = app_opts[service.O_QUEUE_TIMEOUT],
         rules_path    = core_opts[service.O_RULES_DIR],
     )
     app.run()

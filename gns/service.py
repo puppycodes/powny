@@ -41,7 +41,6 @@ O_DIE_AFTER = "die-after"
 O_QUIT_WAIT = "quit-wait"
 O_RECHECK   = "recheck"
 
-O_QUEUE_TIMEOUT     = "queue-timeout"
 O_ACQUIRE_DELAY     = "acquire-delay"
 O_POLL_INTERVAL     = "poll-interval"
 O_RECYCLED_PRIORITY = "recycled-priority"
@@ -87,13 +86,9 @@ CONFIG_MAP = {
         O_VERSION: (1, validators.common.valid_number),
     },
 
-    S_SPLITTER: typetools.merge_dicts({
-            O_QUEUE_TIMEOUT: (1, _valid_float_min_0),
-        }, dict(_DAEMON_MAP)),
+    S_SPLITTER: dict(_DAEMON_MAP),
 
-    S_WORKER: typetools.merge_dicts({
-            O_QUEUE_TIMEOUT: (1, _valid_float_min_0),
-        }, dict(_DAEMON_MAP)),
+    S_WORKER: dict(_DAEMON_MAP),
 
     S_COLLECTOR: typetools.merge_dicts({
             O_POLL_INTERVAL:     (10, _valid_number_min_1),
