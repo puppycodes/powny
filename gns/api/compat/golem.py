@@ -54,7 +54,7 @@ class SubmitApi(chrpc.server.WebObject):
                 "service": request["eventtype"],
             })
         if validators.common.valid_bool(request.get("json", False)):
-            event_root.update(json.loads(request["info"]))
+            event_root.update(json.loads(request.get("info", "{}")))
         else:
             event_root.update({
                     "status": {
@@ -62,7 +62,7 @@ class SubmitApi(chrpc.server.WebObject):
                         "warning":  "WARN",
                         "critical": "CRIT",
                     }[request.get("status", "critical")],
-                    "description": request["info"],
+                    "description": request.get("info", ""),
                 })
         with zclient.get_context(self._config) as client:
             job_id = events.add(client, event_root, chain.MAIN)
