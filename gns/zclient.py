@@ -19,6 +19,5 @@ def connect(config):
 def get_context(config): # pylint: disable=C0103
     client = connect(config)
     yield client
-    client.stop()
-    client.close()
+    zoo.close(client)
 
