@@ -18,6 +18,8 @@ def connect(config):
 @contextlib.contextmanager
 def get_context(config): # pylint: disable=C0103
     client = connect(config)
-    yield client
-    zoo.close(client)
+    try:
+        yield client
+    finally:
+        zoo.close(client)
 
