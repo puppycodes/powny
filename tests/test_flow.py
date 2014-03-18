@@ -40,6 +40,8 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
     def tearDownClass(cls):
         for service in cls._services:
             service.kill()
+        for service in cls._services:
+            service.wait()
 
 
     ### Tests ###
