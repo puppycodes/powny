@@ -46,6 +46,13 @@ if __name__ == "__main__":
 
         packages=(
             "gns",
+            "gns/api",
+            "gns/api/compat",
+            "gns/api/rest",
+            "gns/api/rpc",
+            "gns/bltins",
+            "gns/bmod_output",
+            "gns/fetchers",
             "chrpc",
             "raava",
         ),
