@@ -23,7 +23,6 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
     @classmethod
     def setUpClass(cls):
         env = dict(os.environ)
-        env.update({ "LC_ALL": "C", "PYTHONPATH": "." })
         conf_opt = ("-c", "etc/gns-test.d")
         subprocess.check_output(("python3", "scripts/gns-reinit.py", "--do-it-now") + conf_opt, env=env)
         cls._services = [
