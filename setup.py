@@ -51,7 +51,7 @@ if __name__ == "__main__":
             "gns/api/rest",
             "gns/api/rpc",
             "gns/bltins",
-            "gns/bmod_output",
+            "gns/bltins/bmod_output",
             "gns/fetchers",
             "chrpc",
             "raava",
@@ -90,7 +90,6 @@ if __name__ == "__main__":
             "mako >= 0.9.1",
             "decorator >= 3.4.0",
             "python-dateutil >= 2.2",
-            "cffi >= 0.7", # Default in PyPy 2.1.0-beta1
 
             "six == 1.4.1",
             # FIXME: Added strict dependence six == 1.4.1, because newer versions contain a bug
