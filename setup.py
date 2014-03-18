@@ -48,6 +48,7 @@ if __name__ == "__main__":
             "gns",
             "chrpc",
             "raava",
+            "elog",
         ),
 
         scripts=[ "scripts/gns-{}.py".format(name) for name in (
