@@ -86,12 +86,6 @@ if __name__ == "__main__":
             "pyyaml >= 3.10",
             "decorator >= 3.4.0",
             "python-dateutil >= 2.2",
-
-            "six == 1.4.1",
-            # FIXME: Added strict dependence six == 1.4.1, because newer versions contain a bug
-            # associated with the missing module winreg on Linux platform.
-            #    https://bitbucket.org/gutworth/six/issue/51/importerror-no-module-named-_winreg-with
-            #    https://bitbucket.org/gutworth/six/issue/56/problem-running-on-google-app-engine
         ),
 
         cmdclass = { "build": GnsBuild },
