@@ -1,4 +1,3 @@
-import os
 import subprocess
 import threading
 import http.server
@@ -22,9 +21,8 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
 
     @classmethod
     def setUpClass(cls):
-        env = dict(os.environ)
         conf_opt = ("-c", "etc/gns-test.d")
-        subprocess.check_output(("python3", "scripts/gns-reinit.py", "--do-it-now") + conf_opt, env=env)
+        subprocess.check_output(("python3", "scripts/gns-reinit.py", "--do-it-now") + conf_opt)
         cls._services = [
             subprocess.Popen(cmd + conf_opt, env=env)
             for cmd in (
@@ -34,6 +32,8 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
                 ("pypy3",   "scripts/gns-collector.py"),
             )
         ]
+        # wait for services to start and initialize
+        # FIXME: service initialization for tests should be done on docker side
         time.sleep(3)
 
     @classmethod
