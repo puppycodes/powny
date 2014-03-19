@@ -1,4 +1,4 @@
-FROM nikicat/ubuntu-pypy3:12.04
+FROM nikicat/ubuntu-pypy3
 
 ADD etc/gns.d /etc/gns.d
 ADD . /root/gns
