@@ -1,6 +1,9 @@
 all:
 	true
 
+test:
+	PYTHONPATH=. LC_ALL=C ./run-tests.py
+
 pylint:
 	pypy3 `which pylint` --rcfile=pylint.ini \
 		tests \
