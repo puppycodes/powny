@@ -4,9 +4,6 @@ all:
 pylint:
 	pypy3 `which pylint` --rcfile=pylint.ini \
 		tests \
-		raava \
-		elog \
-		chrpc \
 		gns \
 		scripts/*.py \
 		*.py \
