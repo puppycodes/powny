@@ -53,9 +53,6 @@ if __name__ == "__main__":
             "gns/bltins",
             "gns/bltins/bmod_output",
             "gns/fetchers",
-            "chrpc",
-            "raava",
-            "elog",
         ),
 
         scripts=[ "scripts/gns-{}.py".format(name) for name in (
@@ -67,10 +64,6 @@ if __name__ == "__main__":
                 "fetch-rules",
                 "api",
             )],
-
-        package_data={
-            "chrpc": ["templates/*.html"],
-        },
 
         classifiers=( # http://pypi.python.org/pypi?:action=list_classifiers
             "Development Status :: 2 - Pre-Alpha",
@@ -84,19 +77,15 @@ if __name__ == "__main__":
         ),
 
         install_requires=(
+            "raava >= 0.1",
+            "elog >= 0.1",
+            "chrpc >= 0.1",
+
             "kazoo >= 1.3.1",
             "ulib >= 0.24",
             "pyyaml >= 3.10",
-            "cherrypy >= 3.2.4",
-            "mako >= 0.9.1",
             "decorator >= 3.4.0",
             "python-dateutil >= 2.2",
-
-            "six == 1.4.1",
-            # FIXME: Added strict dependence six == 1.4.1, because newer versions contain a bug
-            # associated with the missing module winreg on Linux platform.
-            #    https://bitbucket.org/gutworth/six/issue/51/importerror-no-module-named-_winreg-with
-            #    https://bitbucket.org/gutworth/six/issue/56/problem-running-on-google-app-engine
         ),
 
         cmdclass = { "build": GnsBuild },
