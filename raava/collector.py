@@ -23,6 +23,8 @@ class CollectorThread(application.Thread):
         self._delay = delay
         self._recycled_priority = recycled_priority
         self._garbage_lifetime = garbage_lifetime
+
+        self._ready_queue = self._client.TransactionalQueue(zoo.READY_PATH)
         self._stop_flag = False
 
 
@@ -56,66 +58,62 @@ class CollectorThread(application.Thread):
             except zoo.NoNodeError:
                 # XXX: Tasks without jobs
                 lock = self._client.SingleLock(task_lock_path)
-                if not lock.try_acquire():
-                    continue
-                self._remove_running(lock, task_id)
+                with lock.try_context() as lock:
+                    if lock is not None:
+                        self._remove_running(lock, task_id)
                 continue
 
-            if max(created or 0, recycled or 0) + self._delay > time.time():
-                continue # XXX: Do not grab the new or the respawned tasks
-
-            lock = self._client.SingleLock(task_lock_path)
-            if not lock.try_acquire():
-                continue
-            if self._client.pget(zoo.join(control_task_path, zoo.CONTROL_TASK_FINISHED)) is None:
-                self._push_back_running(lock, task_id)
-            else:
-                self._remove_running(lock, task_id)
+            if max(created or 0, recycled or 0) + self._delay <= time.time():
+                # Grab only old tasks
+                lock = self._client.SingleLock(task_lock_path)
+                with lock.try_context() as lock:
+                    if lock is not None:
+                        if self._client.pget(zoo.join(control_task_path, zoo.CONTROL_TASK_FINISHED)) is None:
+                            self._push_back_running(lock, task_id)
+                        else:
+                            self._remove_running(lock, task_id)
 
     def _poll_control(self):
         for job_id in self._client.get_children(zoo.CONTROL_JOBS_PATH):
             if self._stop_flag:
                 break
 
-            try:
-                finished = events.get_finished(self._client, job_id)
-                if finished is None or finished + self._garbage_lifetime > time.time():
-                    continue
-            except events.NoJobError:
-                continue
-
             lock = self._client.SingleLock(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.LOCK))
-            if not lock.try_acquire():
-                continue
-            self._remove_control(lock, job_id)
+            with lock.try_context() as lock:
+                if lock is not None:
+                    try:
+                        finished = events.get_finished_unsafe(self._client, job_id) # XXX: We have own lock ^^^
+                        if finished is not None and finished + self._garbage_lifetime <= time.time():
+                            self._remove_control(lock, job_id)
+                            _logger.info("Control removed: %s", job_id)
+                    except (events.NoJobError, zoo.NoNodeError, zoo.TransactionError):
+                        _logger.exception("Cannot remove control")
 
     ###
 
     def _push_back_running(self, lock, task_id):
         running_dict = self._client.pget(zoo.join(zoo.RUNNING_PATH, task_id))
         job_id = running_dict[zoo.RUNNING_JOB_ID]
-        trans = self._client.transaction()
-        trans.delete(zoo.join(zoo.RUNNING_PATH, task_id, zoo.LOCK))
-        trans.delete(zoo.join(zoo.RUNNING_PATH, task_id))
-        trans.lq_put(zoo.READY_PATH, pickle.dumps({
-                zoo.READY_JOB_ID:  job_id,
-                zoo.READY_TASK_ID: task_id,
-                zoo.READY_HANDLER: running_dict[zoo.RUNNING_HANDLER],
-                zoo.READY_STATE:   running_dict[zoo.RUNNING_STATE],
-            }))
-        trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_RECYCLED), time.time())
         try:
-            zoo.check_transaction("push_back_running", trans.commit())
+            with self._client.transaction("push_back_running") as trans:
+                lock.release(trans)
+                trans.delete(zoo.join(zoo.RUNNING_PATH, task_id))
+                self._ready_queue.put(trans, pickle.dumps({
+                        zoo.READY_JOB_ID:  job_id,
+                        zoo.READY_TASK_ID: task_id,
+                        zoo.READY_HANDLER: running_dict[zoo.RUNNING_HANDLER],
+                        zoo.READY_STATE:   running_dict[zoo.RUNNING_STATE],
+                    }))
+                trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, zoo.CONTROL_TASK_RECYCLED), time.time())
             _logger.info("Pushed back: %s", task_id)
         except zoo.TransactionError:
             _logger.exception("Cannot push-back running")
 
     def _remove_running(self, lock, task_id):
-        trans = self._client.transaction()
-        trans.delete(zoo.join(zoo.RUNNING_PATH, task_id, zoo.LOCK))
-        trans.delete(zoo.join(zoo.RUNNING_PATH, task_id))
         try:
-            zoo.check_transaction("remove_running", trans.commit())
+            with self._client.transaction("remove_running") as trans:
+                lock.release(trans)
+                trans.delete(zoo.join(zoo.RUNNING_PATH, task_id))
             _logger.info("Running removed: %s", task_id)
         except zoo.TransactionError:
             _logger.exception("Cannot remove running")
@@ -123,9 +121,8 @@ class CollectorThread(application.Thread):
     ###
 
     def _remove_control(self, lock, job_id):
-        try:
-            control_job_path = zoo.join(zoo.CONTROL_JOBS_PATH, job_id)
-            trans = self._client.transaction()
+        control_job_path = zoo.join(zoo.CONTROL_JOBS_PATH, job_id)
+        with self._client.transaction("remove_control") as trans:
             trans.delete(zoo.join(control_job_path, zoo.CONTROL_PARENTS))
             for task_id in self._client.get_children(zoo.join(control_job_path, zoo.CONTROL_TASKS)):
                 for node in (
@@ -143,16 +140,11 @@ class CollectorThread(application.Thread):
                     zoo.CONTROL_TASKS,
                     zoo.CONTROL_ADDED,
                     zoo.CONTROL_SPLITTED,
-                    zoo.LOCK,
                 ):
                 trans.delete(zoo.join(control_job_path, node))
-            with self._client.Lock(zoo.CONTROL_LOCK_PATH):
-                cancel_path = zoo.join(control_job_path, zoo.CONTROL_CANCEL)
-                if self._client.exists(cancel_path) is not None:
-                    trans.delete(cancel_path)
-                trans.delete(zoo.join(control_job_path))
-                zoo.check_transaction("remove_control", trans.commit())
-            _logger.info("Control removed: %s", job_id)
-        except (zoo.NoNodeError, zoo.TransactionError):
-            _logger.error("Cannot remove control", exc_info=True)
+            lock.release(trans)
+            cancel_path = zoo.join(control_job_path, zoo.CONTROL_CANCEL)
+            if self._client.exists(cancel_path) is not None:
+                trans.delete(cancel_path)
+            trans.delete(zoo.join(control_job_path))
 

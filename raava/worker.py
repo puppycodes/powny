@@ -39,7 +39,7 @@ class WorkerThread(application.Thread):
         application.Thread.__init__(self, name="Worker::{workers:03d}".format(workers=_workers), **kwargs_dict)
 
         self._rules_path = rules_path
-        self._ready_queue = self._client.AbortableLockingQueue(zoo.READY_PATH)
+        self._ready_queue = self._client.TransactionalQueue(zoo.READY_PATH)
         self._client_lock = threading.Lock()
         self._threads_dict = {}
         self._stop_flag = False
@@ -49,7 +49,6 @@ class WorkerThread(application.Thread):
 
     def stop(self):
         self._stop_flag = True
-        self._ready_queue.abort_get()
         for task_dict in self._threads_dict.values():
             task_dict[_TASK_THREAD].stop()
 
@@ -70,9 +69,9 @@ class WorkerThread(application.Thread):
             data = self._ready_queue.get()
             self._cleanup()
             if data is None:
+                time.sleep(0.1) # FIXME: Add interruptable wait()
                 continue
             self._run_task(pickle.loads(data))
-            self._ready_queue.consume()
 
     def _run_task(self, ready_dict):
         job_id = ready_dict[zoo.READY_JOB_ID]
@@ -89,20 +88,20 @@ class WorkerThread(application.Thread):
             _logger.exception("Missing the necessary control nodes for the ready job")
             return
 
-        trans = self._client.transaction()
-        trans.pcreate(zoo.join(zoo.RUNNING_PATH, task_id), {
-                zoo.RUNNING_JOB_ID:  job_id,
-                zoo.RUNNING_HANDLER: handler,
-                zoo.RUNNING_STATE:   state,
-            })
-        for (node, value) in (
-                (zoo.CONTROL_TASK_STATUS,   ( zoo.TASK_STATUS.NEW if state is None else zoo.TASK_STATUS.READY )),
-                (zoo.CONTROL_TASK_CREATED,  ( created or time.time() )),
-                (zoo.CONTROL_TASK_RECYCLED, time.time()),
-            ):
-            trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, node), value)
-        trans.create(lock_path, ephemeral=True) # XXX: Acquired SingleLock()
-        zoo.check_transaction("init_task", trans.commit())
+        with self._client.transaction("init_task") as trans:
+            trans.pcreate(zoo.join(zoo.RUNNING_PATH, task_id), {
+                    zoo.RUNNING_JOB_ID:  job_id,
+                    zoo.RUNNING_HANDLER: handler,
+                    zoo.RUNNING_STATE:   state,
+                })
+            for (node, value) in (
+                    (zoo.CONTROL_TASK_STATUS,   ( zoo.TASK_STATUS.NEW if state is None else zoo.TASK_STATUS.READY )),
+                    (zoo.CONTROL_TASK_CREATED,  ( created or time.time() )),
+                    (zoo.CONTROL_TASK_RECYCLED, time.time()),
+                ):
+                trans.pset(zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id, node), value)
+            trans.create(lock_path, ephemeral=True) # XXX: Acquired SingleLock()
+            self._ready_queue.consume(trans)
 
         task_thread = _TaskThread(parents_list, job_id, task_id, handler, state, self._controller, self._saver)
         self._threads_dict[task_id] = {
@@ -138,29 +137,27 @@ class WorkerThread(application.Thread):
     def _saver_unsafe(self, task, stack_list, exc, state):
         job_id = task.get_job_id()
         task_id = task.get_task_id()
-        trans = self._client.transaction()
-        trans.pset(zoo.join(zoo.RUNNING_PATH, task_id), {
-                zoo.RUNNING_JOB_ID:  job_id,
-                zoo.RUNNING_HANDLER: None,
-                zoo.RUNNING_STATE:   state,
-            })
-        control_task_path = zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id)
-        if state is None:
-            trans.pset(zoo.join(control_task_path, zoo.CONTROL_TASK_FINISHED), time.time())
-            status = zoo.TASK_STATUS.FINISHED
-        else:
-            status = zoo.TASK_STATUS.READY
-        trans.pset(zoo.join(control_task_path, zoo.CONTROL_TASK_STATUS), status)
-        trans.pset(zoo.join(control_task_path, zoo.CONTROL_TASK_STACK), (
-            stack_list and [
-                item
-                for item in stack_list
-                if item[0].startswith(self._rules_path)
-            ] ))
-        trans.pset(zoo.join(control_task_path, zoo.CONTROL_TASK_EXC), exc)
-
         try:
-            zoo.check_transaction("saver", trans.commit())
+            with self._client.transaction("saver") as trans:
+                trans.pset(zoo.join(zoo.RUNNING_PATH, task_id), {
+                        zoo.RUNNING_JOB_ID:  job_id,
+                        zoo.RUNNING_HANDLER: None,
+                        zoo.RUNNING_STATE:   state,
+                    })
+                control_task_path = zoo.join(zoo.CONTROL_JOBS_PATH, job_id, zoo.CONTROL_TASKS, task_id)
+                if state is None:
+                    trans.pset(zoo.join(control_task_path, zoo.CONTROL_TASK_FINISHED), time.time())
+                    status = zoo.TASK_STATUS.FINISHED
+                else:
+                    status = zoo.TASK_STATUS.READY
+                trans.pset(zoo.join(control_task_path, zoo.CONTROL_TASK_STATUS), status)
+                trans.pset(zoo.join(control_task_path, zoo.CONTROL_TASK_STACK), (
+                    stack_list and [
+                        item
+                        for item in stack_list
+                        if item[0].startswith(self._rules_path)
+                    ] ))
+                trans.pset(zoo.join(control_task_path, zoo.CONTROL_TASK_EXC), exc)
         except zoo.TransactionError:
             _logger.exception("saver error, current task has been dropped")
             raise

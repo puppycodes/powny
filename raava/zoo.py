@@ -3,11 +3,9 @@
 
     Nodes may be in an arbitrary chroot.
 
-    /input           # LockingQueue(); Queue in which to place the data from events.add().
+    /input           # TransactionalQueue(); Queue in which to place the data from events.add().
 
-    /control         # Lock(); Temporary tasks data, counters and the control interface.
-    /control/lock    # Global lock for the control interface. Used in events.get_info(),
-                     # get_finished() to obtain consistent data about jobs.
+    /control         # A temporary data of tasks, counters and the control interface.
 
     /control/jobs/<job_uuid>             # Job data.
     /control/jobs/<job_uuid>/lock        # SingleLock(); This lock is used by collector when searching finished tasks.
@@ -26,7 +24,7 @@
     /control/jobs/<job_uuid>/tasks/<task_uuid>/stack       # Stack of the task.
     /control/jobs/<job_uuid>/tasks/<task_uuid>/exc         # If the handler is crashed, contains an exception as string.
 
-    /ready    # LockingQueue(); Queue for worker with the ready to run tasks.
+    /ready    # TransactionalQueue(); Queue for worker with the ready to run tasks.
 
     /running
     /running/<task_uuid>         # Here are details of running tasks: a reference to the function, the pickled stack,
@@ -43,11 +41,13 @@
 import pickle
 import functools
 import threading
+import contextlib
 import logging
 
 import kazoo.client
 import kazoo.protocol.paths
 import kazoo.protocol.states
+import kazoo.retry
 from kazoo.exceptions import * # pylint: disable=W0401,W0614
 from kazoo.protocol.paths import join # pylint: disable=W0611
 
@@ -79,7 +79,6 @@ CONTROL_TASK_STATUS    = "status"
 CONTROL_TASK_STACK     = "stack"
 CONTROL_TASK_EXC       = "exc"
 CONTROL_CANCEL         = "cancel"
-CONTROL_LOCK_PATH      = join(CONTROL_PATH, LOCK)
 
 READY_JOB_ID   = INPUT_JOB_ID
 READY_TASK_ID  = "task_id"
@@ -117,7 +116,14 @@ def connect(zoo_nodes, timeout, randomize_hosts, chroot):
     _logger.info("Started zookeeper client on hosts: %s", hosts)
     return client
 
-def init(client, fatal = False):
+def close(client):
+    client.stop()
+    client.close()
+    _logger.info("Zookeeper client has been closed")
+
+
+###
+def init(client, fatal=False):
     for path in (INPUT_PATH, READY_PATH, RUNNING_PATH, CONTROL_JOBS_PATH, JOBS_COUNTER_PATH, USER_PATH):
         try:
             client.create(path, makepath=True)
@@ -128,16 +134,7 @@ def init(client, fatal = False):
             if fatal:
                 raise
 
-    # Some of our code does not use the API of AbortableLockingQueue(), and puts the data in the queue by using
-    # transactions. Because transactions can not do CAS (to prepare the tree nodes), we must be sure that
-    # the right tree was set up in advance.
-    client.LockingQueue(INPUT_PATH)._ensure_paths() # pylint: disable=W0212
-    client.LockingQueue(READY_PATH)._ensure_paths() # pylint: disable=W0212
-
-    # To Lock() to do it is not necessary. This line is added to show the location in node structure.
-    client.Lock(CONTROL_LOCK_PATH)._ensure_path() # pylint: disable=W0212
-
-def drop(client, fatal = False):
+def drop(client, fatal=False):
     for path in (INPUT_PATH, READY_PATH, RUNNING_PATH, CONTROL_PATH, CORE_PATH, USER_PATH):
         try:
             client.delete(path, recursive=True)
@@ -149,32 +146,13 @@ def drop(client, fatal = False):
                 raise
 
 
-###
-def check_transaction(name, results, pairs = None):
-    ok = True
-    for (index, result) in enumerate(results):
-        if isinstance(result, Exception):
-            ok = False
-            if pairs is not None:
-                _logger.error("Failed the part of transaction \"%s\": %s=%s; err=%s",
-                    name,
-                    pairs[index][0], # Node
-                    pairs[index][1], # Data
-                    result.__class__.__name__,
-                )
-    if not ok:
-        if pairs is None:
-            _logger.error("Failed transaction \"%s\": %s", name, results)
-        raise TransactionError("Failed transaction: %s" % (name))
-
-
 ##### Public classes #####
 class SingleLock:
     def __init__(self, client, path):
         self._client = client
         self._path = path
 
-    def try_acquire(self, fatal = False):
+    def try_acquire(self, fatal=False):
         try:
             self._client.create(self._path, ephemeral=True)
             return True
@@ -185,6 +163,15 @@ class SingleLock:
         except NodeExistsError:
             return False
 
+    @contextlib.contextmanager
+    def try_context(self, fatal=False):
+        retval = ( self if self.try_acquire(fatal) else None )
+        try:
+            yield retval
+        finally:
+            if retval is not None:
+                self.release()
+
     def acquire(self, fatal = True):
         while not self.try_acquire(fatal):
             wait = threading.Event()
@@ -193,9 +180,10 @@ class SingleLock:
             if self._client.exists(self._path, watch=watcher) is not None:
                 wait.wait()
 
-    def release(self):
+    def release(self, trans=None):
         try:
-            self._client.delete(self._path)
+            dest = ( trans or self._client ) # Prefer transaction
+            dest.delete(self._path)
         except NoNodeError:
             pass
 
@@ -219,70 +207,89 @@ class IncrementalCounter:
             self._client.pset(self._path, value + 1)
         return value
 
-class AbortableLockingQueue(kazoo.recipe.queue.LockingQueue):
-    def get(self, poll_every=0.1):
-        self._ensure_paths()
-        if not self.processing_element is None:
-            return self.processing_element[1]
-        else:
-            self._abort = False
-            return self._inner_get(poll_every)
+class TransactionalQueue:
+    # This class based on the recipe for the queue from here:
+    #   https://zookeeper.apache.org/doc/r3.1.2/recipes.html#sc_recipes_Queues
+    # XXX: This class does not save items order on failure (when consume() has not been called).
+    # This behaviour is acceptable for our purposes.
 
-    def abort_get(self):
-        self._abort = True # pylint: disable=W0201
+    def __init__(self, client, path):
+        # XXX: We do not inherit the class kazoo.recipe.queue.BaseQueue, because we have nothing from him to use.
+        self._client = client
+        self._path = path
+        self._children = []
+        self._last = None
 
-    def _inner_get(self, poll_every):
-        # XXX: Partial copypaste from kazoo-1.3.1-py3.2.egg/kazoo/recipe/queue.py:252
-        # In my implementation, get() does not accept "timeout" argument and waits until
-        # the object appears in the queue. Waiting can interrupt by abort_get().
-        # Frequent calls of LockingQueue.get(timeout) lead to memory leaks, if data in the
-        # queue rarely appear. This is due to the fact that more and more instances of
-        # check_for_updates() registered as watchers.
 
-        flag = self.client.handler.event_object()
-        lock = self.client.handler.lock_object()
-        canceled = False
-        value = []
+    ### Public ###
 
-        def check_for_updates(event):
-            if not event is None and event.type != kazoo.protocol.states.EventType.CHILD:
-                return
-            with lock:
-                if canceled or flag.isSet():
-                    return
-                values = self.client.retry(self.client.get_children,
-                    self._entries_path,
-                    check_for_updates)
-                taken = self.client.retry(self.client.get_children,
-                    self._lock_path,
-                    check_for_updates)
-                available = self._filter_locked(values, taken)
-                if len(available) > 0:
-                    ret = self._take(available[0])
-                    if not ret is None:
-                        # By this time, no one took the task
-                        value.append(ret)
-                        flag.set()
+    def put(self, trans, value, priority=100):
+        path = "{path}/entry-{priority:03d}-".format(
+            path=self._path,
+            priority=priority,
+        )
+        trans.create(path, value, sequence=True)
 
-        check_for_updates(None)
-        retval = None
-        while not self._abort:
-            flag.wait(poll_every)
-            if flag.isSet():
-                self._abort = True # pylint: disable=W0201
-        with lock:
-            canceled = True
-            if len(value) > 0:
-                # We successfully locked an entry
-                self.processing_element = value[0]
-                retval = value[0][1]
-        return retval
+    def get(self):
+        # FIXME: need children watcher
+        if self._last is not None:
+            self._children.pop(0)
+            self._last = None
+        return self._client.retry(self._inner_get)
+
+    def consume(self, trans):
+        assert self._last is not None, "Required get()"
+        trans.delete(join(self._path, self._last, LOCK))
+        trans.delete(join(self._path, self._last))
+
+
+    ### Private ###
+
+    def _inner_get(self):
+        assert self._last is None, "Required consume() before a new get()"
+        if len(self._children) == 0:
+            self._children = self._client.retry(self._client.get_children, self._path)
+            self._children = list(sorted(self._children))
+        if len(self._children) == 0:
+            return None
+
+        name = self._children[0]
+        path = join(self._path, name)
+        try:
+            self._client.create(join(path, LOCK), ephemeral=True)
+        except (NoNodeError, NodeExistsError):
+            self._children.pop(0) # FIXME: need a watcher
+            raise kazoo.retry.ForceRetryError
+        self._last = name
+
+        return self._client.get(path)[0]
+
+class TransactionRequest(kazoo.client.TransactionRequest):
+    def __init__(self, client, name):
+        kazoo.client.TransactionRequest.__init__(self, client)
+        self._name = name
+
+    def pset(self, path, value):
+        return self.set_data(path, pickle.dumps(value))
+
+    def pcreate(self, path, value):
+        return self.create(path, pickle.dumps(value))
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        results = self.commit()
+        ok = all([ # No exceptions!
+                not isinstance(result, Exception)
+                for result in results
+            ])
+        if not ok:
+            _logger.error("Failed transaction \"%s\": %s", self._name, results)
+            raise TransactionError("Failed transaction: {}".format(self._name))
 
 class Client(kazoo.client.KazooClient): # pylint: disable=R0904
     def __init__(self, *args, **kwargs):
         self.SingleLock = functools.partial(SingleLock, self)
         self.IncrementalCounter = functools.partial(IncrementalCounter, self)
-        self.AbortableLockingQueue = functools.partial(AbortableLockingQueue, self)
+        self.TransactionalQueue = functools.partial(TransactionalQueue, self)
         kazoo.client.KazooClient.__init__(self, *args, **kwargs)
 
     def pget(self, path):
@@ -294,21 +301,6 @@ class Client(kazoo.client.KazooClient): # pylint: disable=R0904
     def pcreate(self, path, value):
         return self.create(path, pickle.dumps(value))
 
-    def transaction(self):
-        return TransactionRequest(self)
-
-class TransactionRequest(kazoo.client.TransactionRequest):
-    def lq_put(self, queue_path, data, priority = 100):
-        if isinstance(queue_path, (list, tuple)):
-            queue_path = kazoo.protocol.paths.join(*queue_path)
-        self.create("{path}/entries/entry-{priority:03d}-".format(
-                path=queue_path,
-                priority=priority,
-            ), data, sequence=True)
-
-    def pset(self, path, value):
-        return self.set_data(path, pickle.dumps(value))
-
-    def pcreate(self, path, value):
-        return self.create(path, pickle.dumps(value))
+    def transaction(self, name): # pylint: disable=W0221
+        return TransactionRequest(self, name)
 
