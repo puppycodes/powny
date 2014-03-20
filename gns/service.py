@@ -81,7 +81,7 @@ CONFIG_MAP = {
         O_ZOO_RANDOMIZE: (True,            validators.common.valid_bool),
         O_ZOO_CHROOT:    ("/gns",          str),
 
-        O_RULES_DIR:    (const.RULES_DIR, lambda arg: os.path.normpath(validators.fs.valid_accessible_path(arg + "/."))),
+        O_RULES_DIR:    (const.RULES_DIR, str),
         O_RULES_HEAD:   ("HEAD",          str),
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
         O_FETCHER:      (None,            _valid_maybe_empty_object),
