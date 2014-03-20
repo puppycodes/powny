@@ -1,4 +1,3 @@
-import sys
 import os
 import yaml
 import argparse
@@ -6,6 +5,7 @@ import logging
 import logging.config
 
 from ulib import typetools
+from ulib import validatorlib
 from ulib import validators
 import ulib.validators.common # pylint: disable=W0611
 import ulib.validators.network
@@ -114,14 +114,27 @@ CONFIG_MAP = {
 }
 
 
+##### Exceptions #####
+class ConfigError(Exception):
+    pass
+
+
 ##### Public methods #####
 def init(**kwargs):
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=kwargs.pop("config_dir_path", const.CONFIG_DIR), metavar="<dir>")
+    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=None, metavar="<dir>")
     (options, argv) = parser.parse_known_args()
 
-    options.config_dir_path = os.path.normpath(validators.fs.valid_accessible_path(options.config_dir_path + "/."))
-    config = _load_config(options.config_dir_path)
+    config_dir_path = options.config_dir_path
+    if config_dir_path is not None:
+        # Validate --config-dir
+        config_dir_path = os.path.normpath(validators.fs.valid_accessible_path(config_dir_path + "/."))
+    else:
+        config_dir_path = kwargs.pop("config_dir_path", const.CONFIG_DIR)
+        if not os.access(config_dir_path, os.F_OK):
+            config_dir_path = None # Default config directory is not necessary
+
+    config = _load_config(config_dir_path)
     _init_logging(config)
     _init_meters(config)
 
@@ -146,16 +159,16 @@ def _init_meters(config):
 ###
 def _load_config(config_dir_path):
     config = make_default_config(CONFIG_MAP)
-    for name in sorted(os.listdir(config_dir_path)) :
-        if not name.endswith(".conf"):
-            continue
-        config_file_path = os.path.join(config_dir_path, name)
-        with open(config_file_path) as config_file:
-            try:
-                typetools.merge_dicts(config, yaml.load(config_file.read()))
-            except Exception:
-                print("Incorrect config: %s\n-----" % (config_file_path), file=sys.stderr)
-                raise
+    if config_dir_path is not None:
+        for name in sorted(os.listdir(config_dir_path)):
+            if not name.endswith(".conf"):
+                continue
+            config_file_path = os.path.join(config_dir_path, name)
+            with open(config_file_path) as config_file:
+                try:
+                    typetools.merge_dicts(config, yaml.load(config_file.read()))
+                except Exception as err:
+                    raise ConfigError("Incorrect YAML syntax in \"%s\":\n%s" % (config_file_path, err))
     validate_config(config, CONFIG_MAP)
     return config
 
@@ -167,16 +180,20 @@ def make_default_config(pattern):
         elif isinstance(pair, tuple):
             defaults[key] = pair[0]
         else:
-            raise RuntimeError("Invalid CONFIG_MAP")
+            raise RuntimeError("Programming error: invalid CONFIG_MAP")
     return defaults
 
 def validate_config(config, pattern, keys = ()):
     for (key, pair) in pattern.items():
+        keys_path = tuple(keys) + (key,)
+        option_name = ".".join(keys_path)
         if isinstance(pair, dict):
-            keys_path = list(keys) + [key]
             if not isinstance(config[key], dict):
-                raise RuntimeError("The section \"%s\" must be a dict" % (".".join(keys_path)))
+                raise ConfigError("The section \"%s\" must be a dict" % (option_name))
             validate_config(config[key], pattern[key], keys_path)
         else: # tuple
-            config[key] = pair[1](config[key])
+            try:
+                config[key] = pair[1](config[key])
+            except validatorlib.ValidatorError as err:
+                raise ConfigError("Invalid value for \"%s\": %s" % (option_name, err))
 
