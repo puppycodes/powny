@@ -14,11 +14,8 @@ _logger = logging.getLogger("gns.fetchers")
 ##### Public methods #####
 def main():
     (config, parser, argv) = service.init(description="GNS rules fetcher")
-    parser.add_argument("--do-it-now", dest="do_flag", action="store_true")
-    options = parser.parse_args(argv)
-
-    if not options.do_flag: # pylint: disable=E1101
-        raise RuntimeError("Specify option --do-it-now to process")
+    parser.add_argument("--do-it-now", action="store_true", required=True, help="Specify this option to process")
+    parser.parse_args(argv) # Handle --do-it-now and --help
 
     fetcher_name = config[service.S_CORE][service.O_FETCHER]
     if fetcher_name is None:
