@@ -111,63 +111,63 @@ CONFIG_MAP = {
 
 
 ##### Public methods #####
-def init(**kwargs_dict):
+def init(**kwargs):
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=kwargs_dict.pop("config_dir_path", const.CONFIG_DIR), metavar="<dir>")
-    (options, remaining_list) = parser.parse_known_args()
+    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=kwargs.pop("config_dir_path", const.CONFIG_DIR), metavar="<dir>")
+    (options, argv) = parser.parse_known_args()
 
     options.config_dir_path = os.path.normpath(validators.fs.valid_accessible_path(options.config_dir_path + "/."))
-    config_dict = _load_config(options.config_dir_path)
-    _init_logging(config_dict)
+    config = _load_config(options.config_dir_path)
+    _init_logging(config)
 
-    kwargs_dict.update({
-            "formatter_class" : argparse.RawDescriptionHelpFormatter,
-            "parents"         : [parser],
+    kwargs.update({
+            "formatter_class": argparse.RawDescriptionHelpFormatter,
+            "parents"        : [parser],
         })
-    return (config_dict, argparse.ArgumentParser(**kwargs_dict), remaining_list)
+    return (config, argparse.ArgumentParser(**kwargs), argv)
 
 
 ##### Private methods #####
-def _init_logging(config_dict):
+def _init_logging(config):
     logging.setLogRecordFactory(elog.records.LogRecord) # This factory can keep the TID
     logging.captureWarnings(True)
-    logging.config.dictConfig(config_dict[S_LOGGING])
+    logging.config.dictConfig(config[S_LOGGING])
 
 
 ###
 def _load_config(config_dir_path):
-    config_dict = make_default_config(CONFIG_MAP)
+    config = make_default_config(CONFIG_MAP)
     for name in sorted(os.listdir(config_dir_path)) :
         if not name.endswith(".conf"):
             continue
         config_file_path = os.path.join(config_dir_path, name)
         with open(config_file_path) as config_file:
             try:
-                typetools.merge_dicts(config_dict, yaml.load(config_file.read()))
+                typetools.merge_dicts(config, yaml.load(config_file.read()))
             except Exception:
                 print("Incorrect config: %s\n-----" % (config_file_path), file=sys.stderr)
                 raise
-    validate_config(config_dict, CONFIG_MAP)
-    return config_dict
+    validate_config(config, CONFIG_MAP)
+    return config
 
-def make_default_config(start_dict):
-    default_dict = {}
-    for (key, value) in start_dict.items():
-        if isinstance(value, dict):
-            default_dict[key] = make_default_config(value)
-        elif isinstance(value, tuple):
-            default_dict[key] = value[0]
+def make_default_config(pattern):
+    defaults = {}
+    for (key, pair) in pattern.items():
+        if isinstance(pair, dict):
+            defaults[key] = make_default_config(pair)
+        elif isinstance(pair, tuple):
+            defaults[key] = pair[0]
         else:
             raise RuntimeError("Invalid CONFIG_MAP")
-    return default_dict
+    return defaults
 
-def validate_config(config_dict, std_dict, keys_list = ()):
-    for (key, pair) in std_dict.items():
+def validate_config(config, pattern, keys = ()):
+    for (key, pair) in pattern.items():
         if isinstance(pair, dict):
-            current_list = list(keys_list) + [key]
-            if not isinstance(config_dict[key], dict):
-                raise RuntimeError("The section \"%s\" must be a dict" % (".".join(current_list)))
-            validate_config(config_dict[key], std_dict[key], current_list)
+            keys_path = list(keys) + [key]
+            if not isinstance(config[key], dict):
+                raise RuntimeError("The section \"%s\" must be a dict" % (".".join(keys_path)))
+            validate_config(config[key], pattern[key], keys_path)
         else: # tuple
-            config_dict[key] = pair[1](config_dict[key])
+            config[key] = pair[1](config[key])
 
