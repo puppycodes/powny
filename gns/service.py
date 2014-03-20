@@ -13,6 +13,7 @@ import ulib.validators.python
 import ulib.validators.fs
 
 import elog.records
+import meters
 
 from . import const
 
@@ -20,6 +21,7 @@ from . import const
 ##### Public constants #####
 S_CORE      = "core"
 S_LOGGING   = "logging"
+S_METERS    = "meters"
 S_SPLITTER  = "splitter"
 S_WORKER    = "worker"
 S_COLLECTOR = "collector"
@@ -88,6 +90,8 @@ CONFIG_MAP = {
         O_VERSION: (1, validators.common.valid_number),
     },
 
+    S_METERS: {},
+
     S_SPLITTER: dict(_DAEMON_MAP),
 
     S_WORKER: dict(_DAEMON_MAP),
@@ -119,6 +123,7 @@ def init(**kwargs):
     options.config_dir_path = os.path.normpath(validators.fs.valid_accessible_path(options.config_dir_path + "/."))
     config = _load_config(options.config_dir_path)
     _init_logging(config)
+    _init_meters(config)
 
     kwargs.update({
             "formatter_class": argparse.RawDescriptionHelpFormatter,
@@ -132,6 +137,10 @@ def _init_logging(config):
     logging.setLogRecordFactory(elog.records.LogRecord) # This factory can keep the TID
     logging.captureWarnings(True)
     logging.config.dictConfig(config[S_LOGGING])
+
+def _init_meters(config):
+    meters.configure(config[S_METERS])
+    meters.start()
 
 
 ###
