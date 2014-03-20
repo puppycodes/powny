@@ -1,3 +1,4 @@
+import sys
 import os
 import yaml
 import argparse
@@ -119,22 +120,31 @@ class ConfigError(Exception):
     pass
 
 
+##### Private objects #####
+_logger = logging.getLogger(__name__)
+
+
 ##### Public methods #####
 def init(**kwargs):
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=None, metavar="<dir>")
     (options, argv) = parser.parse_known_args()
 
-    config_dir_path = options.config_dir_path
-    if config_dir_path is not None:
-        # Validate --config-dir
-        config_dir_path = os.path.normpath(validators.fs.valid_accessible_path(config_dir_path + "/."))
-    else:
-        config_dir_path = kwargs.pop("config_dir_path", const.CONFIG_DIR)
-        if not os.access(config_dir_path, os.F_OK):
-            config_dir_path = None # Default config directory is not necessary
 
-    config = _load_config(config_dir_path)
+    try:
+        config_dir_path = options.config_dir_path
+        if config_dir_path is not None:
+            # Validate --config-dir
+            config_dir_path = os.path.normpath(validators.fs.valid_accessible_path(config_dir_path + "/."))
+        else:
+            config_dir_path = kwargs.pop("config_dir_path", const.CONFIG_DIR)
+            if not os.access(config_dir_path, os.F_OK):
+                config_dir_path = None # Default config directory is not a necessary
+        config = _load_config(config_dir_path)
+    except (ConfigError, validatorlib.ValidatorError) as err:
+        _logger.error("Incorrect configuration: %s", err) # Fallback logging
+        sys.exit(1)
+
     _init_logging(config)
     _init_meters(config)
 
