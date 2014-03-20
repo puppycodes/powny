@@ -10,7 +10,8 @@ from gns import service
 
 ##### Public methods #####
 def main():
-    config = service.init(description="GNS Collector")[0]
+    (config, parser, argv) = service.init(description="GNS Collector")
+    parser.parse_args(argv) # Process --help
     app_opts = config[service.S_COLLECTOR]
 
     app = application.Application(

@@ -15,7 +15,8 @@ import meters
 
 ##### Public methods #####
 def main():
-    config = service.init(description="GNS Splitter")[0]
+    (config, parser, argv) = service.init(description="GNS Splitter")
+    parser.parse_args(argv) # Process --help
     meters.add_meter("gns.events_counter", lambda: core.get_events_counter(config))
     meters.add_meter("gns.jobs_number",    lambda: core.get_jobs_number(config))
 
