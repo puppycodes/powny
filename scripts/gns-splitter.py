@@ -10,10 +10,15 @@ from gns import zclient
 from gns import core
 from gns import chain
 
+import meters
+
 
 ##### Public methods #####
 def main():
     config = service.init(description="GNS Splitter")[0]
+    meters.add_meter("gns.events_counter", lambda: core.get_events_counter(config))
+    meters.add_meter("gns.jobs_number",    lambda: core.get_jobs_number(config))
+
     core_opts = config[service.S_CORE]
     app_opts = config[service.S_SPLITTER]
 
