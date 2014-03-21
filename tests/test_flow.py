@@ -24,7 +24,7 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
         conf_opt = ("-c", "etc/gns-test.d")
         subprocess.check_output(("python3", "scripts/gns-reinit.py", "--do-it-now") + conf_opt)
         cls._services = [
-            subprocess.Popen(cmd + conf_opt, env=env)
+            subprocess.Popen(cmd + conf_opt)
             for cmd in (
                 ("python3", "scripts/gns-api.py"),
                 ("pypy3",   "scripts/gns-splitter.py"),
