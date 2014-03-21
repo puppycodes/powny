@@ -13,10 +13,10 @@ import gns.api.compat.golem
 
 
 ##### Public methods #####
-def application(environ, start_response):
+def make_wsgi_app():
     (root, server_opts) = _init(service.S_API)
     cherrypy.tree.mount(root, "/", server_opts)
-    return cherrypy.tree(environ, start_response)
+    return cherrypy.tree
 
 def run_local():
     (root, server_opts) = _init(service.S_CHERRY)
@@ -57,4 +57,7 @@ def _make_tree(config):
 ##### Main #####
 if __name__ == "__main__":
     run_local()
+else:
+    # Imported from uwsgi, provides common wsgi interface
+    application = make_wsgi_app() # pylint: disable=W0612
 
