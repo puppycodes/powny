@@ -1,4 +1,4 @@
-language: python
+language: c
 before_install:
   - sudo apt-add-repository 'deb http://nikicat.github.io/pypy3-repo ./'
   - sudo apt-get update
@@ -8,6 +8,6 @@ install:
 before_script:
   - sudo easy_install `cat test_requirements.txt`
 script:
-  - py.test test.py -v --cov gns --cov-report term-missing --pep8 gns
+  - py.test run-tests.py -v --cov gns --cov-report term-missing --pep8 gns
 after_success:
   - coveralls
