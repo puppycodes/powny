@@ -1,6 +1,7 @@
 language: c
 env:
   - "PYTHONPATH=/usr/lib/pypy3/site-packages"
+  - "PATH=/usr/lib/pypy3/bin:$PATH"
 before_install:
   - sudo apt-add-repository 'deb http://nikicat.github.io/pypy3-repo ./'
   - sudo apt-add-repository ppa:yandex-sysmon/zookeeper-3.4 -y
