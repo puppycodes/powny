@@ -1,0 +1,12 @@
+before_install:
+  - sudo apt-add-repository 'deb http://nikicat.github.io/pypy3-repo ./'
+  - sudo apt-get update
+  - sudo apt-get install pypy3 -y --force-yes
+install:
+  - easy_install .
+before_script:
+  - easy_install `cat test_requirements.txt`
+script:
+  - py.test test.py -v --cov gns --cov-report term-missing --pep8 gns
+after_success:
+  - coveralls
