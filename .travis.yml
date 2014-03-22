@@ -3,7 +3,7 @@ env:
   - "PYTHONPATH=/usr/lib/pypy3/site-packages"
 before_install:
   - sudo apt-add-repository 'deb http://nikicat.github.io/pypy3-repo ./'
-  - sudo apt-add-repository ppa:yandex-sysmon/zookeeper-3.4
+  - sudo apt-add-repository ppa:yandex-sysmon/zookeeper-3.4 -y
   - sudo apt-get update
   - sudo apt-get install zookeeperd pypy3 -y --force-yes
   - sudo ln -s pypy3 /usr/bin/python
