@@ -1,0 +1,21 @@
+language: c
+env:
+  - "PYTHONPATH=/usr/lib/pypy3/site-packages"
+before_install:
+  - sudo apt-add-repository 'deb http://nikicat.github.io/pypy3-repo ./'
+  - sudo apt-add-repository ppa:yandex-sysmon/zookeeper-3.4 -y
+  - sudo apt-get update
+  - sudo apt-get install zookeeperd pypy3 -y --force-yes
+  - sudo ln -fs pypy3 /usr/bin/python
+  - sudo mkdir /usr/lib/pypy3/site-packages
+  - curl https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py | sudo PYTHONPATH=/usr/lib/pypy3/site-packages pypy3
+  - sudo ln -fs /usr/lib/pypy3/bin/easy_install /usr/local/bin/easy_install
+  - sudo /usr/share/zookeeper/bin/zkServer.sh start
+install:
+  - sudo PYTHONPATH=/usr/lib/pypy3/site-packages easy_install .
+before_script:
+  - sudo PYTHONPATH=/usr/lib/pypy3/site-packages easy_install `cat test_requirements.txt`
+script:
+  - /usr/lib/pypy3/bin/py.test run-tests.py -v --cov gns --cov-report term-missing #--pep8 gns
+after_success:
+  - /usr/lib/pypy3/bin/coveralls

@@ -22,15 +22,15 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
     @classmethod
     def setUpClass(cls):
         conf_opt = ("-c", "etc/gns-test.d")
-        subprocess.check_output(("python3", "scripts/gns-reinit.py", "--do-it-now") + conf_opt)
+        subprocess.check_output(("scripts/gns-reinit.py", "--do-it-now") + conf_opt)
         cls._services = [
-            subprocess.Popen(cmd + conf_opt)
-            for cmd in (
-                ("python3", "scripts/gns-api.py"),
-                ("pypy3",   "scripts/gns-splitter.py"),
-                ("pypy3",   "scripts/gns-worker.py"),
-                ("pypy3",   "scripts/gns-collector.py"),
-            )
+            subprocess.Popen(("scripts/" + cmd,) + conf_opt)
+            for cmd in [
+                "gns-api.py",
+                "gns-splitter.py",
+                "gns-worker.py",
+                "gns-collector.py",
+            ]
         ]
         # wait for services to start and initialize
         # FIXME: service initialization for tests should be done on docker side
@@ -102,7 +102,8 @@ class _ShotServer(http.server.HTTPServer, threading.Thread):
     def stop(self):
         # self._inner_stop() must be called while serve_forever() is running in another thread, or it will deadlock.
         # See socketserver.BaseServer() for details.
-        killer = threading.Thread(target=self._inner_stop, daemon=True)
+        killer = threading.Thread(target=self._inner_stop)
+        killer.daemon = True
         killer.start()
         if threading.current_thread() != self:
             # If another thread - wait, otherwise - suicide in background, withoud deadlock.
