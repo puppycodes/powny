@@ -176,7 +176,7 @@ def _load_config(config_dir_path):
             config_file_path = os.path.join(config_dir_path, name)
             with open(config_file_path) as config_file:
                 try:
-                    typetools.merge_dicts(config, yaml.load(config_file.read()))
+                    typetools.merge_dicts(config, yaml.load(config_file))
                 except Exception as err:
                     raise ConfigError("Incorrect YAML syntax in \"%s\":\n%s" % (config_file_path, err))
     validate_config(config, CONFIG_MAP)
