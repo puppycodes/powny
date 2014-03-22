@@ -9,7 +9,7 @@ before_install:
   - sudo ln -fs pypy3 /usr/bin/python
   - sudo mkdir /usr/lib/pypy3/site-packages
   - curl https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py | sudo PYTHONPATH=/usr/lib/pypy3/site-packages pypy3
-  - sudo ln -fs /usr/lib/pypy3/easy_install /usr/local/bin/easy_install
+  - sudo ln -fs /usr/lib/pypy3/bin/easy_install /usr/local/bin/easy_install
   - sudo /usr/share/zookeeper/bin/zkServer.sh start
 install:
   - sudo PYTHONPATH=/usr/lib/pypy3/site-packages easy_install .
