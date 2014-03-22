@@ -8,7 +8,7 @@ before_install:
   - sudo apt-get install zookeeperd pypy3 -y --force-yes
   - sudo ln -fs pypy3 /usr/bin/python
   - sudo mkdir /usr/lib/pypy3/site-packages
-  - curl https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py | sudo -E pypy3
+  - curl https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py | PYTHONPATH=/usr/lib/pypy3/site-packages sudo -E pypy3
   - sudo /usr/share/zookeeper/bin/zkServer.sh start
 install:
   - sudo -E easy_install-3.2 .
