@@ -170,10 +170,12 @@ def _init_meters(config):
 def _load_config(config_dir_path):
     config = make_default_config(CONFIG_MAP)
     if config_dir_path is not None:
+        _logger.debug("Loading config directory \"%s\"...", config_dir_path)
         for name in sorted(os.listdir(config_dir_path)):
             if not name.endswith(".conf"):
                 continue
             config_file_path = os.path.join(config_dir_path, name)
+            _logger.debug("Loading config from \"%s\"...", config_file_path)
             with open(config_file_path) as config_file:
                 try:
                     typetools.merge_dicts(config, yaml.load(config_file))
