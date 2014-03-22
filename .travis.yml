@@ -6,7 +6,7 @@ before_install:
   - sudo apt-add-repository ppa:yandex-sysmon/zookeeper-3.4 -y
   - sudo apt-get update
   - sudo apt-get install zookeeperd pypy3 -y --force-yes
-  - sudo ln -s pypy3 /usr/bin/python
+  - sudo ln -fs pypy3 /usr/bin/python
   - sudo mkdir /usr/lib/pypy3/site-packages
   - curl https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py | sudo pypy3
   - sudo /usr/share/zookeeper/bin/zkServer.sh start
