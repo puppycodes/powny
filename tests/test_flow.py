@@ -24,13 +24,13 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
         conf_opt = ("-c", "etc/gns-test.d")
         subprocess.check_output(("scripts/gns-reinit.py", "--do-it-now") + conf_opt)
         cls._services = [
-            subprocess.Popen(cmd + conf_opt)
-            for cmd in (
-                ("scripts/gns-api.py"),
-                ("scripts/gns-splitter.py"),
-                ("scripts/gns-worker.py"),
-                ("scripts/gns-collector.py"),
-            )
+            subprocess.Popen(("scripts/" + cmd,) + conf_opt)
+            for cmd in [
+                "gns-api.py",
+                "gns-splitter.py",
+                "gns-worker.py",
+                "gns-collector.py",
+            ]
         ]
         # wait for services to start and initialize
         # FIXME: service initialization for tests should be done on docker side
