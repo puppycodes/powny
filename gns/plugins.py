@@ -7,8 +7,8 @@ from . import service
 
 
 ##### Public methods #####
-def load_plugins(config_dict, path, package_prefix, module_prefix, mapper):
-    plugins_dict = {}
+def load_plugins(config, path, package_prefix, module_prefix, mapper):
+    plugins = {}
 
     for file_name in os.listdir(path):
         if file_name[0] in (".", "_") or not file_name.startswith(module_prefix):
@@ -22,12 +22,12 @@ def load_plugins(config_dict, path, package_prefix, module_prefix, mapper):
 
         module = importlib.import_module(package_prefix + module_name)
 
-        typetools.merge_dicts(plugins_dict, getattr(module, mapper))
-        std_dict = getattr(module, "CONFIG_MAP", None)
-        if std_dict is not None:
-            default_dict = service.make_default_config(std_dict)
-            typetools.merge_dicts(config_dict, typetools.merge_dicts(default_dict, config_dict))
-            service.validate_config(config_dict, std_dict)
+        typetools.merge_dicts(plugins, getattr(module, mapper))
+        pattern = getattr(module, "CONFIG_MAP", None)
+        if pattern is not None:
+            defaults = service.make_default_config(pattern)
+            typetools.merge_dicts(config, typetools.merge_dicts(defaults, config))
+            service.validate_config(config, pattern)
 
-    return plugins_dict
+    return plugins
 

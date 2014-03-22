@@ -11,7 +11,8 @@ from gns import core
 
 ##### Public methods #####
 def main():
-    config = service.init(description="GNS Worker")[0]
+    (config, parser, argv) = service.init(description="GNS Worker")
+    parser.parse_args(argv) # Process --help
     core_opts = config[service.S_CORE]
     app_opts = config[service.S_WORKER]
 
