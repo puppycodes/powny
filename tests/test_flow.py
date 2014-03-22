@@ -102,7 +102,8 @@ class _ShotServer(http.server.HTTPServer, threading.Thread):
     def stop(self):
         # self._inner_stop() must be called while serve_forever() is running in another thread, or it will deadlock.
         # See socketserver.BaseServer() for details.
-        killer = threading.Thread(target=self._inner_stop, daemon=True)
+        killer = threading.Thread(target=self._inner_stop)
+        killer.daemon = True
         killer.start()
         if threading.current_thread() != self:
             # If another thread - wait, otherwise - suicide in background, withoud deadlock.
