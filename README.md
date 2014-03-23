@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/yandex-sysmon/gns.svg?branch=master)](https://travis-ci.org/yandex-sysmon/gns)
+[![Docker Repository on Quay.io](https://quay.io/repository/yandexsysmon/gns/status "Docker Repository on Quay.io")](https://quay.io/repository/yandexsysmon/gns)
 ##Global Notification System##
 
 ###Running services###
