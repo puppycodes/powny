@@ -1,6 +1,6 @@
 language: c
 env:
-  - "PYTHONPATH=/usr/lib/pypy3/site-packages"
+  - PYTHONPATH=/usr/lib/pypy3/site-packages
 before_install:
   - sudo apt-add-repository 'deb http://nikicat.github.io/pypy3-repo ./'
   - sudo apt-add-repository ppa:yandex-sysmon/zookeeper-3.4 -y
@@ -19,3 +19,7 @@ script:
   - /usr/lib/pypy3/bin/py.test run-tests.py -v --cov gns --cov-report term-missing #--pep8 gns
 after_success:
   - /usr/lib/pypy3/bin/coveralls
+notifications:
+  hipchat:
+    rooms:
+      secure: kOIqTRRXT5KjnTkM6wJBuoh9WfOdTHHZ58yeThFI0DvukA+IzqTHTPzANjpcGj5Q5S7bVJ3ypgFul7ZZMRjEWag9MqXsFmsGR8fK9MLiCXwJZ756ri5vaUUx8Jgib0FYud7iNQFfEgPGN/Xpy+tBc3J18Mb/FlgLnpDWPIqvtuQ=
