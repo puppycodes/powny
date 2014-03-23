@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/yandex-sysmon/gns.svg?branch=master)](https://travis-ci.org/yandex-sysmon/gns)
+##Global Notification System##
+
 ###Running services###
 Some services need to be run using PyPy3, others can work from the usual Python3.
 Pypy3 services:
