@@ -47,23 +47,23 @@ if __name__ == "__main__":
         packages=(
             "gns",
             "gns/api",
-            "gns/api/compat",
-            "gns/api/rest",
-            "gns/api/rpc",
             "gns/bltins",
             "gns/bltins/bmod_output",
             "gns/fetchers",
         ),
 
-        scripts=[ "scripts/gns-{}.py".format(name) for name in (
-                "splitter",
-                "worker",
-                "collector",
-                "cli",
-                "reinit",
-                "fetch-rules",
-                "api",
-            )],
+        entry_points={
+            "console_scripts": [
+                "gns-{0} = gns.{0}:main".format(name) for name in [
+                    "splitter",
+                    "worker",
+                    "collector",
+                    "cli",
+                    "reinit",
+                    "fetcher",
+                ]
+            ] + ["gns-api = gns.api_:main"]
+        },
 
         classifiers=( # http://pypi.python.org/pypi?:action=list_classifiers
             "Development Status :: 2 - Pre-Alpha",
@@ -87,6 +87,7 @@ if __name__ == "__main__":
             "pyyaml >= 3.10",
             "decorator >= 3.4.0",
             "python-dateutil >= 2.2",
+            "uwsgi",
         ),
 
         cmdclass = { "build": GnsBuild },

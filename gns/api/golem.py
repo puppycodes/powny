@@ -10,8 +10,8 @@ import ulib.validators.common # pylint: disable=W0611
 from raava import events
 from raava import rules
 
-from ... import zclient
-from ... import chain
+from .. import zclient
+from .. import chain
 
 
 ##### Private methods #####

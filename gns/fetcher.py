@@ -3,8 +3,8 @@
 
 import logging
 
-from gns import service
-from gns import fetchers
+from . import service
+from . import fetchers
 
 
 ##### Private objects #####
