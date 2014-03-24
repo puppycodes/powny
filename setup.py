@@ -87,7 +87,6 @@ if __name__ == "__main__":
             "pyyaml >= 3.10",
             "decorator >= 3.4.0",
             "python-dateutil >= 2.2",
-            "uwsgi",
         ),
 
         cmdclass = { "build": GnsBuild },
