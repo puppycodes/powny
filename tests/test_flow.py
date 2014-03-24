@@ -81,12 +81,10 @@ def _send_recv_event(event):
     server = _ShotServer(event["echo_host"], event["echo_port"])
     server.start()
     try:
-        time.sleep(0.1)
         # To save events had not numbered sequentially. Check that everything works to increase counter.
         opener.open(_make_event_request({ "_stub": None }))
-        time.sleep(0.1)
         opener.open(_make_event_request(event))
-        time.sleep(1)
+        time.sleep(2)
         return json.loads(server.get_result().decode())
     finally:
         server.stop()
@@ -100,42 +98,32 @@ class _ShotServer(http.server.HTTPServer, threading.Thread):
         self.result = None
 
     def stop(self):
-        # self._inner_stop() must be called while serve_forever() is running in another thread, or it will deadlock.
-        # See socketserver.BaseServer() for details.
-        killer = threading.Thread(target=self._inner_stop)
-        killer.daemon = True
-        killer.start()
-        if threading.current_thread() != self:
-            # If another thread - wait, otherwise - suicide in background, withoud deadlock.
-            killer.join()
-
-    def _inner_stop(self):
+        _logger.debug("stopping one-shot server %s", self)
         self.shutdown()
         self.server_close()
+        self.join()
 
     def run(self):
+        _logger.debug("starting one-shot server %s", self)
         self.serve_forever()
 
     def get_result(self):
-        assert self.result is not None, "No result readed"
+        assert self.result is not None, "No result received"
         return self.result
 
 class _ShotHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
-        try:
-            if self.server.result is None:
-                self.server.result = self.rfile.read(int(self.headers["Content-Length"]))
-                self.send_response(200)
-                self.send_header("Content-type", "text/plain")
-                self.end_headers()
-                self.wfile.write(b"ok")
-            else:
-                self.send_response(400)
-                self.send_header("Content-type", "text/plain")
-                self.end_headers()
-                self.wfile.write(b"only one shot!")
-        finally:
-            self.server.stop() # Suicide.
+        if self.server.result is None:
+            self.server.result = self.rfile.read(int(self.headers["Content-Length"]))
+            self.send_response(200)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"ok")
+        else:
+            self.send_response(400)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"only one shot!")
 
     def log_message(self, format, *args): # pylint: disable=W0622
         _logger.info("%s - - [%s] %s", self.address_string(), self.log_date_time_string(), format % (args))
