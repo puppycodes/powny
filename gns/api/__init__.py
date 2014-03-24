@@ -24,6 +24,9 @@ def application(env, start_response):
 
 def main():
     config = service.init(description="GNS HTTP API")[0]
+    run(config)
+
+def run(config):
     (root, app_opts) = _make_tree(config)
     server_opts = config[service.S_CHERRY].copy()
     server_opts.update(app_opts)

@@ -12,8 +12,10 @@ from gns import service
 def main():
     (config, parser, argv) = service.init(description="GNS Collector")
     parser.parse_args(argv) # Process --help
-    app_opts = config[service.S_COLLECTOR]
+    run(config)
 
+def run(config):
+    app_opts = config[service.S_COLLECTOR]
     app = application.Application(
         thread_class      = collector.CollectorThread,
         zoo_connect       = lambda: zclient.connect(config),

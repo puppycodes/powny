@@ -1,4 +1,4 @@
-import subprocess
+import multiprocessing
 import threading
 import http.server
 import urllib.request
@@ -7,6 +7,12 @@ import unittest
 import time
 import logging
 
+import gns.reinit
+import gns.api
+import gns.splitter
+import gns.worker
+import gns.collector
+import gns.service
 
 ##### Private objects #####
 _logger = logging.getLogger(__name__)
@@ -21,27 +27,31 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
 
     @classmethod
     def setUpClass(cls):
-        conf_opt = ("-c", "etc/gns-test.d")
-        subprocess.check_output(("scripts/gns-reinit.py", "--do-it-now") + conf_opt)
+        config = gns.service.load_config("etc/gns-test.d")
+        proc = multiprocessing.Process(target=gns.reinit.run, args=(config,))
+        proc.start()
+        proc.join()
         cls._services = [
-            subprocess.Popen(("scripts/" + cmd,) + conf_opt)
-            for cmd in [
-                "gns-api.py",
-                "gns-splitter.py",
-                "gns-worker.py",
-                "gns-collector.py",
+            multiprocessing.Process(target=module.run, args=(config,))
+            for module in [
+                gns.api,
+                gns.splitter,
+                gns.worker,
+                gns.collector,
             ]
         ]
+        for service in cls._services:
+            service.start()
         # wait for services to start and initialize
-        # FIXME: service initialization for tests should be done on docker side
+        # FIXME: do not invoke subprocesses, run all code in single process
         time.sleep(3)
 
     @classmethod
     def tearDownClass(cls):
         for service in cls._services:
-            service.kill()
+            service.terminate()
         for service in cls._services:
-            service.wait()
+            service.join()
 
 
     ### Tests ###
