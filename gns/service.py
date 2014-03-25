@@ -140,7 +140,7 @@ def init(**kwargs):
             config_dir_path = kwargs.pop("config_dir_path", const.CONFIG_DIR)
             if not os.access(config_dir_path, os.F_OK):
                 config_dir_path = None # Default config directory is not a necessary
-        config = _load_config(config_dir_path)
+        config = load_config(config_dir_path)
     except (ConfigError, validatorlib.ValidatorError) as err:
         _logger.error("Incorrect configuration: %s", err) # Fallback logging
         sys.exit(1)
@@ -167,7 +167,7 @@ def _init_meters(config):
 
 
 ###
-def _load_config(config_dir_path):
+def load_config(config_dir_path):
     config = make_default_config(CONFIG_MAP)
     if config_dir_path is not None:
         _logger.debug("Loading config directory \"%s\"...", config_dir_path)

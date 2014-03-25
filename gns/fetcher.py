@@ -3,8 +3,8 @@
 
 import logging
 
-from gns import service
-from gns import fetchers
+from . import service
+from . import fetchers
 
 
 ##### Private objects #####
@@ -16,7 +16,9 @@ def main():
     (config, parser, argv) = service.init(description="GNS rules fetcher")
     parser.add_argument("--do-it-now", action="store_true", required=True, help="Specify this option to process")
     parser.parse_args(argv) # Handle --do-it-now and --help
+    run(config)
 
+def run(config):
     fetcher_name = config[service.S_CORE][service.O_FETCHER]
     if fetcher_name is None:
         _logger.debug("Fetcher is not configured")

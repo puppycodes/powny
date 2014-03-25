@@ -1,4 +1,4 @@
-import subprocess
+import multiprocessing
 import threading
 import http.server
 import urllib.request
@@ -7,6 +7,12 @@ import unittest
 import time
 import logging
 
+import gns.reinit
+import gns.api
+import gns.splitter
+import gns.worker
+import gns.collector
+import gns.service
 
 ##### Private objects #####
 _logger = logging.getLogger(__name__)
@@ -21,27 +27,31 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
 
     @classmethod
     def setUpClass(cls):
-        conf_opt = ("-c", "etc/gns-test.d")
-        subprocess.check_output(("scripts/gns-reinit.py", "--do-it-now") + conf_opt)
+        config = gns.service.load_config("etc/gns-test.d")
+        proc = multiprocessing.Process(target=gns.reinit.run, args=(config,))
+        proc.start()
+        proc.join()
         cls._services = [
-            subprocess.Popen(("scripts/" + cmd,) + conf_opt)
-            for cmd in [
-                "gns-api.py",
-                "gns-splitter.py",
-                "gns-worker.py",
-                "gns-collector.py",
+            multiprocessing.Process(target=module.run, args=(config,))
+            for module in [
+                gns.api,
+                gns.splitter,
+                gns.worker,
+                gns.collector,
             ]
         ]
+        for service in cls._services:
+            service.start()
         # wait for services to start and initialize
-        # FIXME: service initialization for tests should be done on docker side
+        # FIXME: do not invoke subprocesses, run all code in single process
         time.sleep(3)
 
     @classmethod
     def tearDownClass(cls):
         for service in cls._services:
-            service.kill()
+            service.terminate()
         for service in cls._services:
-            service.wait()
+            service.join()
 
 
     ### Tests ###
@@ -81,13 +91,10 @@ def _send_recv_event(event):
     server = _ShotServer(event["echo_host"], event["echo_port"])
     server.start()
     try:
-        time.sleep(0.1)
         # To save events had not numbered sequentially. Check that everything works to increase counter.
         opener.open(_make_event_request({ "_stub": None }))
-        time.sleep(0.1)
         opener.open(_make_event_request(event))
-        time.sleep(1)
-        return json.loads(server.get_result().decode())
+        return json.loads(server.wait_for_result().decode())
     finally:
         server.stop()
 
@@ -97,45 +104,39 @@ class _ShotServer(http.server.HTTPServer, threading.Thread):
     def __init__(self, host_name, port):
         http.server.HTTPServer.__init__(self, (host_name, port), _ShotHandler)
         threading.Thread.__init__(self)
-        self.result = None
+        self._result = None
+        self._finished = threading.Condition()
+
+    def wait_for_result(self):
+        with self._finished:
+            while self._result is None:
+                self._finished.wait()
+            return self._result
+
+    def put_result(self, result):
+        assert result is not None, "result should not be None"
+        with self._finished:
+            self._result = result
+            self._finished.notify()
 
     def stop(self):
-        # self._inner_stop() must be called while serve_forever() is running in another thread, or it will deadlock.
-        # See socketserver.BaseServer() for details.
-        killer = threading.Thread(target=self._inner_stop)
-        killer.daemon = True
-        killer.start()
-        if threading.current_thread() != self:
-            # If another thread - wait, otherwise - suicide in background, withoud deadlock.
-            killer.join()
-
-    def _inner_stop(self):
+        _logger.debug("stopping one-shot server %s", self)
         self.shutdown()
         self.server_close()
+        self.join()
 
     def run(self):
+        _logger.debug("starting one-shot server %s", self)
         self.serve_forever()
-
-    def get_result(self):
-        assert self.result is not None, "No result readed"
-        return self.result
 
 class _ShotHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
-        try:
-            if self.server.result is None:
-                self.server.result = self.rfile.read(int(self.headers["Content-Length"]))
-                self.send_response(200)
-                self.send_header("Content-type", "text/plain")
-                self.end_headers()
-                self.wfile.write(b"ok")
-            else:
-                self.send_response(400)
-                self.send_header("Content-type", "text/plain")
-                self.end_headers()
-                self.wfile.write(b"only one shot!")
-        finally:
-            self.server.stop() # Suicide.
+        result = self.rfile.read(int(self.headers["Content-Length"]))
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"ok")
+        self.server.put_result(result)
 
     def log_message(self, format, *args): # pylint: disable=W0622
         _logger.info("%s - - [%s] %s", self.address_string(), self.log_date_time_string(), format % (args))
