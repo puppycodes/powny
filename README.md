@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/yandex-sysmon/gns.svg?branch=master)](https://travis-ci.org/yandex-sysmon/gns)
+[![Coverage Status](https://coveralls.io/repos/yandex-sysmon/gns/badge.png?branch=master)](https://coveralls.io/r/yandex-sysmon/gns?branch=master)
 [![Docker Repository on Quay.io](https://quay.io/repository/yandexsysmon/gns/status "Docker Repository on Quay.io")](https://quay.io/repository/yandexsysmon/gns)
+[![Latest Version](https://pypip.in/v/gns/badge.png)](https://pypi.python.org/pypi/gns/)
 ##Global Notification System##
 
 ###Running services###
