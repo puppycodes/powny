@@ -4,5 +4,5 @@ output:
 collector:
     poll-interval: 1
 
-logging: !include logging.conf
+logging: !include logging.yaml
 
