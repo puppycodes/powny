@@ -10,6 +10,6 @@ from gns import service
 
 ##### Main #####
 if __name__ == "__main__":
-    service.init(config_dir_path="etc/gns-test.d") # Init logging
+    service.init(config_file_path="etc/gns-test.d/gns.conf") # Init logging
     unittest.main()
 

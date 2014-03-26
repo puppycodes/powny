@@ -1,6 +1,7 @@
 import sys
 import os
 import yaml
+import yaml.loader
 import argparse
 import logging
 import logging.config
@@ -127,20 +128,19 @@ _logger = logging.getLogger(__name__)
 ##### Public methods #####
 def init(**kwargs):
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("-c", "--config-dir", dest="config_dir_path", default=None, metavar="<dir>")
+    parser.add_argument("-c", "--config", dest="config_file_path", default=None, metavar="<file>")
     (options, argv) = parser.parse_known_args()
 
-
     try:
-        config_dir_path = options.config_dir_path
-        if config_dir_path is not None:
-            # Validate --config-dir
-            config_dir_path = os.path.normpath(validators.fs.valid_accessible_path(config_dir_path + "/."))
+        config_file_path = options.config_file_path
+        if config_file_path is not None:
+            # Validate --config
+            config_file_path = os.path.normpath(validators.fs.valid_accessible_path(config_file_path))
         else:
-            config_dir_path = kwargs.pop("config_dir_path", const.CONFIG_DIR)
-            if not os.access(config_dir_path, os.F_OK):
-                config_dir_path = None # Default config directory is not a necessary
-        config = load_config(config_dir_path)
+            config_file_path = kwargs.pop("config_file_path", const.CONFIG_FILE)
+            if not os.access(config_file_path, os.F_OK):
+                config_file_path = None # Default config file is not a necessary
+        config = load_config(config_file_path)
     except (ConfigError, validatorlib.ValidatorError) as err:
         _logger.error("Incorrect configuration: %s", err) # Fallback logging
         sys.exit(1)
@@ -155,32 +155,13 @@ def init(**kwargs):
     return (config, argparse.ArgumentParser(**kwargs), argv)
 
 
-##### Private methods #####
-def _init_logging(config):
-    logging.setLogRecordFactory(elog.records.LogRecord) # This factory can keep the TID
-    logging.captureWarnings(True)
-    logging.config.dictConfig(config[S_LOGGING])
-
-def _init_meters(config):
-    meters.configure(config[S_METERS])
-    meters.start()
-
-
 ###
-def load_config(config_dir_path):
+def load_config(config_file_path):
+    _logger.debug("Making a default confing...")
     config = make_default_config(CONFIG_MAP)
-    if config_dir_path is not None:
-        _logger.debug("Loading config directory \"%s\"...", config_dir_path)
-        for name in sorted(os.listdir(config_dir_path)):
-            if not name.endswith(".conf"):
-                continue
-            config_file_path = os.path.join(config_dir_path, name)
-            _logger.debug("Loading config from \"%s\"...", config_file_path)
-            with open(config_file_path) as config_file:
-                try:
-                    typetools.merge_dicts(config, yaml.load(config_file))
-                except Exception as err:
-                    raise ConfigError("Incorrect YAML syntax in \"%s\":\n%s" % (config_file_path, err))
+    if config_file_path is not None:
+        with open(config_file_path) as config_file:
+            typetools.merge_dicts(config, _load_yaml(config_file))
     validate_config(config, CONFIG_MAP)
     return config
 
@@ -208,4 +189,36 @@ def validate_config(config, pattern, keys = ()):
                 config[key] = pair[1](config[key])
             except validatorlib.ValidatorError as err:
                 raise ConfigError("Invalid value for \"%s\": %s" % (option_name, err))
+
+
+##### Private methods #####
+def _init_logging(config):
+    logging.setLogRecordFactory(elog.records.LogRecord) # This factory can keep the TID
+    logging.captureWarnings(True)
+    logging.config.dictConfig(config[S_LOGGING])
+
+def _init_meters(config):
+    meters.configure(config[S_METERS])
+    meters.start()
+
+def _load_yaml(stream):
+    _logger.debug("Loading config from \"%s\"...", stream.name)
+    try:
+        return yaml.load(stream, _YamlLoader)
+    except Exception as err:
+        raise ConfigError("Incorrect YAML syntax in \"%s\":\n%s" % (stream.name, err))
+
+
+##### Private classes #####
+class _YamlLoader(yaml.loader.Loader):
+    def __init__(self, stream):
+        yaml.loader.Loader.__init__(self, stream)
+        self._root = os.path.dirname(stream.name)
+
+    def include(self, node):
+        file_path = os.path.join(self._root, self.construct_scalar(node)) # pylint: disable=E1101
+        _logger.debug("Including config \"%s\"...", file_path)
+        with open(file_path) as stream:
+            return _load_yaml(stream)
+_YamlLoader.add_constructor("!include", _YamlLoader.include) # pylint: disable=E1101
 
