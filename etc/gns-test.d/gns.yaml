@@ -1,0 +1,8 @@
+output:
+    noop: true
+
+collector:
+    poll-interval: 1
+
+logging: !include logging.yaml
+

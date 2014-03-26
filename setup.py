@@ -2,15 +2,14 @@
 
 
 import setuptools
-import gns.const
 
 
 ##### Main #####
 if __name__ == "__main__":
     setuptools.setup(
         name="gns",
-        version=gns.const.VERSION,
-        url=gns.const.UPSTREAM_URL,
+        version="0.1",
+        url="https://github.com/yandex-sysmon/gns",
         license="GPLv3",
         author="Devaev Maxim",
         author_email="mdevaev@gmail.com",

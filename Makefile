@@ -2,13 +2,12 @@ all:
 	true
 
 test:
-	PYTHONPATH=. LC_ALL=C ./run-tests.py
+	PYTHONPATH=. LC_ALL=C pypy3 run-tests.py
 
 pylint:
 	pypy3 `which pylint` --rcfile=pylint.ini \
 		tests \
 		gns \
-		scripts/*.py \
 		*.py \
 		--output-format=colorized 2>&1 | less -SR
 
@@ -17,6 +16,7 @@ pypi:
 	python setup.py sdist upload
 
 clean:
+	rm -f test.log
 	rm -rf build dist gns.egg-info
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name __pycache__ -delete
