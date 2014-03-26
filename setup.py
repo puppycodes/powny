@@ -1,35 +1,8 @@
 #!/usr/bin/env python
 
 
-import os
 import setuptools
-import distutils.command.build
-import textwrap
 import gns.const
-
-
-##### Public constants #####
-ETC_DIR    = "/etc"
-VARLIB_DIR = "/var/lib"
-
-
-##### Public classes #####
-class GnsBuild(distutils.command.build.build):
-    def run(self):
-        distutils.command.build.build.run(self)
-        self._write_lib("gns", "const_site.py", """
-                CONFIG_DIR = "%(etc)s/gns"
-                RULES_DIR   = "%(varlib)s/gns/rules"
-            """ % {
-                "etc":    ETC_DIR,
-                "varlib": VARLIB_DIR,
-            })
-
-    def _write_lib(self, module, file_name, text):
-        file_path = os.path.join(self.build_lib, module, file_name)
-        assert os.path.getsize(file_path) == 0
-        with open(file_path, "w") as lib_file:
-            lib_file.write(textwrap.dedent(text).strip())
 
 
 ##### Main #####
@@ -88,7 +61,5 @@ if __name__ == "__main__":
             "decorator >= 3.4.0",
             "python-dateutil >= 2.2",
         ),
-
-        cmdclass = { "build": GnsBuild },
     )
 
