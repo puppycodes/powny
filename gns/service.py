@@ -17,8 +17,6 @@ import ulib.validators.fs
 import elog.records
 import meters
 
-from . import const
-
 
 ##### Public constants #####
 S_CORE      = "core"
@@ -82,7 +80,7 @@ CONFIG_MAP = {
         O_ZOO_RANDOMIZE: (True,            validators.common.valid_bool),
         O_ZOO_CHROOT:    ("/gns",          str),
 
-        O_RULES_DIR:    (const.RULES_DIR, str),
+        O_RULES_DIR:    ("rules",         str),
         O_RULES_HEAD:   ("HEAD",          str),
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
         O_FETCHER:      (None,            _valid_maybe_empty_object),
@@ -128,7 +126,7 @@ _logger = logging.getLogger(__name__)
 ##### Public methods #####
 def init(**kwargs):
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("-c", "--config", dest="config_file_path", default=None, metavar="<file>")
+    parser.add_argument("-c", "--config", dest="config_file_path", default=kwargs.pop("config_file_path", None), metavar="<file>")
     (options, argv) = parser.parse_known_args()
 
     try:
@@ -136,10 +134,6 @@ def init(**kwargs):
         if config_file_path is not None:
             # Validate --config
             config_file_path = os.path.normpath(validators.fs.valid_accessible_path(config_file_path))
-        else:
-            config_file_path = kwargs.pop("config_file_path", const.CONFIG_FILE)
-            if not os.access(config_file_path, os.F_OK):
-                config_file_path = None # Default config file is not a necessary
         config = load_config(config_file_path)
     except (ConfigError, validatorlib.ValidatorError) as err:
         _logger.error("Incorrect configuration: %s", err) # Fallback logging
