@@ -36,6 +36,7 @@ O_RULES_DIR     = "rules-dir"
 O_RULES_HEAD    = "rules-head"
 O_IMPORT_ALIAS  = "import-alias"
 O_FETCHER       = "fetcher"
+O_FETCH_INTERVAL= "fetch-interval"
 
 O_VERSION = "version"
 
@@ -84,6 +85,7 @@ CONFIG_MAP = {
         O_RULES_HEAD:   ("HEAD",          str),
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
         O_FETCHER:      (None,            _valid_maybe_empty_object),
+        O_FETCH_INTERVAL: (60,            int),
     },
 
     S_LOGGING: {

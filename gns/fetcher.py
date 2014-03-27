@@ -2,20 +2,20 @@
 
 
 import logging
+import time
 
 from . import service
 from . import fetchers
 
 
 ##### Private objects #####
-_logger = logging.getLogger("gns.fetchers")
+_logger = logging.getLogger(__name__)
 
 
 ##### Public methods #####
 def main():
     (config, parser, argv) = service.init(description="GNS rules fetcher")
-    parser.add_argument("--do-it-now", action="store_true", required=True, help="Specify this option to process")
-    parser.parse_args(argv) # Handle --do-it-now and --help
+    parser.parse_args(argv) # Handle --help
     run(config)
 
 def run(config):
@@ -25,16 +25,22 @@ def run(config):
         return
 
     try:
-        fetcher = fetchers.load_fetchers(config)[fetcher_name]
-        fetchers.replace_head(
-            config[service.S_CORE][service.O_RULES_DIR],
-            config[service.S_CORE][service.O_RULES_HEAD],
-            fetcher(config),
-        )
+        fetcher = fetchers.load_fetchers(config)[fetcher_name](config)
+        rules_dir = config[service.S_CORE][service.O_RULES_DIR]
+        rules_head = config[service.S_CORE][service.O_RULES_HEAD]
+        fetch_interval = config[service.S_CORE][service.O_FETCH_INTERVAL]
+        if fetch_interval == 0:
+            fetchers.replace_head(rules_dir, rules_head, fetcher)
+        else:
+            _logger.debug("Starting periodic rule fetching using %s to %s each %d seconds", fetcher_name, rules_dir, fetch_interval)
+            while True:
+                next_fetch = time.time() + fetch_interval
+                fetchers.replace_head(rules_dir, rules_head, fetcher)
+                time.sleep(next_fetch - time.time())
+
     except Exception:
         _logger.exception("Cannot update rules")
         raise
-
 
 ##### Main #####
 if __name__ == "__main__":
