@@ -12,26 +12,22 @@ from . import golem
 
 
 ##### Public methods #####
-
-# uWSGI entry point
-def application(env, start_response):
-    config = service.init(description="GNS HTTP API")[0]
-    (root, app_opts) = _make_tree(config)
-    server_opts = config[service.S_API].copy()
-    server_opts.update(app_opts)
-    cherrypy.tree.mount(root, "/", server_opts)
-    return cherrypy.tree(env, start_response)
-
 def main():
     config = service.init(description="GNS HTTP API")[0]
     run(config)
 
 def run(config):
-    (root, app_opts) = _make_tree(config)
-    server_opts = config[service.S_CHERRY].copy()
-    server_opts.update(app_opts)
+    (root, server_opts) = _init(config, service.S_CHERRY)
     cherrypy.quickstart(root, config=server_opts)
 
+def make_wsgi_app():
+    config = service.init(description="GNS HTTP API")[0]
+    (root, server_opts) = _init(config, service.S_API)
+    cherrypy.tree.mount(root, "/", server_opts)
+    return cherrypy.tree
+
+
+##### Private methods #####
 def _make_tree(config):
     root = Module()
     root.api = Module()
@@ -54,7 +50,9 @@ def _make_tree(config):
             "/api/compat/golem/submit": disp_dict,
         })
 
+def _init(config, section):
+    (root, app_opts) = _make_tree(config)
+    server_opts = config[section].copy()
+    server_opts.update(app_opts)
+    return (root, server_opts)
 
-##### Main #####
-if __name__ == "__main__":
-    main()
