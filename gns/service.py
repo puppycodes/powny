@@ -36,6 +36,7 @@ O_RULES_DIR     = "rules-dir"
 O_RULES_HEAD    = "rules-head"
 O_IMPORT_ALIAS  = "import-alias"
 O_FETCHER       = "fetcher"
+O_FETCH_INTERVAL= "fetch-interval"
 
 O_VERSION = "version"
 
@@ -84,6 +85,7 @@ CONFIG_MAP = {
         O_RULES_HEAD:   ("HEAD",          str),
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
         O_FETCHER:      (None,            _valid_maybe_empty_object),
+        O_FETCH_INTERVAL: (60,            int),
     },
 
     S_LOGGING: {
@@ -139,7 +141,7 @@ def init(**kwargs):
         _logger.error("Incorrect configuration: %s", err) # Fallback logging
         sys.exit(1)
 
-    _init_logging(config)
+    init_logging(config)
     _init_meters(config)
 
     kwargs.update({
@@ -186,7 +188,7 @@ def validate_config(config, pattern, keys = ()):
 
 
 ##### Private methods #####
-def _init_logging(config):
+def init_logging(config):
     logging.setLogRecordFactory(elog.records.LogRecord) # This factory can keep the TID
     logging.captureWarnings(True)
     logging.config.dictConfig(config[S_LOGGING])

@@ -1,0 +1,139 @@
+name: gns
+
+services:
+  zookeeper:
+    image: quay.io/nikicat/zookeeper
+    instances:
+      zk-1:
+        ship: docker-1
+        ports: {client: 2181, peer: 2888, leader_election: 3888}
+        volumes:
+          /var/lib/zookeeper: /data/zookeeper
+      zk-2:
+        ship: docker-2
+        ports: {client: 2181, peer: 2888, leader_election: 3888}
+        volumes:
+          /var/lib/zookeeper: /data/zookeeper
+      zk-3:
+        ship: docker-3
+        ports: {client: 2181, peer: 2888, leader_election: 3888}
+        volumes:
+          /var/lib/zookeeper: /data/zookeeper
+  gns-reinit:
+    image: nikicat/gns
+    instances:
+      gns-reinit:
+        ship: docker-1
+        env:
+          MODULE: reinit
+  gns-fetcher:
+    image: nikicat/gns
+    instances:
+      gns-fetcher-1:
+        ship: docker-1
+        env:
+          MODULE: fetcher
+      gns-fetcher-2:
+        ship: docker-2
+        env:
+          MODULE: fetcher
+      gns-fetcher-3:
+        ship: docker-3
+        env:
+          MODULE: fetcher
+  gns-api:
+    image: nikicat/gns
+    requires:
+      - zookeeper
+    instances:
+      gns-api-1:
+        ship: docker-1
+        ports: {http: 7887}
+        env:
+          MODULE: api
+      gns-api-2:
+        ship: docker-2
+        ports: {http: 7887}
+        env:
+          MODULE: api
+      gns-api-3:
+        ship: docker-3
+        ports: {http: 7887}
+        env:
+          MODULE: api
+  gns-splitter:
+    image: nikicat/gns
+    requires:
+      - zookeeper
+    instances:
+      gns-splitter-1:
+        ship: docker-1
+        env:
+          MODULE: splitter
+        volumes:
+            /var/cache/gns-rules: /var/cache/gns-rules
+      gns-splitter-2:
+        ship: docker-2
+        env:
+          MODULE: splitter
+        volumes:
+            /var/cache/gns-rules: /var/cache/gns-rules
+      gns-splitter-3:
+        ship: docker-3
+        env:
+          MODULE: splitter
+        volumes:
+            /var/cache/gns-rules: /var/cache/gns-rules
+  gns-worker:
+    image: nikicat/gns
+    requires:
+      - zookeeper
+    instances:
+      gns-worker-1:
+        ship: docker-1
+        env:
+          MODULE: worker
+        volumes:
+            /var/cache/gns-rules: /var/cache/gns-rules
+      gns-worker-2:
+        ship: docker-2
+        env:
+          MODULE: worker
+        volumes:
+            /var/cache/gns-rules: /var/cache/gns-rules
+      gns-worker-3:
+        ship: docker-3
+        env:
+          MODULE: worker
+        volumes:
+            /var/cache/gns-rules: /var/cache/gns-rules
+  gns-collector:
+    image: nikicat/gns
+    requires:
+      - zookeeper
+    instances:
+      gns-collector-1:
+        ship: docker-1
+        env:
+          MODULE: collector
+      gns-collector-2:
+        ship: docker-2
+        env:
+          MODULE: collector
+      gns-collector-3:
+        ship: docker-3
+        env:
+          MODULE: collector
+
+#registries:
+#  docker-3:
+#    registry: http://docker-3.i.fog.yandex.net:5000/v1/
+#    email: nbryskin@yandex-team.ru
+
+ships:
+  docker-1:
+    ip: docker-1.i.fog.yandex.net
+  docker-2:
+    ip: docker-2.i.fog.yandex.net
+  docker-3:
+    ip: docker-3.i.fog.yandex.net

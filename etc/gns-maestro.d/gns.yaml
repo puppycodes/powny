@@ -1,0 +1,9 @@
+core:
+  zoo-nodes: []
+  rules-dir: /root/rules
+  fetcher: git
+
+git:
+  repo-dir: /root/rules.git
+
+logging: !include logging.yaml

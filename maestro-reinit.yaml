@@ -1,0 +1,34 @@
+name: gns
+
+default_env: &default-env
+  CONFIG: /root/gns.d/gns.yaml
+  RULES_DIR: /root/rules
+  REPO_DIR: /root/rules.git
+
+volumes: &volumes
+  /root/rules.git: /tmp/gns-rules.git
+  /root/rules: /tmp/gns-rules
+
+services:
+  zookeeper:
+    image: quay.io/nikicat/zookeeper
+    instances:
+      zk:
+        ship: local
+        ports: {client: 2181, peer: 2888, leader_election: 3888}
+        volumes:
+          /var/lib/zookeeper: /data/zookeeper
+  gns-reinit:
+    image: nikicat/gns-untrusted
+    requires:
+      - zookeeper
+    instances:
+      gns-reinit:
+        ship: local
+        env:
+          <<: *default-env
+          MODULE: reinit
+
+ships:
+  local:
+    ip: 172.17.42.1

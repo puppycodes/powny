@@ -1,5 +1,13 @@
 FROM nikicat/ubuntu-pypy3
 
-ADD etc/gns.d /etc/gns.d
+ADD requirements.txt /root/requirements.txt
+RUN easy_install -H *.python.org `cat /root/requirements.txt`
+RUN easy_install -H *.python.org git+git://github.com/signalfuse/maestro-ng
+ADD maestro-run.py /root/
+ADD etc/gns-maestro.d /root/gns.d
 ADD . /root/gns
-RUN cd /root/gns && pypy3 setup.py install
+RUN easy_install -H *.python.org /root/gns
+
+WORKDIR /root
+
+CMD pypy3 /root/maestro-run.py

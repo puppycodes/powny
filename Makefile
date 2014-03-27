@@ -37,3 +37,10 @@ docker-clean:
 	docker rm -f gns-collector || true
 	docker rm -f zookeeper || true
 	docker rm gns-rules || true
+
+docker-image:
+	docker build -t nikicat/gns-untrusted .
+	docker push nikicat/gns-untrusted
+
+maestro-test:
+	ZOOKEEPER_ZOOKEEPER_CLIENT_PORT=2181 ZOOKEEPER_ZOOKEEPER_HOST=localhost MODULE=$(MODULE) PYTHONPATH=. pypy3 maestro-run.py
