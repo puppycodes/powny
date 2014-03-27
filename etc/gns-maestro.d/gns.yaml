@@ -4,7 +4,6 @@ core:
   fetcher: git
 
 git:
-  tar-bin: tar
   repo-dir: /root/rules.git
 
 logging: !include logging.yaml
