@@ -141,7 +141,7 @@ def init(**kwargs):
         _logger.error("Incorrect configuration: %s", err) # Fallback logging
         sys.exit(1)
 
-    _init_logging(config)
+    init_logging(config)
     _init_meters(config)
 
     kwargs.update({
@@ -188,7 +188,7 @@ def validate_config(config, pattern, keys = ()):
 
 
 ##### Private methods #####
-def _init_logging(config):
+def init_logging(config):
     logging.setLogRecordFactory(elog.records.LogRecord) # This factory can keep the TID
     logging.captureWarnings(True)
     logging.config.dictConfig(config[S_LOGGING])
