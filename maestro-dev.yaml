@@ -1,5 +1,14 @@
 name: gns
 
+default_env: &default-env
+  CONFIG: /root/gns.d/gns.yaml
+  RULES_DIR: /root/rules
+  REPO_DIR: /root/rules.git
+
+volumes: &volumes
+  /root/rules.git: /tmp/gns-rules.git
+  /root/rules: /tmp/gns-rules
+
 services:
   zookeeper:
     image: quay.io/nikicat/zookeeper
@@ -9,15 +18,6 @@ services:
         ports: {client: 2181, peer: 2888, leader_election: 3888}
         volumes:
           /var/lib/zookeeper: /data/zookeeper
-  gns-reinit:
-    image: nikicat/gns-untrusted
-    requires:
-      - zookeeper
-    instances:
-      gns-reinit:
-        ship: local
-        env:
-          MODULE: reinit
   gns-fetcher:
     image: nikicat/gns-untrusted
     requires:
@@ -26,10 +26,9 @@ services:
       gns-fetcher:
         ship: local
         env:
+          <<: *default-env
           MODULE: fetcher
-        volumes:
-            /root/rules.git: rules.git
-            /root/rules: rules
+        volumes: *volumes
   gns-api:
     image: nikicat/gns-untrusted
     requires:
@@ -39,6 +38,7 @@ services:
         ship: local
         ports: {http: 7887}
         env:
+          <<: *default-env
           MODULE: api
   gns-splitter:
     image: nikicat/gns-untrusted
@@ -48,9 +48,9 @@ services:
       gns-splitter:
         ship: local
         env:
+          <<: *default-env
           MODULE: splitter
-        volumes:
-            /root/rules: rules
+        volumes: *volumes
   gns-worker:
     image: nikicat/gns-untrusted
     requires:
@@ -59,9 +59,9 @@ services:
       gns-worker:
         ship: local
         env:
+          <<: *default-env
           MODULE: worker
-        volumes:
-            /root/rules: rules
+        volumes: *volumes
   gns-collector:
     image: nikicat/gns-untrusted
     requires:
@@ -70,6 +70,7 @@ services:
       gns-collector:
         ship: local
         env:
+          <<: *default-env
           MODULE: collector
 
 #registries:
