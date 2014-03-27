@@ -32,6 +32,8 @@ def run(config):
         if fetch_interval == 0:
             fetchers.replace_head(rules_dir, rules_head, fetcher)
         else:
+            # FIXME: this code is added to provide a way to run periodic task inside a container.
+            # running cron or systemd timer is a better solution, but it demands additional research
             _logger.debug("Starting periodic rule fetching using %s to %s each %d seconds", fetcher_name, rules_dir, fetch_interval)
             while True:
                 next_fetch = time.time() + fetch_interval
