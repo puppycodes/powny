@@ -1,0 +1,82 @@
+name: gns
+
+services:
+  zookeeper:
+    image: quay.io/nikicat/zookeeper
+    instances:
+      zk:
+        ship: local
+        ports: {client: 2181, peer: 2888, leader_election: 3888}
+        volumes:
+          /var/lib/zookeeper: /data/zookeeper
+  gns-reinit:
+    image: nikicat/gns-untrusted
+    requires:
+      - zookeeper
+    instances:
+      gns-reinit:
+        ship: local
+        env:
+          MODULE: reinit
+  gns-fetcher:
+    image: nikicat/gns-untrusted
+    requires:
+      - zookeeper
+    instances:
+      gns-fetcher:
+        ship: local
+        env:
+          MODULE: fetcher
+        volumes:
+            /root/rules.git: rules.git
+            /root/rules: rules
+  gns-api:
+    image: nikicat/gns-untrusted
+    requires:
+      - zookeeper
+    instances:
+      gns-api:
+        ship: local
+        ports: {http: 7887}
+        env:
+          MODULE: api
+  gns-splitter:
+    image: nikicat/gns-untrusted
+    requires:
+      - zookeeper
+    instances:
+      gns-splitter:
+        ship: local
+        env:
+          MODULE: splitter
+        volumes:
+            /root/rules: rules
+  gns-worker:
+    image: nikicat/gns-untrusted
+    requires:
+      - zookeeper
+    instances:
+      gns-worker:
+        ship: local
+        env:
+          MODULE: worker
+        volumes:
+            /root/rules: rules
+  gns-collector:
+    image: nikicat/gns-untrusted
+    requires:
+      - zookeeper
+    instances:
+      gns-collector:
+        ship: local
+        env:
+          MODULE: collector
+
+#registries:
+#  docker-3:
+#    registry: http://docker-3.i.fog.yandex.net:5000/v1/
+#    email: nbryskin@yandex-team.ru
+
+ships:
+  local:
+    ip: 172.17.42.1
