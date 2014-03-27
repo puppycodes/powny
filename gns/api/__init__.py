@@ -20,6 +20,12 @@ def run(config):
     (root, server_opts) = _init(config, service.S_CHERRY)
     cherrypy.quickstart(root, config=server_opts)
 
+def make_wsgi_app():
+    config = service.init(description="GNS HTTP API")[0]
+    (root, server_opts) = _init(config, service.S_API)
+    cherrypy.tree.mount(root, "/", server_opts)
+    return cherrypy.tree
+
 
 ##### Private methods #####
 def _make_tree(config):
@@ -49,18 +55,4 @@ def _init(config, section):
     server_opts = config[section].copy()
     server_opts.update(app_opts)
     return (root, server_opts)
-
-def _make_wsgi_app():
-    config = service.init(description="GNS HTTP API")[0]
-    (root, server_opts) = _init(config, service.S_API)
-    cherrypy.tree.mount(root, "/", server_opts)
-    return cherrypy.tree
-
-
-##### Main #####
-if __name__ == "__main__":
-    main()
-else:
-    # Imported from uwsgi, provides common wsgi interface
-    application = _make_wsgi_app() # pylint: disable=W0612
 
