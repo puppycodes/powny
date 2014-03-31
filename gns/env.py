@@ -1,15 +1,23 @@
+import threading
+import copy
 import textwrap
 import mako.template
+
+from ulib import typetools
+
+from . import service
 
 
 ##### Private objects #####
 _config = None
+_config_lock = threading.Lock()
 
 
 ##### Public methods #####
 def setup_config(config):
-    global _config
-    _config = config
+    with _config_lock:
+        global _config
+        _config = config
 
 
 ###
@@ -23,6 +31,15 @@ def get_config(*keys_list, default=None):
         else:
             return default
     return value
+
+def patch_config(pattern):
+    with _config_lock:
+        global _config
+        config = copy.copy(_config)
+        defaults = service.make_default_config(pattern)
+        typetools.merge_dicts(config, typetools.merge_dicts(defaults, config))
+        service.validate_config(config, pattern)
+        _config = config
 
 
 ###
