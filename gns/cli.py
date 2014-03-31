@@ -1,5 +1,6 @@
 import argparse
-from gns import service,fetcher,worker,splitter,collector,api,reinit
+import importlib
+from . import service
 
 def main():
     parser = argparse.ArgumentParser(add_help=False)
@@ -12,7 +13,7 @@ def main():
     service.init_logging(config)
     service.init_meters(config)
 
-    globals()[options.command].run(config)
+    importlib.import_module("."+options.command, __package__).run(config)
 
 
 if __name__ == "__main__":
