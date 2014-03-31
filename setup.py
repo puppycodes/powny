@@ -25,7 +25,10 @@ if __name__ == "__main__":
         ),
 
         entry_points={
-            "console_scripts": ["gns = gns.cli:main", "gns-rpc = gns.client:main"]
+            "console_scripts": [
+                "gns = gns.cli:main",
+                "gns-rpc = gns.client:main",
+            ]
         },
 
         classifiers=( # http://pypi.python.org/pypi?:action=list_classifiers
