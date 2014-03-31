@@ -19,8 +19,6 @@ if __name__ == "__main__":
         packages=(
             "gns",
             "gns/api",
-            "gns/bltins",
-            "gns/bltins/bmod_output",
             "gns/fetchers",
         ),
 

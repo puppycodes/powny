@@ -1,16 +1,13 @@
-from raava import rhooks
 from raava import handlers
 from raava import events
 
 from . import service
-from . import bltins
 from . import zclient
 from . import env
 
 
 ##### Public methods #####
 def init_rules_environment(config):
-    rhooks.setup_builtins(bltins.load_builtins(config))
     env.setup_config(config)
 
     rules_path = config[service.S_CORE][service.O_RULES_DIR]
