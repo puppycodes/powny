@@ -1,3 +1,4 @@
+from rules import *
 from . import echo_event
 
 @match_event(host="test_state")
