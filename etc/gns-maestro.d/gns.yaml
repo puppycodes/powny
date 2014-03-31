@@ -1,9 +1,17 @@
 core:
-  zoo-nodes: []
-  rules-dir: /root/rules
+  zoo-nodes: !!python/object/apply:maestro.guestutils.get_node_list ["zookeeper", ["client"]]
+  rules-dir: !!python/object/apply:os.getenv [RULES_DIR]
   fetcher: git
 
 git:
-  repo-dir: /root/rules.git
+  repo-dir: !!python/object/apply:os.getenv [REPO_DIR]
+  repo-url: !!python/object/apply:os.getenv [REPO_URL]
 
 logging: !include logging.yaml
+
+output:
+  sms:
+    send-url: !!python/object/apply:os.getenv [SMS_URL, "http://localhost"]
+  email:
+    from: !!python/object/apply:os.getenv [EMAIL_FROM, "gns@localhost"]
+    server: !!python/object/apply:os.getenv [SMTP_HOST, "localhost"]

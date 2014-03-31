@@ -25,16 +25,7 @@ if __name__ == "__main__":
         ),
 
         entry_points={
-            "console_scripts": [
-                "gns-{0} = gns.{0}:main".format(name) for name in [
-                    "splitter",
-                    "worker",
-                    "collector",
-                    "cli",
-                    "reinit",
-                    "fetcher",
-                ]
-            ] + ["gns-api = gns.api_:main"]
+            "console_scripts": ["gns = gns.cli:main", "gns-rpc = gns.client:main"]
         },
 
         classifiers=( # http://pypi.python.org/pypi?:action=list_classifiers
