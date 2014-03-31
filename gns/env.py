@@ -3,20 +3,20 @@ import mako.template
 
 
 ##### Private objects #####
-_config_dict = None
+_config = None
 
 
 ##### Public methods #####
-def setup_config(config_dict):
-    global _config_dict
-    _config_dict = config_dict
+def setup_config(config):
+    global _config
+    _config = config
 
 
 ###
 def get_config(*keys_list, default=None):
     if len(keys_list) == 0:
-        return _config_dict
-    value = _config_dict
+        return _config
+    value = _config
     for key in keys_list:
         if key in value:
             value = value[key]
