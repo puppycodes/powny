@@ -17,7 +17,7 @@ _config_lock = threading.Lock()
 def setup_config(config):
     with _config_lock:
         global _config
-        _config = config
+        _config = copy.copy(config)
 
 
 ###
