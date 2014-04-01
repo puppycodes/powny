@@ -13,13 +13,13 @@ services:
   zookeeper:
     image: quay.io/nikicat/zookeeper
     instances:
-      zk:
-        ship: local
+      zk-1:
+        ship: !!python/object/apply:os.getenv [SHIP]
         ports: {client: 2181, peer: 2888, leader_election: 3888}
         volumes:
           /var/lib/zookeeper: /data/zookeeper
   gns-reinit:
-    image: nikicat/gns-untrusted
+    image: nikicat/gns-ut
     requires:
       - zookeeper
     instances:
@@ -32,3 +32,5 @@ services:
 ships:
   local:
     ip: 172.17.42.1
+  fog:
+    ip: docker-1.i.fog.yandex.net

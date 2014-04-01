@@ -7,3 +7,4 @@ ulib
 pyyaml
 decorator
 python-dateutil
+pygments

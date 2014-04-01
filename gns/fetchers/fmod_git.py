@@ -53,7 +53,7 @@ def _git_update_rules(config):
             _shell_exec("git clone {url} {git_worktree}", git_worktree=git_worktree, url=repo_url)
         else:
             raise RuntimeError("git dir {} does not exist and {}.{} is not set".format(git_dir, S_GIT, O_REPO_URL))
-    _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} fetch", git_worktree=git_worktree, git_dir=git_dir)
+    _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} pull", git_worktree=git_worktree, git_dir=git_dir)
 
     rules_path = config[service.S_CORE][service.O_RULES_DIR]
     prefix = config[S_GIT][O_PREFIX]

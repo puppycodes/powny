@@ -4,22 +4,38 @@ default_env: &default-env
   CONFIG: /root/gns.d/gns.yaml
   RULES_DIR: /root/rules
   REPO_DIR: /root/rules.git
+  REPO_URL: https://github.yandex-team.ru/monitoring/gns-rules
+  ELASTICSEARCH_URL: http://elasticlog.yandex.net:9200
+  SMS_URL: https://golem.yandex-team.ru/api/sms/send.sbml
+  EMAIL_FROM: gns@gns
 
 volumes: &volumes
   /root/rules.git: /tmp/gns-rules.git
   /root/rules: /tmp/gns-rules
 
+ships:
+  local:
+    ip: &ship 172.17.42.1
+
+gns-image: &gns-image nikicat/gns-ut
+
 services:
   zookeeper:
-    image: quay.io/nikicat/zookeeper
+    image: nikicat/zookeeper-ut
     instances:
       zk:
         ship: local
         ports: {client: 2181, peer: 2888, leader_election: 3888}
         volumes:
           /var/lib/zookeeper: /data/zookeeper
+  exim:
+    image: nikicat/exim-ut
+    instances:
+      exim: &exim
+        ship: local
+        ports: {smtp: 25}
   gns-fetcher:
-    image: nikicat/gns-untrusted
+    image: *gns-image
     requires:
       - zookeeper
     instances:
@@ -30,7 +46,7 @@ services:
           MODULE: fetcher
         volumes: *volumes
   gns-api:
-    image: nikicat/gns-untrusted
+    image: *gns-image
     requires:
       - zookeeper
     instances:
@@ -41,7 +57,7 @@ services:
           <<: *default-env
           MODULE: api
   gns-splitter:
-    image: nikicat/gns-untrusted
+    image: *gns-image
     requires:
       - zookeeper
     instances:
@@ -52,18 +68,20 @@ services:
           MODULE: splitter
         volumes: *volumes
   gns-worker:
-    image: nikicat/gns-untrusted
+    image: *gns-image
     requires:
       - zookeeper
+      - exim
     instances:
       gns-worker:
         ship: local
         env:
           <<: *default-env
           MODULE: worker
+          SMTP_HOST: *ship
         volumes: *volumes
   gns-collector:
-    image: nikicat/gns-untrusted
+    image: *gns-image
     requires:
       - zookeeper
     instances:
@@ -77,7 +95,3 @@ services:
 #  docker-3:
 #    registry: http://docker-3.i.fog.yandex.net:5000/v1/
 #    email: nbryskin@yandex-team.ru
-
-ships:
-  local:
-    ip: 172.17.42.1

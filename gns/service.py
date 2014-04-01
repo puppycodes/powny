@@ -142,7 +142,7 @@ def init(**kwargs):
         sys.exit(1)
 
     init_logging(config)
-    _init_meters(config)
+    init_meters(config)
 
     kwargs.update({
             "formatter_class": argparse.RawDescriptionHelpFormatter,
@@ -193,9 +193,8 @@ def init_logging(config):
     logging.captureWarnings(True)
     logging.config.dictConfig(config[S_LOGGING])
 
-def _init_meters(config):
+def init_meters(config):
     meters.configure(config[S_METERS])
-    meters.start()
 
 def _load_yaml(stream):
     _logger.debug("Loading config from \"%s\"...", stream.name)
