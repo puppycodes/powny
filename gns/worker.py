@@ -8,13 +8,6 @@ from gns import service
 from gns import zclient
 from gns import core
 
-
-##### Public methods #####
-def main():
-    (config, parser, argv) = service.init(description="GNS Worker")
-    parser.parse_args(argv) # Process --help
-    run(config)
-
 def run(config):
     core_opts = config[service.S_CORE]
     app_opts = config[service.S_WORKER]
@@ -31,9 +24,3 @@ def run(config):
         rules_path    = core_opts[service.O_RULES_DIR],
     )
     app.run()
-
-
-##### Main #####
-if __name__ == "__main__":
-    main()
-

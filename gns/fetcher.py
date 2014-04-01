@@ -11,13 +11,6 @@ from . import fetchers
 ##### Private objects #####
 _logger = logging.getLogger(__name__)
 
-
-##### Public methods #####
-def main():
-    (config, parser, argv) = service.init(description="GNS rules fetcher")
-    parser.parse_args(argv) # Handle --help
-    run(config)
-
 def run(config):
     fetcher_name = config[service.S_CORE][service.O_FETCHER]
     if fetcher_name is None:
@@ -45,8 +38,3 @@ def run(config):
     except Exception:
         _logger.exception("Cannot update rules")
         raise
-
-##### Main #####
-if __name__ == "__main__":
-    main()
-

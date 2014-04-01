@@ -11,7 +11,7 @@ logging: !include logging.yaml
 
 output:
   sms:
-    send-url: !!python/object/apply:os.getenv [SMS_URL, "http://localhost"]
+    send-url: !!python/object/apply:os.getenv [YA_SMS_URL, "http://localhost"]
   email:
     from: !!python/object/apply:os.getenv [EMAIL_FROM, "gns@localhost"]
     server: !!python/object/apply:os.getenv [SMTP_HOST, "localhost"]

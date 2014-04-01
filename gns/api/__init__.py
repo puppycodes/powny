@@ -10,12 +10,6 @@ from . import rpc # pylint: disable=W0611
 from . import rest
 from . import golem
 
-
-##### Public methods #####
-def main():
-    config = service.init(description="GNS HTTP API")[0]
-    run(config)
-
 def run(config):
     (root, server_opts) = _init(config, service.S_CHERRY)
     cherrypy.quickstart(root, config=server_opts)

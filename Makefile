@@ -2,7 +2,7 @@ all:
 	true
 
 test:
-	PYTHONPATH=. LC_ALL=C pypy3 run-tests.py
+	PYTHONPATH=. LC_ALL=C pypy3 -m py.test -v --cov gns --cov-report term-missing
 
 pylint:
 	pypy3 `which pylint` --rcfile=pylint.ini \
@@ -25,13 +25,12 @@ docker-image:
 	docker build -t nikicat/gns-ut .
 	docker push nikicat/gns-ut
 
-maestro-test:
+run-module:
 	REPO_DIR=/tmp/gns-rules.git REPO_URL=https://github.yandex-team.ru/monitoring/gns-rules RULES_DIR=/tmp/gns-rules ZOOKEEPER_ZOOKEEPER_CLIENT_PORT=2181 ZOOKEEPER_ZOOKEEPER_HOST=localhost PYTHONPATH=. pypy3 -m gns.cli $(MODULE) -c etc/gns-maestro.d/gns.yaml
 
-maestro-run-dev:
+run-maestro-dev:
 	maestro -f maestro/dev.yaml stop
 	mkdir -p /tmp/gns-rules{,.git}
-	#ln -fs /dev/null /tmp/gns-rules/HEAD
-	#[ -d /tmp/gns-rules.git ] || git clone https://github.yandex-team.ru/monitoring/gns-rules /tmp/gns-rules.git
-	SHIP=local maestro -f maestro/reinit.yaml start
+	. maestro/env-local.sh
+	maestro -f maestro/reinit.yaml start
 	maestro -f maestro/dev.yaml start
