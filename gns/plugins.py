@@ -3,7 +3,7 @@ import importlib
 
 from ulib import typetools
 
-from . import service
+from . import env
 
 
 ##### Public methods #####
@@ -25,9 +25,7 @@ def load_plugins(config, path, package_prefix, module_prefix, mapper):
         typetools.merge_dicts(plugins, getattr(module, mapper))
         pattern = getattr(module, "CONFIG_MAP", None)
         if pattern is not None:
-            defaults = service.make_default_config(pattern)
-            typetools.merge_dicts(config, typetools.merge_dicts(defaults, config))
-            service.validate_config(config, pattern)
+            env.patch_config(pattern)
 
     return plugins
 

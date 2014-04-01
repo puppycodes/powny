@@ -5,7 +5,6 @@ __pycache__
 *.pyc
 .coverage
 .cache
-rules/
 rules.git/
 test.log
 build/

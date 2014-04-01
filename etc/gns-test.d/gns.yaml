@@ -1,3 +1,6 @@
+core:
+    import-alias: rules
+
 output:
     noop: true
 
