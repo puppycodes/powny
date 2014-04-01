@@ -28,6 +28,7 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
     @classmethod
     def setUpClass(cls):
         config = gns.service.load_config(config_file_path="etc/gns-test.d/gns.yaml")
+        gns.service.init_logging(config)
         proc = multiprocessing.Process(target=gns.reinit.run, args=(config,))
         proc.start()
         proc.join()
