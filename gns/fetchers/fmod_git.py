@@ -24,12 +24,13 @@ _logger = logging.getLogger(__name__)
 
 
 ##### Private methods #####
-def _shell_exec(command):
+def _shell_exec(command, cwd=None):
     proc_stdout = subprocess.check_output(
         command,
         env={ "LC_ALL": "C" },
         universal_newlines=True,
         shell=True,
+        cwd=cwd,
     )
     _logger.debug("Command '{}' stdout:\n{}".format(command, proc_stdout))
     return proc_stdout
@@ -53,17 +54,15 @@ def _git_update_rules(config):
             _shell_exec("git clone {url} {git_worktree}".format(git_worktree=git_worktree, url=repo_url))
         else:
             raise RuntimeError("git dir {} does not exist and {}.{} is not set".format(git_dir, S_GIT, O_REPO_URL))
-    _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} pull".format(git_worktree=git_worktree, git_dir=git_dir))
+    _shell_exec("git pull", cwd=git_worktree)
 
     rules_path = config[service.S_CORE][service.O_RULES_DIR]
     prefix = config[S_GIT][O_PREFIX]
 
     modules = []
-    commits = _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} log -n {limit} --pretty=format:%H".format(
-            git_worktree=git_worktree,
-            git_dir=git_dir,
+    commits = _shell_exec("git log -n {limit} --pretty=format:%H".format(
             limit=config[S_GIT][O_REVISIONS],
-        )).strip().split("\n")
+        ), cwd=git_worktree).strip().split("\n")
     assert len(commits) > 0
     for commit in commits:
         module_name = prefix + commit
@@ -79,12 +78,10 @@ def _git_update_rules(config):
         os.mkdir(tmp_path)
 
         _logger.info("Checkout %s --> %s", commit, module_path)
-        _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} archive {commit} | tar -x -C {tmp}".format(
-                git_worktree=git_worktree,
-                git_dir=git_dir,
-                commit=commit,
-                tmp=tmp_path,
-            ))
+        _shell_exec("git clone {git_worktree} {tmp}".format(git_worktree=git_worktree, tmp=tmp_path))
+        _shell_exec("git checkout -b version-{commit} {commit}".format(commit=commit), cwd=tmp_path)
+        _shell_exec("git submodule init", cwd=tmp_path)
+        _shell_exec("git submodule update", cwd=tmp_path)
         os.rename(tmp_path, module_path)
 
     _git_cleanup(rules_path, prefix, modules)
@@ -96,7 +93,7 @@ def _git_update_rules(config):
 CONFIG_MAP = {
     S_GIT: {
         O_REPO_URL:  ("http://example.com", str),
-        O_REPO_DIR:  ("/tmp",               lambda arg: validators.fs.valid_accessible_path(arg + "/.")),
+        O_REPO_DIR:  ("/tmp/rules.git",     str),
         O_REVISIONS: (10,                   lambda arg: validators.common.valid_number(arg, 1)),
         O_PREFIX:    ("git_",               str),
     },
