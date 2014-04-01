@@ -13,8 +13,8 @@ volumes: &volumes
   /root/rules.git: /tmp/gns-rules.git
   /root/rules: /tmp/gns-rules
 
-gns-image: &gns-image nikicat/gns-ut
-zookeeper-image: &zookeeper-image nikicat/zookeeper-ut
+gns-image: &gns-image !!python/object/apply:os.getenv [DOCKER_GNS_IMAGE, nikicat/gns-ut]
+zookeeper-image: &zookeeper-image !!python/object/apply:os.getenv [DOCKER_ZOOKEEPER_IMAGE, nikicat/zookeeper-ut]
 
 registries:
   docker-3:

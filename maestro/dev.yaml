@@ -18,10 +18,16 @@ ships:
     ip: &ship 172.17.42.1
 
 gns-image: &gns-image nikicat/gns-ut
+zookeeper-image: &zookeeper-image nikicat/zookeeper-ut
 
+#registries:
+#  docker-3:
+#    registry: http://docker-3.i.fog.yandex.net:5000/v1/
+#    email: nbryskin@yandex-team.ru
+#
 services:
   zookeeper:
-    image: nikicat/zookeeper-ut
+    image: *zookeeper-image
     instances:
       zk:
         ship: local
@@ -90,8 +96,3 @@ services:
         env:
           <<: *default-env
           MODULE: collector
-
-#registries:
-#  docker-3:
-#    registry: http://docker-3.i.fog.yandex.net:5000/v1/
-#    email: nbryskin@yandex-team.ru
