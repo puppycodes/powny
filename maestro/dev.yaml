@@ -6,7 +6,7 @@ default_env: &default-env
   REPO_DIR: /root/rules.git
   REPO_URL: https://github.yandex-team.ru/monitoring/gns-rules
   ELASTICSEARCH_URL: http://elasticlog.yandex.net:9200
-  SMS_URL: https://golem.yandex-team.ru/api/sms/send.sbml
+  YA_SMS_URL: https://golem.yandex-team.ru/api/sms/send.sbml
   EMAIL_FROM: gns@gns
 
 volumes: &volumes

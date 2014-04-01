@@ -5,9 +5,9 @@ default_env: &default-env
   RULES_DIR: /root/rules
   REPO_DIR: /root/rules.git
   REPO_URL: https://github.yandex-team.ru/monitoring/gns-rules
-  ELASTICSEARCH_URL: http://elasticlog.yandex.net:9200
-  SMS_URL: https://golem.yandex-team.ru/api/sms/send.sbml
-  EMAIL_FROM: gns@gns
+  ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, 'http://elasticlog.yandex.net:9200']
+  YA_SMS_URL: !!python/object/apply:os.getenv [YA_SMS_URL, 'https://golem.yandex-team.ru/api/sms/send.sbml']
+  EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, 'gns@gns']
 
 volumes: &volumes
   /root/rules.git: /tmp/gns-rules.git
@@ -25,13 +25,13 @@ registries:
 
 ships:
   docker-1:
-    ip: &ship-1 docker-1.i.fog.yandex.net
+    ip: &ship-1 !!python/object/apply:os.getenv [SHIP_1, docker-1.i.fog.yandex.net]
     timeout: 15
   docker-2:
-    ip: &ship-2 docker-2.i.fog.yandex.net
+    ip: &ship-2 !!python/object/apply:os.getenv [SHIP_2, docker-2.i.fog.yandex.net]
     timeout: 15
   docker-3:
-    ip: &ship-3 docker-3.i.fog.yandex.net
+    ip: &ship-3 !!python/object/apply:os.getenv [SHIP_3, docker-3.i.fog.yandex.net]
     timeout: 15
 
 services:
