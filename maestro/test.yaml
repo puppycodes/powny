@@ -61,13 +61,6 @@ services:
       exim-3:
         <<: *exim
         ship: docker-3
-#  gns-reinit:
-#    image: *gns-image
-#    instances:
-#      gns-reinit:
-#        ship: docker-1
-#        env:
-#          MODULE: reinit
   gns-fetcher:
     image: *gns-image
     requires:
