@@ -35,6 +35,7 @@ def get_config(*keys_list, default=None):
 def patch_config(pattern):
     with _config_lock:
         global _config
+        assert _config is not None, "Run setup_config() first"
         config = copy.copy(_config)
         defaults = service.make_default_config(pattern)
         typetools.merge_dicts(config, typetools.merge_dicts(defaults, config))
