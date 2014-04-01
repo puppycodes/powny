@@ -25,19 +25,21 @@ def run(config):
         return
 
     try:
-        fetcher = fetchers.load_fetchers(config)[fetcher_name](config)
+        fetcher = fetchers.load_fetchers(config)[fetcher_name]
         rules_dir = config[service.S_CORE][service.O_RULES_DIR]
         rules_head = config[service.S_CORE][service.O_RULES_HEAD]
         fetch_interval = config[service.S_CORE][service.O_FETCH_INTERVAL]
         if fetch_interval == 0:
-            fetchers.replace_head(rules_dir, rules_head, fetcher)
+            module_name = fetcher(config)
+            fetchers.replace_head(rules_dir, rules_head, module_name)
         else:
             # FIXME: this code is added to provide a way to run periodic task inside a container.
             # running cron or systemd timer is a better solution, but it demands additional research
             _logger.debug("Starting periodic rule fetching using %s to %s each %d seconds", fetcher_name, rules_dir, fetch_interval)
             while True:
                 next_fetch = time.time() + fetch_interval
-                fetchers.replace_head(rules_dir, rules_head, fetcher)
+                module_name = fetcher(config)
+                fetchers.replace_head(rules_dir, rules_head, module_name)
                 time.sleep(next_fetch - time.time())
 
     except Exception:
