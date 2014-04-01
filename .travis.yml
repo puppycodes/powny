@@ -16,7 +16,7 @@ install:
 before_script:
   - sudo PYTHONPATH=/usr/lib/pypy3/site-packages easy_install `cat test_requirements.txt`
 script:
-  - /usr/lib/pypy3/bin/py.test run-tests.py -v --cov gns --cov-report term-missing #--pep8 gns
+  - /usr/lib/pypy3/bin/py.test -v --cov gns --cov-report term-missing #--pep8 gns
 after_success:
   - /usr/lib/pypy3/bin/coveralls
 notifications:
