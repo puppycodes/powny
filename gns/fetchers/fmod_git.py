@@ -24,14 +24,14 @@ _logger = logging.getLogger(__name__)
 
 
 ##### Private methods #####
-def _shell_exec(command, **kwargs):
+def _shell_exec(command):
     proc_stdout = subprocess.check_output(
-        command.format(**kwargs),
+        command,
         env={ "LC_ALL": "C" },
         universal_newlines=True,
         shell=True,
     )
-    _logger.debug("Command stdout:\n{}".format(proc_stdout))
+    _logger.debug("Command '{}' stdout:\n{}".format(command, proc_stdout))
     return proc_stdout
 
 def _git_cleanup(rules_path, prefix, modules):
@@ -50,20 +50,20 @@ def _git_update_rules(config):
         repo_url = config[S_GIT].get(O_REPO_URL)
         if repo_url:
             _logger.info("initializing git repo %s with remote %s", git_worktree, repo_url)
-            _shell_exec("git clone {url} {git_worktree}", git_worktree=git_worktree, url=repo_url)
+            _shell_exec("git clone {url} {git_worktree}".format(git_worktree=git_worktree, url=repo_url))
         else:
             raise RuntimeError("git dir {} does not exist and {}.{} is not set".format(git_dir, S_GIT, O_REPO_URL))
-    _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} pull", git_worktree=git_worktree, git_dir=git_dir)
+    _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} pull".format(git_worktree=git_worktree, git_dir=git_dir))
 
     rules_path = config[service.S_CORE][service.O_RULES_DIR]
     prefix = config[S_GIT][O_PREFIX]
 
     modules = []
-    commits = _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} log -n {limit} --pretty=format:%H",
+    commits = _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} log -n {limit} --pretty=format:%H".format(
         git_worktree=git_worktree,
         git_dir=git_dir,
         limit=config[S_GIT][O_REVISIONS],
-    ).strip().split("\n")
+    )).strip().split("\n")
     assert len(commits) > 0
     for commit in commits:
         module_name = prefix + commit
@@ -79,12 +79,12 @@ def _git_update_rules(config):
         os.mkdir(tmp_path)
 
         _logger.info("Checkout %s --> %s", commit, module_path)
-        _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} archive {commit} | tar -x -C {tmp}",
+        _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} archive {commit} | tar -x -C {tmp}".format(
             git_worktree=git_worktree,
             git_dir=git_dir,
             commit=commit,
             tmp=tmp_path,
-        )
+        ))
         os.rename(tmp_path, module_path)
 
     _git_cleanup(rules_path, prefix, modules)
