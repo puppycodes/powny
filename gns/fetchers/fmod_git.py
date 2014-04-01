@@ -48,7 +48,7 @@ def _git_update_rules(config):
     if not os.path.exists(git_dir):
         _logger.info("git dir %s does not exist", git_dir)
         repo_url = config[S_GIT].get(O_REPO_URL)
-        if repo_url:
+        if len(repo_url) != 0:
             _logger.info("initializing git repo %s with remote %s", git_worktree, repo_url)
             _shell_exec("git clone {url} {git_worktree}".format(git_worktree=git_worktree, url=repo_url))
         else:
@@ -60,10 +60,10 @@ def _git_update_rules(config):
 
     modules = []
     commits = _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} log -n {limit} --pretty=format:%H".format(
-        git_worktree=git_worktree,
-        git_dir=git_dir,
-        limit=config[S_GIT][O_REVISIONS],
-    )).strip().split("\n")
+            git_worktree=git_worktree,
+            git_dir=git_dir,
+            limit=config[S_GIT][O_REVISIONS],
+        )).strip().split("\n")
     assert len(commits) > 0
     for commit in commits:
         module_name = prefix + commit
@@ -80,11 +80,11 @@ def _git_update_rules(config):
 
         _logger.info("Checkout %s --> %s", commit, module_path)
         _shell_exec("git --work-tree {git_worktree} --git-dir {git_dir} archive {commit} | tar -x -C {tmp}".format(
-            git_worktree=git_worktree,
-            git_dir=git_dir,
-            commit=commit,
-            tmp=tmp_path,
-        ))
+                git_worktree=git_worktree,
+                git_dir=git_dir,
+                commit=commit,
+                tmp=tmp_path,
+            ))
         os.rename(tmp_path, module_path)
 
     _git_cleanup(rules_path, prefix, modules)
