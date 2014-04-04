@@ -1,60 +1,26 @@
-name: gns
-
-default_env: &default-env
-  CONFIG: /root/gns.d/gns.yaml
-  RULES_DIR: /root/rules
-  REPO_DIR: /root/rules.git
-  REPO_URL: https://github.yandex-team.ru/monitoring/gns-rules
-  ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, 'http://elasticlog.yandex.net:9200']
-  YA_SMS_URL: !!python/object/apply:os.getenv [YA_SMS_URL, 'https://golem.yandex-team.ru/api/sms/send.sbml']
-  EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, 'gns@gns']
-
-volumes: &volumes
-  /root/rules.git: /tmp/gns-rules.git
-  /root/rules: /tmp/gns-rules
-
-gns-image: &gns-image !!python/object/apply:os.getenv [DOCKER_GNS_IMAGE, nikicat/gns-ut]
-zookeeper-image: &zookeeper-image !!python/object/apply:os.getenv [DOCKER_ZOOKEEPER_IMAGE, nikicat/zookeeper-ut]
-
-registries:
-  docker-3:
-    registry: http://docker-3.i.fog.yandex.net/v1/
-    email: nbryskin@yandex-team.ru
-    username: stub
-    password: stub
-
-ships:
-  docker-1:
-    ip: &ship-1 !!python/object/apply:os.getenv [SHIP_1, docker-1.i.fog.yandex.net]
-    timeout: 15
-  docker-2:
-    ip: &ship-2 !!python/object/apply:os.getenv [SHIP_2, docker-2.i.fog.yandex.net]
-    timeout: 15
-  docker-3:
-    ip: &ship-3 !!python/object/apply:os.getenv [SHIP_3, docker-3.i.fog.yandex.net]
-    timeout: 15
-
 services:
   zookeeper:
     image: *zookeeper-image
     instances:
-      zk-1: &zk
+      zookeeper-1: &zookeeper
         ship: docker-1
         ports: {client: 2181, peer: 2888, leader_election: 3888}
         volumes:
           /var/lib/zookeeper: /data/zookeeper
-      zk-2:
-        <<: *zk
+        mem_limit: 1000000000
+      zookeeper-2:
+        <<: *zookeeper
         ship: docker-2
-      zk-3:
-        <<: *zk
+      zookeeper-3:
+        <<: *zookeeper
         ship: docker-3
   exim:
-    image: nikicat/exim-ut
+    image: *exim-image
     instances:
       exim-1: &exim
         ship: docker-1
         ports: {smtp: 25}
+        mem_limit: 200000000
       exim-2:
         <<: *exim
         ship: docker-2
@@ -72,6 +38,8 @@ services:
           <<: *default-env
           MODULE: fetcher
         volumes: *volumes
+        mem_limit: 1g
+        stop_timeout: 1
       gns-fetcher-2:
         <<: *gns-fetcher
         ship: docker-2
@@ -89,6 +57,8 @@ services:
         env:
           <<: *default-env
           MODULE: api
+        mem_limit: 1000000000
+        stop_timeout: 1
       gns-api-2:
         <<: *gns-api
         ship: docker-2
@@ -106,6 +76,8 @@ services:
           <<: *default-env
           MODULE: splitter
         volumes: *volumes
+        mem_limit: 1000000000
+        stop_timeout: 1
       gns-splitter-2:
         <<: *gns-splitter
         ship: docker-2
@@ -125,6 +97,8 @@ services:
           MODULE: worker
           SMTP_HOST: *ship-1
         volumes: *volumes
+        mem_limit: 1000000000
+        stop_timeout: 1
       gns-worker-2:
         <<: *gns-worker
         ship: docker-2
@@ -138,7 +112,7 @@ services:
         env:
           <<: *default-env
           MODULE: worker
-          SMTP_HOST: *ship-2
+          SMTP_HOST: *ship-3
   gns-collector:
     image: *gns-image
     requires:
@@ -149,6 +123,8 @@ services:
         env:
           <<: *default-env
           MODULE: collector
+        mem_limit: 1000000000
+        stop_timeout: 1
       gns-collector-2:
         <<: *gns-collector
         ship: docker-2
