@@ -1,5 +1,4 @@
-#FROM docker-3.i.fog.yandex.net/ubuntu-pypy3
-FROM nikicat/ubuntu-pypy3
+FROM yandex/ubuntu-pypy3
 
 ADD requirements.txt /root/requirements.txt
 RUN easy_install -H *.python.org `cat /root/requirements.txt`
