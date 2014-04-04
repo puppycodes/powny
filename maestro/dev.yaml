@@ -1,25 +1,3 @@
-name: gns
-
-default_env: &default-env
-  CONFIG: /root/gns.d/gns.yaml
-  RULES_DIR: /root/rules
-  REPO_DIR: /root/rules.git
-  REPO_URL: https://github.yandex-team.ru/monitoring/gns-rules
-  ELASTICSEARCH_URL: http://elasticlog.yandex.net:9200
-  YA_SMS_URL: https://golem.yandex-team.ru/api/sms/send.sbml
-  EMAIL_FROM: gns@gns
-
-volumes: &volumes
-  /root/rules.git: /tmp/gns-rules.git
-  /root/rules: /tmp/gns-rules
-
-ships:
-  local:
-    ip: &ship 172.17.42.1
-
-gns-image: &gns-image nikicat/gns-ut
-zookeeper-image: &zookeeper-image nikicat/zookeeper-ut
-
 #registries:
 #  docker-3:
 #    registry: http://docker-3.i.fog.yandex.net:5000/v1/
@@ -29,17 +7,19 @@ services:
   zookeeper:
     image: *zookeeper-image
     instances:
-      zk:
+      zookeeper:
         ship: local
         ports: {client: 2181, peer: 2888, leader_election: 3888}
         volumes:
           /var/lib/zookeeper: /data/zookeeper
+        mem_limit: 1000000000
   exim:
-    image: nikicat/exim-ut
+    image: *exim-image
     instances:
       exim: &exim
         ship: local
         ports: {smtp: 25}
+        mem_limit: 1000000000
   gns-fetcher:
     image: *gns-image
     requires:
@@ -51,6 +31,7 @@ services:
           <<: *default-env
           MODULE: fetcher
         volumes: *volumes
+        mem_limit: 1000000000
   gns-api:
     image: *gns-image
     requires:
@@ -62,6 +43,7 @@ services:
         env:
           <<: *default-env
           MODULE: api
+        mem_limit: 1000000000
   gns-splitter:
     image: *gns-image
     requires:
@@ -73,6 +55,7 @@ services:
           <<: *default-env
           MODULE: splitter
         volumes: *volumes
+        mem_limit: 1000000000
   gns-worker:
     image: *gns-image
     requires:
@@ -86,6 +69,7 @@ services:
           MODULE: worker
           SMTP_HOST: *ship
         volumes: *volumes
+        mem_limit: 1000000000
   gns-collector:
     image: *gns-image
     requires:
@@ -96,3 +80,4 @@ services:
         env:
           <<: *default-env
           MODULE: collector
+        mem_limit: 1000000000
