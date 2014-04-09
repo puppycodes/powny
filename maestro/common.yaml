@@ -1,35 +1,23 @@
 name: gns
 
 default_env: &default-env
-  CONFIG: /root/gns.d/gns.yaml
-  RULES_DIR: /root/rules
-  REPO_DIR: /root/rules.git
-  REPO_URL: !!python/object/apply:os.getenv [GNS_REPO_URL, 'https://github.yandex-team.ru/monitoring/gns-rules']
-  ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, 'http://elasticlog.yandex.net:9200']
-  GOLEM_SMS_URL: !!python/object/apply:os.getenv [GOLEM_SMS_URL, 'http://localhost']
-  EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, 'gns@gns']
+    CONFIG: /root/gns.d/gns.yaml
+    RULES_DIR: /root/rules
+    REPO_DIR: /root/rules.git
+    REPO_URL: !!python/object/apply:os.getenv [GNS_REPO_URL, 'https://github.yandex-team.ru/monitoring/gns-rules']
+    ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, 'http://elasticlog.yandex.net:9200']
+    GOLEM_SMS_URL: !!python/object/apply:os.getenv [GOLEM_SMS_URL, 'http://localhost']
+    EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, 'gns@gns']
 
 volumes: &volumes
-  /root/rules.git: /var/cache/gns-rules.git
-  /root/rules: /var/cache/gns-rules
+    /root/rules.git: /var/cache/gns-rules.git
+    /root/rules: /var/cache/gns-rules
 
 gns-image: &gns-image !!python/object/apply:os.getenv [DOCKER_GNS_IMAGE, 'yandex/gns:latest']
 zookeeper-image: &zookeeper-image !!python/object/apply:os.getenv [DOCKER_ZOOKEEPER_IMAGE, 'yandex/zookeeper:latest']
 smtp-image: &smtp-image  !!python/object/apply:os.getenv [DOCKER_SMTP_IMAGE, 'yandex/exim:latest']
 
-ships:
-  local:
-    ip: !!python/object/apply:os.getenv [DOCKER_SHIP_LOCAL, 172.18.43.1]
-    timeout: 15
-  ship-1:
-    ip: !!python/object/apply:os.getenv [DOCKER_SHIP_1, 172.18.43.1]
-    timeout: 15
-  ship-2:
-    ip: !!python/object/apply:os.getenv [DOCKER_SHIP_2, 172.18.43.1]
-    timeout: 15
-  ship-3:
-    ip: !!python/object/apply:os.getenv [DOCKER_SHIP_3, 172.18.43.1]
-    timeout: 15
+ships: *fleet
 
 zookeeper: &zookeeper
     ship: local

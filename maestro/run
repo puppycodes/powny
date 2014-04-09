@@ -1,12 +1,14 @@
 #!/bin/bash
 
-type=$1
+fleet=$1
+configuration=$2
 
-if [ -z "$type" ]; then
-    echo "usage: $0 <type> <maestro args...>"
+if [ -z "$fleet" ] || [ -z "$configuration" ]; then
+    echo "usage: $0 <fleet name {local,zk,docker}> <configuration name {dev,test}> [<maestro args...>]"
     exit 1
 fi
 
 shift
+shift
 
-cat maestro/{common,$type}.yaml | maestro $@
+cat maestro/{fleet-$fleet,common,$configuration}.yaml | maestro $@

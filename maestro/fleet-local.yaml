@@ -1,0 +1,13 @@
+local-fleet: &fleet
+    local:
+        ip: 172.18.43.1
+    local1:
+        ip: 172.18.43.1
+    local2:
+        ip: 172.18.43.1
+    local3:
+        ip: 172.18.43.1
+
+ship-1: &ship-1 local1
+ship-2: &ship-2 local2
+ship-3: &ship-3 local3
