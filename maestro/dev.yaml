@@ -1,83 +1,40 @@
-#registries:
-#  docker-3:
-#    registry: http://docker-3.i.fog.yandex.net:5000/v1/
-#    email: nbryskin@yandex-team.ru
-#
 services:
-  zookeeper:
-    image: *zookeeper-image
-    instances:
-      zookeeper:
-        ship: local
-        ports: {client: 2181, peer: 2888, leader_election: 3888}
-        volumes:
-          /var/lib/zookeeper: /data/zookeeper
-        mem_limit: 1000000000
-  exim:
-    image: *exim-image
-    instances:
-      exim: &exim
-        ship: local
-        ports: {smtp: 25}
-        mem_limit: 1000000000
-  gns-fetcher:
-    image: *gns-image
-    requires:
-      - zookeeper
-    instances:
-      gns-fetcher:
-        ship: local
-        env:
-          <<: *default-env
-          MODULE: fetcher
-        volumes: *volumes
-        mem_limit: 1000000000
-  gns-api:
-    image: *gns-image
-    requires:
-      - zookeeper
-    instances:
-      gns-api:
-        ship: local
-        ports: {http: 7887}
-        env:
-          <<: *default-env
-          MODULE: api
-        mem_limit: 1000000000
-  gns-splitter:
-    image: *gns-image
-    requires:
-      - zookeeper
-    instances:
-      gns-splitter:
-        ship: local
-        env:
-          <<: *default-env
-          MODULE: splitter
-        volumes: *volumes
-        mem_limit: 1000000000
-  gns-worker:
-    image: *gns-image
-    requires:
-      - zookeeper
-      - exim
-    instances:
-      gns-worker:
-        ship: local
-        env:
-          <<: *default-env
-          MODULE: worker
-          SMTP_HOST: *ship
-        volumes: *volumes
-        mem_limit: 1000000000
-  gns-collector:
-    image: *gns-image
-    requires:
-      - zookeeper
-    instances:
-      gns-collector:
-        ship: local
-        env:
-          <<: *default-env
-          MODULE: collector
-        mem_limit: 1000000000
+    zookeeper:
+        image: *zookeeper-image
+        instances:
+            zookeeper: *zookeeper
+    smtp:
+        image: *smtp-image
+        instances:
+            smtp: *smtp
+    gns-fetcher:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-fetcher: *gns-fetcher
+    gns-api:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-api: *gns-api
+    gns-splitter:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-splitter: *gns-splitter
+    gns-worker:
+        image: *gns-image
+        requires:
+            - zookeeper
+            - smtp
+        instances:
+            gns-worker: *gns-worker
+    gns-collector:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-collector: *gns-collector
