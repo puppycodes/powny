@@ -5,9 +5,9 @@ default_env: &default-env
   RULES_DIR: /root/rules
   REPO_DIR: /root/rules.git
   REPO_URL: https://github.yandex-team.ru/monitoring/gns-rules
-  ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, 'http://elasticlog.yandex.net:9200']
-  YA_SMS_URL: !!python/object/apply:os.getenv [YA_SMS_URL, 'https://golem.yandex-team.ru/api/sms/send.sbml']
-  EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, 'gns@gns']
+  ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, "http://elasticlog.yandex.net:9200"]
+  YA_SMS_URL: !!python/object/apply:os.getenv [YA_SMS_URL, "https://golem.yandex-team.ru/api/sms/send.sbml"]
+  EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, "gns@gns"]
 
 volumes: &volumes
   /root/rules.git: /tmp/gns-rules.git
