@@ -21,18 +21,16 @@ clean:
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name __pycache__ -delete
 
-docker-image:
-	docker build -t yandex/gns .
+images: docker-base docker-service docker-uwsgi docker-nginx
 
-docker-push:
-	docker push yandex/gns
+docker-base:
+	docker build --rm -t gns-base-image $(DOCKER_BUILD_OPTS) .
 
-run-module:
-	REPO_DIR=/tmp/gns-rules.git REPO_URL=https://github.yandex-team.ru/monitoring/gns-rules RULES_DIR=/tmp/gns-rules ZOOKEEPER_ZOOKEEPER_CLIENT_PORT=2181 ZOOKEEPER_ZOOKEEPER_HOST=localhost PYTHONPATH=. pypy3 -m gns.cli $(MODULE) -c etc/gns-maestro.d/gns.yaml
+docker-service: docker-base
+	docker build --rm -t gns-service-image $(DOCKER_BUILD_OPTS) docker/service
 
-run-maestro-dev:
-	maestro -f maestro/dev.yaml stop
-	mkdir -p /tmp/gns-rules{,.git}
-	. maestro/env-local.sh
-	maestro -f maestro/reinit.yaml start
-	maestro -f maestro/dev.yaml start
+docker-uwsgi: docker-base
+	docker build --rm -t gns-uwsgi-image $(DOCKER_BUILD_OPTS) docker/uwsgi
+
+docker-nginx: docker-base
+	docker build --rm -t gns-nginx-image $(DOCKER_BUILD_OPTS) docker/nginx

@@ -6,7 +6,7 @@ services:
                 <<: *zookeeper
                 ship: *ship-1
     gns-reinit:
-        image: *gns-image
+        image: *gns-service-image
         requires:
             - zookeeper
         instances:

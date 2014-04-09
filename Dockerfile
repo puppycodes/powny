@@ -1,10 +1,9 @@
-FROM yandex/ubuntu-pypy3
+# Base GNS image
 
-ADD requirements.txt /root/requirements.txt
-RUN easy_install -H *.python.org `cat /root/requirements.txt`
-RUN easy_install -H *.python.org git+git://github.com/signalfuse/maestro-ng
-ADD etc/gns-maestro.d /root/gns.d
+FROM nikicat/ubuntu
+MAINTAINER Devaev Maxim <mdevaev@gmail.com>
+
 ADD . /root/gns
-RUN easy_install -H *.python.org /root/gns
 
-CMD gns $MODULE -c /root/gns.d/gns.yaml
+WORKDIR /root
+CMD bash
