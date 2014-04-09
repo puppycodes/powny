@@ -96,3 +96,13 @@ gns-collector: &gns-collector
         memory: 200m
         cpu: 9
     stop_timeout: 1
+
+gns-creinit: &gns-reinit
+    ship: local
+    env:
+        <<: *default-env
+        MODULE: reinit
+    limits:
+        memory: 200m
+        cpu: 5
+    stop_timeout: 1
