@@ -1,17 +1,30 @@
 core:
-  zoo-nodes: !!python/object/apply:maestro.guestutils.get_node_list ["zookeeper", ["client"]]
-  rules-dir: !!python/object/apply:os.getenv [RULES_DIR]
-  fetcher: git
+    import-alias: rules
+    zoo-nodes: !!python/object/apply:maestro.guestutils.get_node_list ["zookeeper", ["client"]]
+    rules-dir: !!python/object/apply:os.getenv [RULES_DIR]
+    fetcher: git
 
 git:
-  repo-dir: !!python/object/apply:os.getenv [REPO_DIR]
-  repo-url: !!python/object/apply:os.getenv [REPO_URL]
+    repo-dir: !!python/object/apply:os.getenv [REPO_DIR]
+    repo-url: !!python/object/apply:os.getenv [REPO_URL]
 
 logging: !include logging.yaml
 
+splitter:
+    workers: !!python/object/apply:os.getenv [GNS_SPLITTER_WORKERS, 1]
+worker:
+    workers: !!python/object/apply:os.getenv [GNS_WORKER_WORKERS, 1]
+collector:
+    workers: !!python/object/apply:os.getenv [GNS_COLLECTOR_WORKERS, 1]
+
 output:
-  sms:
-    send-url: !!python/object/apply:os.getenv [YA_SMS_URL, "http://localhost"]
-  email:
-    from: !!python/object/apply:os.getenv [EMAIL_FROM, "gns@localhost"]
-    server: !!python/object/apply:os.getenv [SMTP_HOST, "localhost"]
+    sms:
+        send-url: !!python/object/apply:os.getenv [GOLEM_SMS_URL, "http://localhost"]
+    email:
+        from: !!python/object/apply:os.getenv [EMAIL_FROM, "gns@localhost"]
+        server: !!python/object/apply:maestro.guestutils.get_container_host_address []
+        port: !!python/object/apply:maestro.guestutils.get_port ["smtp", 25]
+
+cherry:
+    global:
+        server.socket_port: !!python/object/apply:maestro.guestutils.get_port ["http", 7887]

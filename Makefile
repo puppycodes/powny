@@ -22,8 +22,10 @@ clean:
 	find . -type d -name __pycache__ -delete
 
 docker-image:
-	docker build -t nikicat/gns-ut .
-	docker push nikicat/gns-ut
+	docker build -t yandex/gns .
+
+docker-push:
+	docker push yandex/gns
 
 run-module:
 	REPO_DIR=/tmp/gns-rules.git REPO_URL=https://github.yandex-team.ru/monitoring/gns-rules RULES_DIR=/tmp/gns-rules ZOOKEEPER_ZOOKEEPER_CLIENT_PORT=2181 ZOOKEEPER_ZOOKEEPER_HOST=localhost PYTHONPATH=. pypy3 -m gns.cli $(MODULE) -c etc/gns-maestro.d/gns.yaml

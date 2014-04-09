@@ -6,26 +6,105 @@ default_env: &default-env
   REPO_DIR: /root/rules.git
   REPO_URL: !!python/object/apply:os.getenv [GNS_REPO_URL, 'https://github.yandex-team.ru/monitoring/gns-rules']
   ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, 'http://elasticlog.yandex.net:9200']
-  YA_SMS_URL: !!python/object/apply:os.getenv [YA_SMS_URL, 'https://golem.yandex-team.ru/api/sms/send.sbml']
+  GOLEM_SMS_URL: !!python/object/apply:os.getenv [GOLEM_SMS_URL, 'http://localhost']
   EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, 'gns@gns']
 
 volumes: &volumes
   /root/rules.git: /var/cache/gns-rules.git
   /root/rules: /var/cache/gns-rules
 
-gns-image: &gns-image !!python/object/apply:os.getenv [DOCKER_GNS_IMAGE, yandex/gns]
-zookeeper-image: &zookeeper-image !!python/object/apply:os.getenv [DOCKER_ZOOKEEPER_IMAGE, yandex/zookeeper]
-exim-image: &exim-image  !!python/object/apply:os.getenv [DOCKER_EXIM_IMAGE, yandex/exim]
+gns-image: &gns-image !!python/object/apply:os.getenv [DOCKER_GNS_IMAGE, 'yandex/gns:latest']
+zookeeper-image: &zookeeper-image !!python/object/apply:os.getenv [DOCKER_ZOOKEEPER_IMAGE, 'yandex/zookeeper:latest']
+smtp-image: &smtp-image  !!python/object/apply:os.getenv [DOCKER_SMTP_IMAGE, 'yandex/exim:latest']
 
 ships:
-  docker-1:
-    ip: &ship-1 !!python/object/apply:os.getenv [SHIP_1, docker-1.i.fog.yandex.net]
-    timeout: 15
-  docker-2:
-    ip: &ship-2 !!python/object/apply:os.getenv [SHIP_2, docker-2.i.fog.yandex.net]
-    timeout: 15
-  docker-3:
-    ip: &ship-3 !!python/object/apply:os.getenv [SHIP_3, docker-3.i.fog.yandex.net]
-    timeout: 15
   local:
-    ip: &ship 172.17.42.1
+    ip: !!python/object/apply:os.getenv [DOCKER_SHIP_LOCAL, 172.18.43.1]
+    timeout: 15
+  ship-1:
+    ip: !!python/object/apply:os.getenv [DOCKER_SHIP_1, 172.18.43.1]
+    timeout: 15
+  ship-2:
+    ip: !!python/object/apply:os.getenv [DOCKER_SHIP_2, 172.18.43.1]
+    timeout: 15
+  ship-3:
+    ip: !!python/object/apply:os.getenv [DOCKER_SHIP_3, 172.18.43.1]
+    timeout: 15
+
+zookeeper: &zookeeper
+    ship: local
+    ports:
+        client: 2181
+        peer: 2888
+        leader_election: 3888
+    volumes:
+        /var/lib/zookeeper: /data/zookeeper
+    limits:
+        memory: 1100m
+        cpu: 10
+    env:
+        JVM_OPTS: "-Xmx1g"
+
+smtp: &smtp
+    ship: local
+    ports:
+        smtp: 25
+    limits:
+        memory: 200m
+        cpu: 1
+    stop_timeout: 2
+
+gns-fetcher: &gns-fetcher
+    ship: local
+    env:
+        <<: *default-env
+        MODULE: fetcher
+    volumes: *volumes
+    limits:
+        memory: 1g
+        cpu: 1
+    stop_timeout: 1
+
+gns-api: &gns-api
+    ship: local
+    ports:
+        http: 7887
+    env:
+        <<: *default-env
+        MODULE: api
+    limits:
+        memory: 2g
+        cpu: 5
+    stop_timeout: 1
+
+gns-splitter: &gns-splitter
+    ship: local
+    env:
+        <<: *default-env
+        MODULE: splitter
+    volumes: *volumes
+    limits:
+        memory: 1g
+        cpu: 7
+    stop_timeout: 1
+
+gns-worker: &gns-worker
+    ship: local
+    env:
+        <<: *default-env
+        MODULE: worker
+    volumes: *volumes
+    limits:
+        memory: 1g
+        cpu: 7
+    stop_timeout: 1
+
+gns-collector: &gns-collector
+    ship: local
+    env:
+        <<: *default-env
+        MODULE: collector
+    limits:
+        memory: 200m
+        cpu: 9
+    stop_timeout: 1

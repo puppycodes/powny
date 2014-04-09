@@ -1,133 +1,96 @@
 services:
-  zookeeper:
-    image: *zookeeper-image
-    instances:
-      zookeeper-1: &zookeeper
-        ship: docker-1
-        ports: {client: 2181, peer: 2888, leader_election: 3888}
-        volumes:
-          /var/lib/zookeeper: /data/zookeeper
-        mem_limit: 1000000000
-      zookeeper-2:
-        <<: *zookeeper
-        ship: docker-2
-      zookeeper-3:
-        <<: *zookeeper
-        ship: docker-3
-  exim:
-    image: *exim-image
-    instances:
-      exim-1: &exim
-        ship: docker-1
-        ports: {smtp: 25}
-        mem_limit: 200000000
-      exim-2:
-        <<: *exim
-        ship: docker-2
-      exim-3:
-        <<: *exim
-        ship: docker-3
-  gns-fetcher:
-    image: *gns-image
-    requires:
-      - zookeeper
-    instances:
-      gns-fetcher-1: &gns-fetcher
-        ship: docker-1
-        env:
-          <<: *default-env
-          MODULE: fetcher
-        volumes: *volumes
-        mem_limit: 1g
-        stop_timeout: 1
-      gns-fetcher-2:
-        <<: *gns-fetcher
-        ship: docker-2
-      gns-fetcher-3:
-        <<: *gns-fetcher
-        ship: docker-3
-  gns-api:
-    image: *gns-image
-    requires:
-      - zookeeper
-    instances:
-      gns-api-1: &gns-api
-        ship: docker-1
-        ports: {http: 7887}
-        env:
-          <<: *default-env
-          MODULE: api
-        mem_limit: 1000000000
-        stop_timeout: 1
-      gns-api-2:
-        <<: *gns-api
-        ship: docker-2
-      gns-api-3:
-        <<: *gns-api
-        ship: docker-3
-  gns-splitter:
-    image: *gns-image
-    requires:
-      - zookeeper
-    instances:
-      gns-splitter-1: &gns-splitter
-        ship: docker-1
-        env:
-          <<: *default-env
-          MODULE: splitter
-        volumes: *volumes
-        mem_limit: 1000000000
-        stop_timeout: 1
-      gns-splitter-2:
-        <<: *gns-splitter
-        ship: docker-2
-      gns-splitter-3:
-        <<: *gns-splitter
-        ship: docker-3
-  gns-worker:
-    image: *gns-image
-    requires:
-      - zookeeper
-      - exim
-    instances:
-      gns-worker-1: &gns-worker
-        ship: docker-1
-        env:
-          <<: *default-env
-          MODULE: worker
-          SMTP_HOST: *ship-1
-        volumes: *volumes
-        mem_limit: 1000000000
-        stop_timeout: 1
-      gns-worker-2:
-        <<: *gns-worker
-        ship: docker-2
-        env:
-          <<: *default-env
-          MODULE: worker
-          SMTP_HOST: *ship-2
-      gns-worker-3:
-        <<: *gns-worker
-        ship: docker-3
-        env:
-          <<: *default-env
-          MODULE: worker
-          SMTP_HOST: *ship-3
-  gns-collector:
-    image: *gns-image
-    requires:
-      - zookeeper
-    instances:
-      gns-collector-1: &gns-collector
-        ship: docker-1
-        env:
-          <<: *default-env
-          MODULE: collector
-        mem_limit: 1000000000
-        stop_timeout: 1
-      gns-collector-2:
-        <<: *gns-collector
-        ship: docker-2
-      gns-collector-3:
-        <<: *gns-collector
-        ship: docker-3
+    zookeeper:
+        image: *zookeeper-image
+        instances:
+            zookeeper-1:
+                <<: *zookeeper
+                ship: ship-1
+            zookeeper-2:
+                <<: *zookeeper
+                ship: ship-2
+            zookeeper-3:
+                <<: *zookeeper
+                ship: ship-3
+    smtp:
+        image: *smtp-image
+        instances:
+            smtp-1:
+                <<: *smtp
+                ship: ship-1
+            smtp-2:
+                <<: *smtp
+                ship: ship-2
+            smtp-3:
+                <<: *smtp
+                ship: ship-3
+    gns-fetcher:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-fetcher-1:
+                <<: *gns-fetcher
+                ship: ship-1
+            gns-fetcher-2:
+                <<: *gns-fetcher
+                ship: ship-2
+            gns-fetcher-3:
+                <<: *gns-fetcher
+                ship: ship-3
+    gns-api:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-api-1:
+                <<: *gns-api
+                ship: ship-1
+            gns-api-2:
+                <<: *gns-api
+                ship: ship-2
+            gns-api-3:
+                <<: *gns-api
+                ship: ship-3
+    gns-splitter:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-splitter-1:
+                <<: *gns-splitter
+                ship: ship-1
+            gns-splitter-2:
+                <<: *gns-splitter
+                ship: ship-2
+            gns-splitter-3:
+                <<: *gns-splitter
+                ship: ship-3
+    gns-worker:
+        image: *gns-image
+        requires:
+            - zookeeper
+            - smtp
+        instances:
+            gns-worker-1:
+                <<: *gns-worker
+                ship: ship-1
+            gns-worker-2:
+                <<: *gns-worker
+                ship: ship-2
+            gns-worker-3:
+                <<: *gns-worker
+                ship: ship-3
+    gns-collector:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-collector-1:
+                <<: *gns-collector
+                ship: ship-1
+            gns-collector-2:
+                <<: *gns-collector
+                ship: ship-2
+            gns-collector-3:
+                <<: *gns-collector
+                ship: ship-3
