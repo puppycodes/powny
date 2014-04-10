@@ -21,16 +21,25 @@ clean:
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name __pycache__ -delete
 
-images: docker-base docker-service docker-uwsgi docker-nginx
+docker-gns-image:
+	docker build --rm -t gns $(DOCKER_BUILD_OPTS) .
 
-docker-base:
-	docker build --rm -t gns-base-image $(DOCKER_BUILD_OPTS) .
+docker-gns-python3-image:
+	cp Dockerfile .Dockerfile.bak
+	sed -i -e "s|FROM yandex/ubuntu-pypy3|FROM yandex/ubuntu-python3|g" Dockerfile
+	docker build --rm -t gns-python3 $(DOCKER_BUILD_OPTS) .
+	mv .Dockerfile.bak Dockerfile
 
-docker-service: docker-base
-	docker build --rm -t gns-service-image $(DOCKER_BUILD_OPTS) docker/service
-
-docker-uwsgi: docker-base
-	docker build --rm -t gns-uwsgi-image $(DOCKER_BUILD_OPTS) docker/uwsgi
-
-docker-nginx: docker-base
-	docker build --rm -t gns-nginx-image $(DOCKER_BUILD_OPTS) docker/nginx
+#images: docker-base docker-service docker-uwsgi docker-nginx
+#
+#docker-base:
+#	docker build --rm -t gns-base-image $(DOCKER_BUILD_OPTS) .
+#
+#docker-service: docker-base
+#	docker build --rm -t gns-service-image $(DOCKER_BUILD_OPTS) docker/service
+#
+#docker-uwsgi: docker-base
+#	docker build --rm -t gns-uwsgi-image $(DOCKER_BUILD_OPTS) docker/uwsgi
+#
+#docker-nginx: docker-base
+#	docker build --rm -t gns-nginx-image $(DOCKER_BUILD_OPTS) docker/nginx
