@@ -38,3 +38,9 @@ services:
             - zookeeper
         instances:
             gns-collector: *gns-collector
+    nginx:
+        image: *nginx-image
+        requires:
+            - gns-api
+        instances:
+            nginx: *nginx
