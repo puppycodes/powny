@@ -1,7 +1,7 @@
 name: gns
 
 default_env: &default-env
-    CONFIG: /root/gns.d/gns.yaml
+    GNS_CONFIG: /root/gns.d/gns.yaml
     RULES_DIR: /root/rules
     REPO_DIR: /root/rules.git
     REPO_URL: !!python/object/apply:os.getenv [GNS_REPO_URL, "https://github.yandex-team.ru/monitoring/gns-rules"]
@@ -13,10 +13,11 @@ volumes: &volumes
     /root/rules.git: /var/cache/gns-rules.git
     /root/rules: /var/cache/gns-rules
 
-gns-image: &gns-image !!python/object/apply:os.getenv [DOCKER_GNS_IMAGE, "yandex/gns:latest"]
-zookeeper-image: &zookeeper-image !!python/object/apply:os.getenv [DOCKER_ZOOKEEPER_IMAGE, "yandex/zookeeper:latest"]
-smtp-image: &smtp-image  !!python/object/apply:os.getenv [DOCKER_SMTP_IMAGE, "yandex/exim:latest"]
-nginx-image: &nginx-image  !!python/object/apply:os.getenv [DOCKER_NGINX_IMAGE, "yandex/nginx:latest"]
+gns-image:         &gns-image         !!python/object/apply:os.getenv ["DOCKER_GNS_IMAGE",         "yandex/gns:latest"]
+gns-api-image:     &gns-api-image     !!python/object/apply:os.getenv ["DOCKER_GNS_API_IMAGE",     "yandex/gns:latest"]
+nginx-image:       &nginx-image       !!python/object/apply:os.getenv ["DOCKER_NGINX_IMAGE",       "yandex/nginx:latest"]
+zookeeper-image:   &zookeeper-image   !!python/object/apply:os.getenv ["DOCKER_ZOOKEEPER_IMAGE",   "yandex/zookeeper:latest"]
+smtp-image:        &smtp-image        !!python/object/apply:os.getenv ["DOCKER_SMTP_IMAGE",        "yandex/exim:latest"]
 
 ships: *fleet
 
@@ -47,30 +48,18 @@ gns-fetcher: &gns-fetcher
     ship: local
     env:
         <<: *default-env
-        MODULE: fetcher
+        GNS_MODULE: fetcher
     volumes: *volumes
     limits:
         memory: 1g
         cpu: 1
     stop_timeout: 1
 
-gns-api: &gns-api
-    ship: local
-    ports:
-        http: 7886
-    env:
-        <<: *default-env
-        MODULE: api
-    limits:
-        memory: 2g
-        cpu: 5
-    stop_timeout: 1
-
 gns-splitter: &gns-splitter
     ship: local
     env:
         <<: *default-env
-        MODULE: splitter
+        GNS_MODULE: splitter
     volumes: *volumes
     limits:
         memory: 1g
@@ -81,7 +70,7 @@ gns-worker: &gns-worker
     ship: local
     env:
         <<: *default-env
-        MODULE: worker
+        GNS_MODULE: worker
     volumes: *volumes
     limits:
         memory: 1g
@@ -92,19 +81,31 @@ gns-collector: &gns-collector
     ship: local
     env:
         <<: *default-env
-        MODULE: collector
+        GNS_MODULE: collector
     limits:
         memory: 200m
         cpu: 9
     stop_timeout: 1
 
-gns-creinit: &gns-reinit
+gns-reinit: &gns-reinit
     ship: local
     env:
         <<: *default-env
-        MODULE: reinit
+        GNS_MODULE: reinit
     limits:
         memory: 200m
+        cpu: 5
+    stop_timeout: 1
+
+gns-api: &gns-api
+    ship: local
+    ports:
+        http: 7886
+    env:
+        <<: *default-env
+        GNS_MODULE: api
+    limits:
+        memory: 2g
         cpu: 5
     stop_timeout: 1
 
@@ -116,4 +117,7 @@ nginx: &nginx
     env:
         <<: *default-env
         NGINX_UPSTREAM_SERVICE: gns-api
+    limits:
+        memory: 200m
+        cpu: 5
     stop_timeout: 1

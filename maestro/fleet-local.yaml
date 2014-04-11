@@ -1,12 +1,11 @@
+local-fleet-host: &local-fleet-host
+    ip: !!python/object/apply:os.getenv ["LOCAL_FLEET_HOST", "172.18.43.1"]
+
 local-fleet: &fleet
-    local:
-        ip: 172.18.43.1
-    local1:
-        ip: 172.18.43.1
-    local2:
-        ip: 172.18.43.1
-    local3:
-        ip: 172.18.43.1
+    local:  *local-fleet-host
+    local1: *local-fleet-host
+    local2: *local-fleet-host
+    local3: *local-fleet-host
 
 ship-1: &ship-1 local1
 ship-2: &ship-2 local2
