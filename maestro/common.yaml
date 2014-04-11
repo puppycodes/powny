@@ -121,4 +121,3 @@ nginx: &nginx
         memory: 200m
         cpu: 5
     stop_timeout: 1
-
