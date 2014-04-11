@@ -13,6 +13,12 @@ services:
             - zookeeper
         instances:
             gns-fetcher: *gns-fetcher
+    gns-api:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-api: *gns-api
     gns-splitter:
         image: *gns-image
         requires:
@@ -32,12 +38,6 @@ services:
             - zookeeper
         instances:
             gns-collector: *gns-collector
-    gns-api:
-        image: *gns-api-image
-        requires:
-            - zookeeper
-        instances:
-            gns-api: *gns-api
     nginx:
         image: *nginx-image
         requires:
