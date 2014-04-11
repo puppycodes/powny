@@ -13,14 +13,14 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install \
 	-y --force-yes
 RUN apt-get -y clean
 
-ADD . /root/gns
-
-RUN easy_install -H *.python.org `cat /root/gns/requirements.txt`
+ADD requirements.txt /root/
+RUN easy_install -H *.python.org `cat /root/requirements.txt`
 RUN easy_install -H *.python.org git+git://github.com/signalfuse/maestro-ng
+RUN rm -f /root/requirements.txt
+
+ADD . /root/gns
 RUN easy_install -H *.python.org /root/gns
 RUN cp -r /root/gns/etc/gns-maestro.d /root/gns.d
 RUN rm -rf /root/gns
-
-EXPOSE 7886
 
 CMD gns $GNS_MODULE -c $GNS_CONFIG
