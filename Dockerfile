@@ -23,4 +23,4 @@ RUN easy_install -H *.python.org /root/gns
 RUN cp -r /root/gns/etc/gns-maestro.d /root/gns.d
 RUN rm -rf /root/gns
 
-CMD gns $GNS_MODULE -c $GNS_CONFIG
+CMD gns $GNS_MODULE -c ${GNS_CONFIG:-/root/gns.d/gns.yaml}
