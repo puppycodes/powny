@@ -1,4 +1,5 @@
 #!/bin/bash -x
+set -e
 
 dir="$1"
 from="$2"
@@ -15,6 +16,7 @@ orig="$dir/Dockerfile"
 backup="$dir/.Dockerfile.bak"
 
 cp "$orig" "$backup"
+trap "mv \"$backup\" \"$orig\"" SIGTERM SIGINT
 sed -i -e "s|^FROM .*$|FROM $from|g" "$orig"
 docker build $@ "$dir"
 retval=$?
