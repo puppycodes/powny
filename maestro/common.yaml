@@ -113,9 +113,9 @@ gns-nginx: &gns-nginx
     ship: local
     ports:
         http: 7887
+        https: 443
     env:
         <<: *default-env
-        # FIXME: What should be here?
         NGINX_UPSTREAM_SERVICE: gns-api
     limits:
         memory: 200m
