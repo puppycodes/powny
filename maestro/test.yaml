@@ -94,3 +94,17 @@ services:
             gns-collector-3:
                 <<: *gns-collector
                 ship: *ship-3
+    nginx:
+        image: *nginx-image
+        requires:
+            - gns-api
+        instances:
+            nginx-1:
+                <<: *nginx
+                ship: *ship-1
+            nginx-2:
+                <<: *nginx
+                ship: *ship-2
+            nginx-3:
+                <<: *nginx
+                ship: *ship-3

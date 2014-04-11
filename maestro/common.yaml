@@ -16,6 +16,7 @@ volumes: &volumes
 gns-image: &gns-image !!python/object/apply:os.getenv [DOCKER_GNS_IMAGE, "yandex/gns:latest"]
 zookeeper-image: &zookeeper-image !!python/object/apply:os.getenv [DOCKER_ZOOKEEPER_IMAGE, "yandex/zookeeper:latest"]
 smtp-image: &smtp-image  !!python/object/apply:os.getenv [DOCKER_SMTP_IMAGE, "yandex/exim:latest"]
+nginx-image: &nginx-image  !!python/object/apply:os.getenv [DOCKER_NGINX_IMAGE, "yandex/nginx:latest"]
 
 ships: *fleet
 
@@ -56,7 +57,7 @@ gns-fetcher: &gns-fetcher
 gns-api: &gns-api
     ship: local
     ports:
-        http: 7887
+        http: 7886
     env:
         <<: *default-env
         MODULE: api
@@ -105,4 +106,14 @@ gns-creinit: &gns-reinit
     limits:
         memory: 200m
         cpu: 5
+    stop_timeout: 1
+
+nginx: &nginx
+    ship: local
+    ports:
+        http: 7887
+        https: 443
+    env:
+        <<: *default-env
+        NGINX_UPSTREAM_SERVICE: gns-api
     stop_timeout: 1
