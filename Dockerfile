@@ -8,7 +8,7 @@ MAINTAINER Devaev Maxim <mdevaev@gmail.com>
 # libtcl8.5.so.0: cannot open shared object file: No such file or directory
 RUN apt-get -y update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install \
-		tk8.5 \
+		tk \
 		libtclcl1 \
 	-y --force-yes
 RUN apt-get -y clean
