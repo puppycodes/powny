@@ -24,17 +24,17 @@ clean:
 docker: docker-gns docker-gns-python3 docker-gns-uwsgi
 
 docker-gns:
-	docker build --rm -t gns $(DOCKER_BUILD_OPTS) .
+	docker build -t gns $(DOCKER_BUILD_OPTS) .
 
 docker-gns-python3:
 	cp Dockerfile .Dockerfile.bak
 	sed -i -e "s|FROM yandex/ubuntu-pypy3|FROM yandex/ubuntu-python3|g" Dockerfile
-	docker build --rm -t gns-python3 $(DOCKER_BUILD_OPTS) .
+	docker build -t gns-python3 $(DOCKER_BUILD_OPTS) .
 	mv .Dockerfile.bak Dockerfile
 
 docker-gns-uwsgi:
 	cd uwsgi
 	cp Dockerfile .Dockerfile.bak
 	sed -i -e "s|FROM yandex/gns-python3|FROM gns-python3|g" Dockerfile
-	docker build --rm -t gns-uwsgi $(DOCKER_BUILD_OPTS) .
+	docker build -t gns-uwsgi $(DOCKER_BUILD_OPTS) .
 	mv .Dockerfile.bak Dockerfile
