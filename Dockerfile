@@ -16,7 +16,7 @@ RUN apt-get -y clean
 ADD requirements.txt /root/
 RUN easy_install -H *.python.org `cat /root/requirements.txt`
 RUN easy_install -H *.python.org git+git://github.com/signalfuse/maestro-ng
-RUN rm -f /root/requirements.txt
+RUN rm /root/requirements.txt
 
 ADD . /root/gns
 RUN easy_install -H *.python.org /root/gns
