@@ -3,10 +3,10 @@
 
 from raava import zoo
 
-from gns import service
 from gns import zclient
 
 
+##### Public methods #####
 def run(config):
     with zclient.get_context(config) as client:
         zoo.drop(client, True)

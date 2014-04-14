@@ -10,8 +10,8 @@ from gns import zclient
 from gns import core
 from gns import chain
 
-import meters
 
+##### Public methods #####
 def run(config):
     core_opts = config[service.S_CORE]
     app_opts = config[service.S_SPLITTER]
