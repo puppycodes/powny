@@ -38,7 +38,7 @@ services:
                 <<: *gns-fetcher
                 ship: *ship-3
     gns-api:
-        image: *gns-image
+        image: *gns-api-image
         requires:
             - zookeeper
         instances:

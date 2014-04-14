@@ -14,7 +14,7 @@ services:
         instances:
             gns-fetcher: *gns-fetcher
     gns-api:
-        image: *gns-image
+        image: *gns-api-image
         requires:
             - zookeeper
         instances:
