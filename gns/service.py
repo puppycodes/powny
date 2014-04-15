@@ -30,6 +30,7 @@ S_CHERRY    = "cherry"
 
 O_ZOO_NODES     = "zoo-nodes"
 O_ZOO_TIMEOUT   = "zoo-timeout"
+O_ZOO_START_TIMEOUT = "zoo-start-timeout"
 O_ZOO_RANDOMIZE = "zoo-randomize"
 O_ZOO_CHROOT    = "zoo-chroot"
 O_RULES_DIR     = "rules-dir"

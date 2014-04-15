@@ -10,6 +10,7 @@ def connect(config):
     client = zoo.connect(
         zoo_nodes=core_attrs[service.O_ZOO_NODES],
         timeout=core_attrs[service.O_ZOO_TIMEOUT],
+        start_timeout=core_attrs[service.O_ZOO_START_TIMEOUT],
         randomize_hosts=core_attrs[service.O_ZOO_RANDOMIZE],
         chroot=core_attrs[service.O_ZOO_CHROOT],
     )
