@@ -34,10 +34,13 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
         proc.start()
         proc.join()
         cls._services = [
-            threading.Thread(target=lambda: gns.api.run(config)),
-            threading.Thread(target=lambda: gns.splitter.run(config)),
-            threading.Thread(target=lambda: gns.worker.run(config)),
-            threading.Thread(target=lambda: gns.collector.run(config)),
+            threading.Thread(target=method, args=(config,))
+            for method in (
+                gns.api.run,
+                gns.splitter.run,
+                gns.worker.run,
+                gns.collector.run,
+            )
         ]
         for service in cls._services:
             service.daemon = True
