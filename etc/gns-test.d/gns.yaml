@@ -1,11 +1,19 @@
 core:
     import-alias: rules
+    handle-signals: false
 
 output:
     noop: true
 
+service-opts: &service-opts
+    die-after: 0
+    workers: 1
+splitter:
+    <<: *service-opts
+worker:
+    <<: *service-opts
 collector:
+    <<: *service-opts
     poll-interval: 1
 
 logging: !include logging.yaml
-

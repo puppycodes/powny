@@ -14,6 +14,7 @@ import gns.worker
 import gns.collector
 import gns.service
 
+
 ##### Private objects #####
 _logger = logging.getLogger(__name__)
 
@@ -33,26 +34,15 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
         proc.start()
         proc.join()
         cls._services = [
-            multiprocessing.Process(target=module.run, args=(config,))
-            for module in [
-                gns.api,
-                gns.splitter,
-                gns.worker,
-                gns.collector,
-            ]
+            threading.Thread(target=lambda: gns.api.run(config)),
+            threading.Thread(target=lambda: gns.splitter.run(config)),
+            threading.Thread(target=lambda: gns.worker.run(config)),
+            threading.Thread(target=lambda: gns.collector.run(config)),
         ]
         for service in cls._services:
+            service.daemon = True
             service.start()
-        # wait for services to start and initialize
-        # FIXME: do not invoke subprocesses, run all code in single process
-        time.sleep(3)
-
-    @classmethod
-    def tearDownClass(cls):
-        for service in cls._services:
-            service.terminate()
-        for service in cls._services:
-            service.join()
+        time.sleep(3) # wait for services to start and initialize
 
 
     ### Tests ###
