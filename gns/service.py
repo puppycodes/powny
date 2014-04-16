@@ -60,6 +60,9 @@ O_PORT              = "port"
 def _valid_float_min_0(arg):
     return validators.common.valid_number(arg, 0, value_type=float)
 
+def _valid_float_min_01(arg):
+    return validators.common.valid_number(arg, 0.1, value_type=float)
+
 def _valid_number_min_0(arg):
     return validators.common.valid_number(arg, 0)
 
@@ -79,7 +82,8 @@ _DAEMON_MAP = {
 CONFIG_MAP = {
     S_CORE: {
         O_ZOO_NODES:     (("localhost",),  validators.common.valid_string_list),
-        O_ZOO_TIMEOUT:   (10,              lambda arg: validators.common.valid_number(arg, 0.1, value_type=float)),
+        O_ZOO_TIMEOUT:   (10,              _valid_float_min_01),
+        O_ZOO_START_TIMEOUT: (10,          _valid_float_min_01),
         O_ZOO_RANDOMIZE: (True,            validators.common.valid_bool),
         O_ZOO_CHROOT:    ("/gns",          str),
 
