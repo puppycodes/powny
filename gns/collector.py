@@ -23,6 +23,7 @@ def run(config):
         die_after         = app_opts[service.O_DIE_AFTER],
         quit_wait         = app_opts[service.O_QUIT_WAIT],
         interval          = app_opts[service.O_RECHECK],
+        handle_signals    = config[service.S_CORE][service.O_HANDLE_SIGNALS],
         poll_interval     = app_opts[service.O_POLL_INTERVAL],
         delay             = app_opts[service.O_ACQUIRE_DELAY],
         recycled_priority = app_opts[service.O_RECYCLED_PRIORITY],

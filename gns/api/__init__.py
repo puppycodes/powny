@@ -10,8 +10,12 @@ from . import rpc # pylint: disable=W0611
 from . import rest
 from . import golem
 
+
+##### Public methods #####
 def run(config):
     (root, server_opts) = _init(config, service.S_CHERRY)
+    if not config[service.S_CORE][service.O_HANDLE_SIGNALS]:
+        del cherrypy.engine.signal_handler
     cherrypy.quickstart(root, config=server_opts)
 
 def make_wsgi_app():

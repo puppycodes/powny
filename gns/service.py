@@ -30,13 +30,15 @@ S_CHERRY    = "cherry"
 
 O_ZOO_NODES     = "zoo-nodes"
 O_ZOO_TIMEOUT   = "zoo-timeout"
+O_ZOO_START_TIMEOUT = "zoo-start-timeout"
 O_ZOO_RANDOMIZE = "zoo-randomize"
 O_ZOO_CHROOT    = "zoo-chroot"
 O_RULES_DIR     = "rules-dir"
 O_RULES_HEAD    = "rules-head"
 O_IMPORT_ALIAS  = "import-alias"
 O_FETCHER       = "fetcher"
-O_FETCH_INTERVAL= "fetch-interval"
+O_FETCH_INTERVAL = "fetch-interval"
+O_HANDLE_SIGNALS = "handle-signals"
 
 O_VERSION = "version"
 
@@ -58,6 +60,9 @@ O_PORT              = "port"
 def _valid_float_min_0(arg):
     return validators.common.valid_number(arg, 0, value_type=float)
 
+def _valid_float_min_01(arg):
+    return validators.common.valid_number(arg, 0.1, value_type=float)
+
 def _valid_number_min_0(arg):
     return validators.common.valid_number(arg, 0)
 
@@ -69,7 +74,7 @@ def _valid_maybe_empty_object(arg):
 
 _DAEMON_MAP = {
     O_WORKERS:   (10,   _valid_number_min_1),
-    O_DIE_AFTER: (100,  _valid_number_min_1),
+    O_DIE_AFTER: (100,  lambda arg: validators.common.valid_maybe_empty(arg, _valid_number_min_0)),
     O_QUIT_WAIT: (10,   _valid_number_min_0),
     O_RECHECK:   (0.01, _valid_float_min_0),
 }
@@ -77,7 +82,8 @@ _DAEMON_MAP = {
 CONFIG_MAP = {
     S_CORE: {
         O_ZOO_NODES:     (("localhost",),  validators.common.valid_string_list),
-        O_ZOO_TIMEOUT:   (10,              lambda arg: validators.common.valid_number(arg, 0.1, value_type=float)),
+        O_ZOO_TIMEOUT:   (10,              _valid_float_min_01),
+        O_ZOO_START_TIMEOUT: (10,          _valid_float_min_01),
         O_ZOO_RANDOMIZE: (True,            validators.common.valid_bool),
         O_ZOO_CHROOT:    ("/gns",          str),
 
@@ -86,6 +92,8 @@ CONFIG_MAP = {
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
         O_FETCHER:      (None,            _valid_maybe_empty_object),
         O_FETCH_INTERVAL: (60,            int),
+
+        O_HANDLE_SIGNALS: (True,          validators.common.valid_bool),
     },
 
     S_LOGGING: {

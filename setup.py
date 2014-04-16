@@ -41,8 +41,8 @@ if __name__ == "__main__":
         ),
 
         install_requires=(
-            "raava >= 0.4",
-            "elog >= 0.1",
+            "raava >= 0.5",
+            "elog >= 0.2",
             "chrpc >= 0.1",
             "meters >= 0.3",
 

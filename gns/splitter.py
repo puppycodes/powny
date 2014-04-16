@@ -35,6 +35,7 @@ def run(config):
         die_after     = app_opts[service.O_DIE_AFTER],
         quit_wait     = app_opts[service.O_QUIT_WAIT],
         interval      = app_opts[service.O_RECHECK],
+        handle_signals = core_opts[service.O_HANDLE_SIGNALS],
         loader        = loader,
     )
     app.run()
