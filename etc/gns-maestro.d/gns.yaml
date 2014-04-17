@@ -12,10 +12,13 @@ logging: !include logging.yaml
 
 splitter:
     workers: !!python/object/apply:os.getenv [GNS_SPLITTER_WORKERS, 1]
+    die-after: !!python/object/apply:os.getenv [GNS_SPLITTER_DIE_AFTER]
 worker:
     workers: !!python/object/apply:os.getenv [GNS_WORKER_WORKERS, 1]
+    die-after: !!python/object/apply:os.getenv [GNS_WORKER_DIE_AFTER]
 collector:
     workers: !!python/object/apply:os.getenv [GNS_COLLECTOR_WORKERS, 1]
+    die-after: !!python/object/apply:os.getenv [GNS_COLLECTOR_DIE_AFTER]
 
 output:
     sms:
