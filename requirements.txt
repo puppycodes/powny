@@ -1,10 +1,10 @@
-raava
-elog
-chrpc
-meters
-kazoo
-ulib
+git+https://github.com/mdevaev/kazoo.git@atexit-leak-fix#egg=kazoo
 pyyaml
 decorator
 python-dateutil
 pygments
+ulib
+raava
+elog
+chrpc
+meters
