@@ -45,6 +45,7 @@ if __name__ == "__main__":
             "elog >= 0.2",
             "chrpc >= 0.1",
             "meters >= 0.3",
+            "golemapi >= 0.3",
 
             "kazoo >= 1.3.1",
             "ulib >= 0.24",
