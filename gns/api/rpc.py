@@ -4,10 +4,9 @@ from ulib import validators
 import ulib.validators.extra # pylint: disable=W0611
 
 from raava import events
-from raava import rules
 
+from . import common
 from .. import zclient
-from .. import chain
 
 
 ##### Public classes #####
@@ -18,9 +17,7 @@ class EventsApi(chrpc.server.Module):
     @chrpc.server.api
     def add(self, **kwargs):
         """ Submit event """
-        event_root = rules.EventRoot(kwargs)
-        with zclient.get_context(self._config) as client:
-            return events.add(client, event_root, chain.MAIN)
+        return common.add_event(kwargs, self._config)
 
     @chrpc.server.api
     def cancel(self, job_id):
@@ -48,4 +45,3 @@ class EventsApi(chrpc.server.Module):
         job_id = validators.extra.valid_uuid(job_id)
         with zclient.get_context(self._config) as client:
             return events.get_info(client, job_id)
-

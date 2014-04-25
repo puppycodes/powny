@@ -7,11 +7,7 @@ import chrpc.server
 from ulib import validators
 import ulib.validators.common # pylint: disable=W0611
 
-from raava import events
-from raava import rules
-
-from .. import zclient
-from .. import chain
+from . import common
 
 
 ##### Private methods #####
@@ -49,14 +45,14 @@ class SubmitApi(chrpc.server.WebObject):
     ##### Private #####
 
     def _handle(self, request):
-        event_root = rules.EventRoot({
-                "host":    request["object"],
-                "service": request["eventtype"],
-            })
+        event = {
+            "host":    request["object"],
+            "service": request["eventtype"],
+        }
         if validators.common.valid_bool(request.get("json", False)):
-            event_root.update(json.loads(request.get("info", "{}")))
+            event.update(json.loads(request.get("info", "{}")))
         else:
-            event_root.update({
+            event.update({
                     "status": {
                         "ok":       "OK",
                         "warning":  "WARN",
@@ -64,7 +60,5 @@ class SubmitApi(chrpc.server.WebObject):
                     }[request.get("status", "critical")],
                     "description": request.get("info", ""),
                 })
-        with zclient.get_context(self._config) as client:
-            job_id = events.add(client, event_root, chain.MAIN)
+        job_id = common.add_event(event, self._config)
         return "ok job_id:" + job_id
-
