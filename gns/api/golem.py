@@ -63,5 +63,5 @@ class SubmitApi(chrpc.server.WebObject):
         try:
             job_id = common.add_event(event, self._config)
             return "ok job_id:" + job_id
-        except common.InputOverflowError:
+        except common.InputQueueOverflowError:
             raise cherrypy.HTTPError(503, "Input queue overflow")
