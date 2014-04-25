@@ -60,5 +60,8 @@ class SubmitApi(chrpc.server.WebObject):
                     }[request.get("status", "critical")],
                     "description": request.get("info", ""),
                 })
-        job_id = common.add_event(event, self._config)
-        return "ok job_id:" + job_id
+        try:
+            job_id = common.add_event(event, self._config)
+            return "ok job_id:" + job_id
+        except common.InputOverflowError:
+            raise cherrypy.HTTPError(503, "Input overflow")

@@ -22,6 +22,8 @@ def _raise_http(method):
             raise cherrypy.HTTPError(400, str(err))
         except events.NoJobError:
             raise cherrypy.HTTPError(404, "No job")
+        except common.InputOverflowError:
+            raise cherrypy.HTTPError(503, "Input overflow")
     return decorator.decorator(wrap, method)
 
 
@@ -42,6 +44,7 @@ class JobsResource(chrpc.server.WebObject):
             else:
                 return events.get_info(client, job_id)
 
+    @_raise_http
     @cherrypy.tools.json_in()
     @cherrypy.tools.json_out()
     def POST(self): # pylint: disable=C0103
