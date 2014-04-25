@@ -15,7 +15,7 @@ class InputOverflowError(Exception):
 def add_event(event, config):
     event_root = rules.EventRoot(event)
     with zclient.get_context(config) as client:
-        if events.get_input_size(client) >= config[service.S_CORE][service.O_MAX_INPUT_SIZE]:
+        if events.get_input_size(client) >= config[service.S_CORE][service.O_MAX_INPUT_QUEUE_SIZE]:
             raise InputOverflowError
         job_id = events.add(client, event_root, chain.MAIN)
     return job_id

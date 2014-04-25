@@ -23,7 +23,7 @@ def _raise_http(method):
         except events.NoJobError:
             raise cherrypy.HTTPError(404, "No job")
         except common.InputOverflowError:
-            raise cherrypy.HTTPError(503, "Input overflow")
+            raise cherrypy.HTTPError(503, "Input queue overflow")
     return decorator.decorator(wrap, method)
 
 
