@@ -39,6 +39,7 @@ O_IMPORT_ALIAS  = "import-alias"
 O_FETCHER       = "fetcher"
 O_FETCH_INTERVAL = "fetch-interval"
 O_HANDLE_SIGNALS = "handle-signals"
+O_MAX_INPUT_QUEUE_SIZE = "max-input-queue-size"
 
 O_VERSION = "version"
 
@@ -94,6 +95,8 @@ CONFIG_MAP = {
         O_FETCH_INTERVAL: (60,            int),
 
         O_HANDLE_SIGNALS: (True,          validators.common.valid_bool),
+
+        O_MAX_INPUT_QUEUE_SIZE: (50000,   _valid_number_min_1),
     },
 
     S_LOGGING: {

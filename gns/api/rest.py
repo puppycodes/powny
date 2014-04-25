@@ -8,10 +8,9 @@ import ulib.validators.common # pylint: disable=W0611
 import ulib.validators.extra
 
 from raava import events
-from raava import rules
 
+from . import common
 from .. import zclient
-from .. import chain
 
 
 ##### Private methods #####
@@ -23,6 +22,8 @@ def _raise_http(method):
             raise cherrypy.HTTPError(400, str(err))
         except events.NoJobError:
             raise cherrypy.HTTPError(404, "No job")
+        except common.InputQueueOverflowError:
+            raise cherrypy.HTTPError(503, "Input queue overflow")
     return decorator.decorator(wrap, method)
 
 
@@ -43,12 +44,11 @@ class JobsResource(chrpc.server.WebObject):
             else:
                 return events.get_info(client, job_id)
 
+    @_raise_http
     @cherrypy.tools.json_in()
     @cherrypy.tools.json_out()
     def POST(self): # pylint: disable=C0103
-        event_root = rules.EventRoot(cherrypy.request.json)
-        with zclient.get_context(self._config) as client:
-            job_id = events.add(client, event_root, chain.MAIN)
+        job_id = common.add_event(cherrypy.request.json, self._config)
         return {"status": "ok", "id": job_id}
 
     @_raise_http
@@ -58,4 +58,3 @@ class JobsResource(chrpc.server.WebObject):
         with zclient.get_context(self._config) as client:
             events.cancel(client, job_id)
         return {"status": "ok"}
-
