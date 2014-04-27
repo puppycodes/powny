@@ -36,7 +36,3 @@ Getting the information about the event:
 ```
 curl http://localhost:7887/api/rest/v1/jobs/<UUID>
 ```
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/yandex-sysmon/notify/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
