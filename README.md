@@ -14,8 +14,7 @@ Pypy3 services:
 
 Example commands to start:
 ```
-PYTHONPATH=. python3 scripts/gns-api.py
-PYTHONPATH=. pypy3 scripts/gns-splitter.py
+gns-cli fetcher -c etc/gns.d/gns.yaml
 ```
 
 ###Basic API usage###
