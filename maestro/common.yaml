@@ -8,6 +8,8 @@ default_env: &default-env
     ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, "http://elasticlog.yandex.net:9200"]
     GOLEM_SMS_URL: !!python/object/apply:os.getenv [GOLEM_SMS_URL, "http://localhost"]
     EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, "gns@gns"]
+    BACKDOOR_ENABLED: !!python/object/apply:os.getenv [BACKDOOR_ENABLED, false]
+    BACKDOOR_PORT: !!python/object/apply:os.getenv [BACKDOOR_PORT, 12309]
 
 volumes: &volumes
     /root/rules.git: /var/cache/gns-rules.git

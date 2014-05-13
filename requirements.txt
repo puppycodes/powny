@@ -3,6 +3,7 @@ pyyaml
 decorator
 python-dateutil
 pygments
+manhole
 ulib
 raava
 elog

@@ -17,6 +17,8 @@ import ulib.validators.fs
 import elog.records
 import meters
 
+from . import backdoor
+
 
 ##### Public constants #####
 S_CORE      = "core"
@@ -27,6 +29,7 @@ S_WORKER    = "worker"
 S_COLLECTOR = "collector"
 S_API       = "api"
 S_CHERRY    = "cherry"
+S_BACKDOOR  = "backdoor"
 
 O_ZOO_NODES     = "zoo-nodes"
 O_ZOO_TIMEOUT   = "zoo-timeout"
@@ -53,8 +56,10 @@ O_POLL_INTERVAL     = "poll-interval"
 O_RECYCLED_PRIORITY = "recycled-priority"
 O_GARBAGE_LIFETIME  = "garbage-lifetime"
 
-O_HOST              = "host"
-O_PORT              = "port"
+O_HOST    = "host"
+O_PORT    = "port"
+O_LISTEN  = "listen"
+O_ENABLED = "enabled"
 
 
 ###
@@ -124,6 +129,12 @@ CONFIG_MAP = {
             "server.socket_port": (7887,      validators.network.valid_port),
         },
     },
+
+    S_BACKDOOR: {
+        O_ENABLED: (False, validators.common.valid_bool),
+        O_PORT:    (12309, validators.network.valid_port),
+        O_LISTEN:  (5,     _valid_number_min_1),
+    },
 }
 
 
@@ -153,6 +164,7 @@ def init(**kwargs):
         sys.exit(1)
 
     init_logging(config)
+    init_backdoor(config)
     init_meters(config)
 
     kwargs.update({
@@ -203,6 +215,13 @@ def init_logging(config):
     logging.setLogRecordFactory(elog.records.LogRecord) # This factory can keep the TID
     logging.captureWarnings(True)
     logging.config.dictConfig(config[S_LOGGING])
+
+def init_backdoor(config):
+    if config[S_BACKDOOR][O_ENABLED]:
+        backdoor.start(
+            config[S_BACKDOOR][O_PORT],
+            config[S_BACKDOOR][O_LISTEN],
+        )
 
 def init_meters(config):
     meters.configure(config[S_METERS])

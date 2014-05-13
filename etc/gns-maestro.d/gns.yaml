@@ -10,6 +10,10 @@ git:
 
 logging: !include logging.yaml
 
+backdoor:
+    enabled: !!python/object/apply:os.getenv [BACKDOOR_ENABLED]
+    port: !!python/object/apply:os.getenv [BACKDOOR_PORT]
+
 splitter:
     workers: !!python/object/apply:os.getenv [GNS_SPLITTER_WORKERS, 1]
     die-after: !!python/object/apply:os.getenv [GNS_SPLITTER_DIE_AFTER]
