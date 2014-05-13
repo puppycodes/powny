@@ -5,7 +5,7 @@ test:
 	PYTHONPATH=. LC_ALL=C pypy3 -m py.test -v --cov gns --cov-report term-missing
 
 pylint:
-	pypy3 `which pylint` --rcfile=pylint.ini \
+	pypy3 -m pylint --rcfile=pylint.ini \
 		tests \
 		gns \
 		*.py \
