@@ -19,7 +19,7 @@ docker -d -H unix:///var/run/docker.sock -H tcp://172.18.43.1:4243
 For configuration management, we use [Maestro-NG](https://github.com/signalfuse/maestro-ng).
 You can install it from GitHub and register in the $PATH:
 ```
-python2  -m pip install --user --upgrade git+https://github.com/signalfuse/maestro-ng.git
+python2 -m pip install --user --upgrade git+https://github.com/signalfuse/maestro-ng.git
 export PATH=$PATH:~/.local/bin
 ```
 Next, you can clone GNS from GitHub:
