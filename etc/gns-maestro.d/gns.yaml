@@ -2,6 +2,7 @@ core:
     import-alias: rules
     zoo-nodes: !!python/object/apply:maestro.guestutils.get_node_list ["zookeeper", ["client"]]
     rules-dir: !!python/object/apply:os.getenv [RULES_DIR]
+    max-input-queue-size: !!python/object/apply:os.getenv [MAX_INPUT_QUEUE_SIZE]
     fetcher: git
 
 git:
