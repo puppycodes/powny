@@ -5,6 +5,7 @@ default_env: &default-env
     RULES_DIR: /root/rules
     REPO_DIR: /root/rules.git
     REPO_URL: !!python/object/apply:os.getenv [GNS_REPO_URL, "https://github.yandex-team.ru/monitoring/gns-rules"]
+    MAX_INPUT_QUEUE_SIZE: !!python/object/apply:os.getenv [MAX_INPUT_QUEUE_SIZE, 50000]
     ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, "http://elasticlog.yandex.net:9200"]
     GOLEM_SMS_URL: !!python/object/apply:os.getenv [GOLEM_SMS_URL, "http://localhost"]
     EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, "gns@gns"]
