@@ -11,4 +11,4 @@ RUN easy_install -H *.python.org uwsgi mako
 ADD uwsgi.ini.mako /root/
 
 WORKDIR /root
-CMD mako-render uwsgi.ini.mako > uwsgi.ini && uwsgi --ini uwsgi.ini
+CMD trap exit TERM; mako-render uwsgi.ini.mako > uwsgi.ini && uwsgi --ini uwsgi.ini & wait
