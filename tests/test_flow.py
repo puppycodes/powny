@@ -51,6 +51,7 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
     ### Tests ###
 
     def test_flow_ends_urlopen(self):
+        _logger.debug("----- BEGIN: test_flow_ends_urlopen() -----")
         event = {
             "host":    "test_flow",
             "service": "foo",
@@ -58,8 +59,10 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
         }
         event.update(self._echo_attrs)
         self.assertEqual(_send_recv_event(event), [event])
+        _logger.debug("----- END: test_flow_ends_urlopen() -----")
 
     def test_flow_previous_state(self):
+        _logger.debug("----- BEGIN: test_flow_previous_state() -----")
         events = []
         for count in range(6):
             event = {
@@ -68,8 +71,10 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
             }
             event.update(self._echo_attrs)
             events.append(event)
-        for (current, previous) in zip(events, [None] + events):
+        for (count, (current, previous)) in enumerate(zip(events, [None] + events)):
+            _logger.debug("----- STEP %d: test_flow_previous_state() -----", count)
             self.assertEqual(_send_recv_event(current), [current, previous])
+        _logger.debug("----- END: test_flow_previous_state() -----")
 
 
 ##### Private methods #####
