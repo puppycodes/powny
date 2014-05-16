@@ -5,6 +5,7 @@ python-dateutil
 pygments
 manhole
 objgraph
+membug
 ulib
 raava
 elog
