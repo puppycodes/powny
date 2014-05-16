@@ -105,6 +105,7 @@ class _ShotServer(http.server.HTTPServer, threading.Thread):
         with self._finished:
             while self._result is None:
                 self._finished.wait()
+                _logger.debug("wait_for_result() loop")
             return self._result
 
     def put_result(self, result):
@@ -112,6 +113,7 @@ class _ShotServer(http.server.HTTPServer, threading.Thread):
         with self._finished:
             self._result = result
             self._finished.notify()
+            _logger.debug("the result obtained")
 
     def stop(self):
         _logger.debug("stopping one-shot server %s", self)
