@@ -132,7 +132,9 @@ class _ShotHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write(b"ok")
+        _logger.debug("shot-server got the result")
         self.server.put_result(result)
+        _logger.debug("shot-server put the result")
 
     def log_message(self, format, *args): # pylint: disable=W0622
         _logger.info("%s - - [%s] %s", self.address_string(), self.log_date_time_string(), format % (args))
