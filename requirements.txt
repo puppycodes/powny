@@ -4,6 +4,7 @@ decorator
 python-dateutil
 pygments
 manhole
+objgraph
 ulib
 raava
 elog
