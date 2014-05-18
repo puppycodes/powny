@@ -9,7 +9,8 @@ import chrpc.client
 ##### Public methods #####
 def main():
     parser = argparse.ArgumentParser(description="Low-level CLI tool for GNS API")
-    parser.add_argument("--api-url", dest="api_url",       action="store", default="http://localhost:7887", metavar="<url>")
+    parser.add_argument("--api-url", dest="api_url",       action="store",
+        default="http://localhost:7887", metavar="<url>")
     parser.add_argument("--add",     dest="add_flag",      action="store_true")
     parser.add_argument("--cancel",  dest="cancel_job_id", action="store", metavar="<uuid>")
     parser.add_argument("--info",    dest="info_job_id",   action="store", metavar="<uuid>")

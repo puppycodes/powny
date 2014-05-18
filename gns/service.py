@@ -150,7 +150,8 @@ _logger = logging.getLogger(__name__)
 ##### Public methods #####
 def init(**kwargs):
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("-c", "--config", dest="config_file_path", default=kwargs.pop("config_file_path", None), metavar="<file>")
+    parser.add_argument("-c", "--config", dest="config_file_path",
+        default=kwargs.pop("config_file_path", None), metavar="<file>")
     (options, argv) = parser.parse_known_args()
 
     try:
