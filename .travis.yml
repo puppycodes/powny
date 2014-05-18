@@ -12,13 +12,11 @@ before_install:
     - sudo ln -fs /usr/lib/pypy3/bin/easy_install /usr/local/bin/easy_install
     - sudo /usr/share/zookeeper/bin/zkServer.sh start
 install:
-    - sudo PYTHONPATH=/usr/lib/pypy3/site-packages easy_install .
-before_script:
-    - sudo PYTHONPATH=/usr/lib/pypy3/site-packages easy_install `cat test_requirements.txt`
+    - sudo PYTHONPATH=/usr/lib/pypy3/site-packages easy_install tox coveralls
 script:
-    - "/usr/lib/pypy3/bin/py.test -v --cov gns --cov-report term-missing"
+    - /usr/lib/pypy3/bin/tox -v
 after_success:
-    - "/usr/lib/pypy3/bin/coveralls"
+    - /usr/lib/pypy3/bin/coveralls
 notifications:
     hipchat:
         rooms:

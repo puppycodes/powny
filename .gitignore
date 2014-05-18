@@ -8,3 +8,4 @@ __pycache__
 rules.git/
 test.log
 build/
+.tox/

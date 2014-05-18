@@ -26,6 +26,7 @@ Next, you can clone GNS from GitHub:
 ```
 git clone https://github.com/yandex-sysmon/gns.git
 cd gns
+git submodule update --init --recursive
 ```
 Run the maestro configuration. This command can take a long time, it needs to download several images:
 ```
@@ -69,14 +70,11 @@ To test your must have installed and configured ZooKeeper.
 Intall PyPy3 and dependencies:
 ```
 wget https://bootstrap.pypa.io/ez_setup.py -O - | pypy3 - --user
-~/.local/bin/easy_install -H *.python.org `cat requirements.txt test_requirements.txt` pylint
-```
-Linting:
-```
-make pylint
+pypy3 -m easy_install tox
 ```
 Testing:
 ```
-make test
+make tox
 ```
+See all testing targets in Makefile.
 Also, this project uses [Travis-Ci](https://travis-ci.org/yandex-sysmon/gns).

@@ -1,15 +1,14 @@
 all:
 	true
 
-test:
-	PYTHONPATH=. LC_ALL=C pypy3 -m py.test -v --cov gns --cov-report term-missing
+tox:
+	pypy3 -m tox
 
 pylint:
-	pypy3 -m pylint --rcfile=pylint.ini \
-		tests \
-		gns \
-		*.py \
-		--output-format=colorized 2>&1 | less -SR
+	pypy3 -m tox -e pylint
+
+test:
+	pypy3 -m tox -e unittest
 
 pypi:
 	python setup.py register
@@ -20,6 +19,9 @@ clean:
 	rm -rf build dist gns.egg-info
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name __pycache__ -delete
+
+clean-all: clean
+	rm -rf .tox
 
 docker: docker-gns docker-gns-python3 docker-gns-uwsgi
 
