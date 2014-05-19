@@ -77,4 +77,3 @@ Testing:
 make tox
 ```
 See all testing targets in Makefile.
-Also, this project uses [Travis-Ci](https://travis-ci.org/yandex-sysmon/gns).
