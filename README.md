@@ -14,7 +14,7 @@ To try GNS, you need to install Python 2 and [Docker](http://docker.io) from you
 Docker must be running on the local socket and a special network interface:
 ```
 sudo ip addr add 172.18.43.1/24 dev lo label lo:1
-docker -d -H unix:///var/run/docker.sock -H tcp://172.18.43.1:4243
+sudo docker -d -H unix:///var/run/docker.sock -H tcp://172.18.43.1:4243
 ```
 For configuration management, we use [Maestro-NG](https://github.com/signalfuse/maestro-ng).
 You can install it from GitHub and register in the $PATH:

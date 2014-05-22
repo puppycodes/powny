@@ -51,6 +51,7 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
     ### Tests ###
 
     def test_flow_ends_urlopen(self):
+        _logger.debug("----- BEGIN: test_flow_ends_urlopen() -----")
         event = {
             "host":    "test_flow",
             "service": "foo",
@@ -58,8 +59,10 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
         }
         event.update(self._echo_attrs)
         self.assertEqual(_send_recv_event(event), [event])
+        _logger.debug("----- END: test_flow_ends_urlopen() -----")
 
     def test_flow_previous_state(self):
+        _logger.debug("----- BEGIN: test_flow_previous_state() -----")
         events = []
         for count in range(6):
             event = {
@@ -68,8 +71,10 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
             }
             event.update(self._echo_attrs)
             events.append(event)
-        for (current, previous) in zip(events, [None] + events):
+        for (count, (current, previous)) in enumerate(zip(events, [None] + events)):
+            _logger.debug("----- STEP %d: test_flow_previous_state() -----", count)
             self.assertEqual(_send_recv_event(current), [current, previous])
+        _logger.debug("----- END: test_flow_previous_state() -----")
 
 
 ##### Private methods #####
@@ -104,6 +109,7 @@ class _ShotServer(http.server.HTTPServer, threading.Thread):
     def wait_for_result(self):
         with self._finished:
             while self._result is None:
+                _logger.debug("waiting for result")
                 self._finished.wait()
             return self._result
 
@@ -111,6 +117,7 @@ class _ShotServer(http.server.HTTPServer, threading.Thread):
         assert result is not None, "result should not be None"
         with self._finished:
             self._result = result
+            _logger.debug("the result obtained")
             self._finished.notify()
 
     def stop(self):
@@ -130,7 +137,9 @@ class _ShotHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write(b"ok")
+        _logger.debug("shot-server got the result")
         self.server.put_result(result)
+        _logger.debug("shot-server put the result")
 
     def log_message(self, format, *args): # pylint: disable=W0622
         _logger.info("%s - - [%s] %s", self.address_string(), self.log_date_time_string(), format % (args))
