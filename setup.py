@@ -41,9 +41,22 @@ if __name__ == "__main__":
         ),
 
         install_requires=[
-            ( req if "egg=" not in req else req[req.index("egg=") + 4:] )
-            for req in map(str.strip, open("requirements.txt").read().splitlines())
-            if " " not in req
+            "raava >= 0.10",
+            "elog >= 0.4",
+            "chrpc >= 0.1",
+            "meters >= 0.3",
+            "gns-helpers >= 0.1",
+
+            #"kazoo >= 2.0b1",
+            "ulib >= 0.24",
+            "pyyaml >= 3.10",
+            "decorator >= 3.4.0",
+            "manhole >= 0.6.1",
+            "objgraph >= 1.8.1",
+            "membug >= 0.1",
+        ],
+
+        dependency_links=[
+            "git+https://github.com/python-zk/kazoo.git#egg=kazoo",
         ],
     )
-
