@@ -1,3 +1,0 @@
-[submodule "rules/head_version/base"]
-	path = rules/head_version/base
-	url = https://github.com/yandex-sysmon/rules-base.git
