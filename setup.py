@@ -19,7 +19,6 @@ if __name__ == "__main__":
         packages=(
             "gns",
             "gns/api",
-            "gns/fetchers",
         ),
 
         entry_points={
