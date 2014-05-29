@@ -78,11 +78,14 @@ def _git_update_rules(config):
         os.mkdir(tmp_path)
 
         _logger.info("Checkout %s --> %s", commit, module_path)
-        _shell_exec("git clone {git_worktree} {tmp}".format(git_worktree=git_worktree, tmp=tmp_path))
-        _shell_exec("git checkout -b version-{commit} {commit}".format(commit=commit), cwd=tmp_path)
-        _shell_exec("git submodule init", cwd=tmp_path)
-        _shell_exec("git submodule update", cwd=tmp_path)
-        os.rename(tmp_path, module_path)
+        try:
+            _shell_exec("git clone {git_worktree} {tmp}".format(git_worktree=git_worktree, tmp=tmp_path))
+            _shell_exec("git checkout -b version-{commit} {commit}".format(commit=commit), cwd=tmp_path)
+            _shell_exec("git submodule init", cwd=tmp_path)
+            _shell_exec("git submodule update", cwd=tmp_path)
+            os.rename(tmp_path, module_path)
+        except Exception:
+            _logger.exception("Unable to checkout %s", commit)
 
     _git_cleanup(rules_path, prefix, modules)
 
