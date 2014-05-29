@@ -7,6 +7,7 @@ from chrpc.server import Module
 from .. import service
 
 from . import jobs
+from . import state
 from . import golem
 
 
@@ -32,6 +33,11 @@ def _make_tree(config):
     root.api.rest = Module()
     root.api.rest.v1 = Module()
     root.api.rest.v1.jobs = jobs.JobsResource(config)
+    root.api.rest.v1.system = Module()
+    root.api.rest.v1.system.state = Module()
+    root.api.rest.v1.system.state.splitter = state.StateSplitterResource(config)
+    root.api.rest.v1.system.state.worker = state.StateWorkerResource(config)
+    root.api.rest.v1.system.state.collector = state.StateCollectorResource(config)
 
     root.api.compat = Module()
     root.api.compat.golem = Module()
@@ -40,6 +46,9 @@ def _make_tree(config):
     disp_dict = { "request.dispatch": cherrypy.dispatch.MethodDispatcher() }
     return (root, { path: disp_dict for path in (
                 "/api/rest/v1/jobs",
+                "/api/rest/v1/system/state/splitter",
+                "/api/rest/v1/system/state/worker",
+                "/api/rest/v1/system/state/collector",
                 "/api/compat/golem/submit",
             )
         })
