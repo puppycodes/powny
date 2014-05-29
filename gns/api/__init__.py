@@ -6,7 +6,6 @@ import cherrypy
 from chrpc.server import Module
 from .. import service
 
-from . import rpc # pylint: disable=W0611
 from . import rest
 from . import golem
 
@@ -29,10 +28,6 @@ def make_wsgi_app():
 def _make_tree(config):
     root = Module()
     root.api = Module()
-
-    root.api.rpc = Module()
-    root.api.rpc.v1 = Module()
-    root.api.rpc.v1.events = rpc.EventsApi(config)
 
     root.api.rest = Module()
     root.api.rest.v1 = Module()
