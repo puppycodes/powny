@@ -87,7 +87,7 @@ _DAEMON_MAP = {
     O_WORKERS:   (10,   _valid_number_min_1),
     O_DIE_AFTER: (100,  lambda arg: validators.common.valid_maybe_empty(arg, _valid_number_min_0)),
     O_QUIT_WAIT: (10,   _valid_number_min_0),
-    O_RECHECK:   (0.01, _valid_float_min_0),
+    O_RECHECK:   (5,    _valid_number_min_1),
 }
 
 CONFIG_MAP = {
