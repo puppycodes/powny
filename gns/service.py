@@ -41,6 +41,8 @@ O_RULES_DIR     = "rules-dir"
 O_RULES_HEAD    = "rules-head"
 O_IMPORT_ALIAS  = "import-alias"
 O_FETCH_INTERVAL = "fetch-interval"
+O_NODE_NAME      = "node-name"
+O_PROCESS_NAME   = "process-name"
 O_HANDLE_SIGNALS = "handle-signals"
 O_MAX_INPUT_QUEUE_SIZE = "max-input-queue-size"
 
@@ -83,6 +85,9 @@ def _valid_number_min_1(arg):
 def _valid_maybe_empty_object(arg):
     return validators.common.valid_maybe_empty(arg, validators.python.valid_object_name)
 
+def _valid_maybe_empty_str(arg):
+    return validators.common.valid_maybe_empty(arg, str)
+
 _DAEMON_MAP = {
     O_WORKERS:   (10,   _valid_number_min_1),
     O_DIE_AFTER: (100,  lambda arg: validators.common.valid_maybe_empty(arg, _valid_number_min_0)),
@@ -103,6 +108,8 @@ CONFIG_MAP = {
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
         O_FETCH_INTERVAL: (60,            int),
 
+        O_NODE_NAME:      (None,          _valid_maybe_empty_str),
+        O_PROCESS_NAME:   (None,          _valid_maybe_empty_str),
         O_HANDLE_SIGNALS: (True,          validators.common.valid_bool),
 
         O_MAX_INPUT_QUEUE_SIZE: (50000,   _valid_number_min_1),

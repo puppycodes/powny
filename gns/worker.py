@@ -27,5 +27,7 @@ def run(config):
         interval      = app_opts[service.O_RECHECK],
         handle_signals = core_opts[service.O_HANDLE_SIGNALS],
         rules_path    = core_opts[service.O_RULES_DIR],
+        node_name     = core_opts[service.O_NODE_NAME],
+        process_name  = core_opts[service.O_PROCESS_NAME],
     )
     app.run()

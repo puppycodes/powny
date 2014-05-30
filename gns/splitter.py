@@ -46,6 +46,8 @@ def run(config):
         quit_wait     = app_opts[service.O_QUIT_WAIT],
         interval      = app_opts[service.O_RECHECK],
         handle_signals = core_opts[service.O_HANDLE_SIGNALS],
+        node_name      = core_opts[service.O_NODE_NAME],
+        process_name   = core_opts[service.O_PROCESS_NAME],
         loader        = loader,
         get_ext_stat  = get_ext_stat,
     )
