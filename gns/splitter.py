@@ -40,7 +40,7 @@ def run(config):
     app = application.Application(
         thread_class  = splitter.SplitterThread,
         zoo_connect   = lambda: zclient.connect(config),
-        state_base_path = zoo.STATE_SPLITTER_PATH,
+        state_base    = zoo.STATE_SPLITTER,
         workers       = app_opts[service.O_WORKERS],
         die_after     = app_opts[service.O_DIE_AFTER],
         quit_wait     = app_opts[service.O_QUIT_WAIT],

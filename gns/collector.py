@@ -15,7 +15,7 @@ def run(config):
     app = application.Application(
         thread_class      = collector.CollectorThread,
         zoo_connect       = lambda: zclient.connect(config),
-        state_base_path   = zoo.STATE_COLLECTOR_PATH,
+        state_base        = zoo.STATE_COLLECTOR,
         workers           = app_opts[service.O_WORKERS],
         die_after         = app_opts[service.O_DIE_AFTER],
         quit_wait         = app_opts[service.O_QUIT_WAIT],
