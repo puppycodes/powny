@@ -22,6 +22,7 @@ from . import backdoor
 
 ##### Public constants #####
 S_CORE      = "core"
+S_GIT       = "git"
 S_LOGGING   = "logging"
 S_METERS    = "meters"
 S_SPLITTER  = "splitter"
@@ -39,10 +40,14 @@ O_ZOO_CHROOT    = "zoo-chroot"
 O_RULES_DIR     = "rules-dir"
 O_RULES_HEAD    = "rules-head"
 O_IMPORT_ALIAS  = "import-alias"
-O_FETCHER       = "fetcher"
 O_FETCH_INTERVAL = "fetch-interval"
 O_HANDLE_SIGNALS = "handle-signals"
 O_MAX_INPUT_QUEUE_SIZE = "max-input-queue-size"
+
+O_REPO_URL  = "repo-url"
+O_REPO_DIR  = "repo-dir"
+O_REVISIONS = "revisions"
+O_PREFIX    = "prefix"
 
 O_VERSION = "version"
 
@@ -96,12 +101,18 @@ CONFIG_MAP = {
         O_RULES_DIR:    ("rules",         str),
         O_RULES_HEAD:   ("HEAD",          str),
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
-        O_FETCHER:      (None,            _valid_maybe_empty_object),
         O_FETCH_INTERVAL: (60,            int),
 
         O_HANDLE_SIGNALS: (True,          validators.common.valid_bool),
 
         O_MAX_INPUT_QUEUE_SIZE: (50000,   _valid_number_min_1),
+    },
+
+    S_GIT: {
+        O_REPO_URL:  ("http://example.com", str),
+        O_REPO_DIR:  ("/tmp/rules.git",     str),
+        O_REVISIONS: (10,                   lambda arg: validators.common.valid_number(arg, 1)),
+        O_PREFIX:    ("git_",               str),
     },
 
     S_LOGGING: {
