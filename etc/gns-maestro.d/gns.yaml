@@ -3,6 +3,8 @@ core:
     zoo-nodes: !!python/object/apply:maestro.guestutils.get_node_list ["zookeeper", ["client"]]
     rules-dir: !!python/object/apply:os.getenv [RULES_DIR]
     max-input-queue-size: !!python/object/apply:os.getenv [MAX_INPUT_QUEUE_SIZE]
+    node-name: !!python/object/apply:maestro.guestutils.get_container_name []
+    process-name: !!python/object/apply:maestro.guestutils.get_service_name []
 
 git:
     repo-dir: !!python/object/apply:os.getenv [REPO_DIR]
