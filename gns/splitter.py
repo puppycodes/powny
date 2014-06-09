@@ -3,6 +3,7 @@
 
 from raava import handlers
 from raava import application
+from raava import appstate
 from raava import splitter
 from raava import zoo
 
@@ -10,12 +11,14 @@ from gns import service
 from gns import zclient
 from gns import core
 from gns import chain
+from gns import fetcher
 
 
 # =====
 def run(config):
     core_opts = config[service.S_CORE]
     app_opts = config[service.S_SPLITTER]
+    zoo_connect = ( lambda: zclient.connect(config) )
 
     core.init_rules_environment(config)
 
@@ -29,26 +32,32 @@ def run(config):
         ),
     )
 
-    def get_ext_stat():
+    def get_ext():
+        last_head = loader.get_last_head()
+        last_commit = ( last_head[len(fetcher.PREFIX):] if last_head is not None else None )
         return {
             "loader": {
-                "rules_dir": core_opts[service.O_RULES_DIR],
-                "last_head": loader.get_last_head(),
+                "rules_dir":   core_opts[service.O_RULES_DIR],
+                "last_head":   last_head,
+                "last_commit": last_commit,
             },
         }
+    state_writer = appstate.StateWriter(
+        zoo_connect = zoo_connect,
+        state_base  = zoo.STATE_SPLITTER,
+        node_name   = core_opts[service.O_NODE_NAME],
+        get_ext     = get_ext,
+    )
 
     app = application.Application(
         thread_class  = splitter.SplitterThread,
-        zoo_connect   = lambda: zclient.connect(config),
-        state_base    = zoo.STATE_SPLITTER,
+        zoo_connect   = zoo_connect,
         workers       = app_opts[service.O_WORKERS],
         die_after     = app_opts[service.O_DIE_AFTER],
         quit_wait     = app_opts[service.O_QUIT_WAIT],
         interval      = app_opts[service.O_RECHECK],
         handle_signals = core_opts[service.O_HANDLE_SIGNALS],
-        node_name      = core_opts[service.O_NODE_NAME],
-        process_name   = core_opts[service.O_PROCESS_NAME],
+        state_writer  = state_writer,
         loader        = loader,
-        get_ext_stat  = get_ext_stat,
     )
     app.run()

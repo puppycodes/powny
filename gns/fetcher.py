@@ -10,6 +10,10 @@ import time
 from . import service
 
 
+##### Public constants #####
+PREFIX = "git_"
+
+
 ##### Private objects #####
 _logger = logging.getLogger(__name__)
 
@@ -45,13 +49,12 @@ def _update_rules(config):
     repo_url       = config[service.S_GIT][service.O_REPO_URL]
     rules_path     = config[service.S_CORE][service.O_RULES_DIR]
     head_name      = config[service.S_CORE][service.O_RULES_HEAD]
-    prefix         = config[service.S_GIT][service.O_PREFIX]
     keep_revisions = config[service.S_GIT][service.O_REVISIONS]
 
     _git_pull(git_worktree, repo_url)
-    (module_name, keep_modules) = _git_update_rules(git_worktree, rules_path, prefix, keep_revisions)
+    (module_name, keep_modules) = _git_update_rules(git_worktree, rules_path, keep_revisions)
     _replace_head(rules_path, head_name, module_name)
-    _git_cleanup(rules_path, prefix, keep_modules)
+    _git_cleanup(rules_path, keep_modules)
 
 def _replace_head(rules_path, head_name, module_name):
     head_path = os.path.join(rules_path, head_name)
@@ -81,14 +84,14 @@ def _git_pull(git_worktree, repo_url):
             raise RuntimeError("git dir {} does not exist and repo-url is not set".format(git_dir))
     _shell_exec("git pull", cwd=git_worktree)
 
-def _git_update_rules(git_worktree, rules_path, prefix, keep_revisions):
+def _git_update_rules(git_worktree, rules_path, keep_revisions):
     keep_modules = []
     commits = _shell_exec("git log -n {} --pretty=format:%H".format(keep_revisions), cwd=git_worktree)
     commits = commits.strip().split("\n")
     assert len(commits) > 0
 
     for commit in commits:
-        module_name = prefix + commit
+        module_name = PREFIX + commit
         keep_modules.append(module_name)
 
         module_path = os.path.join(rules_path, module_name)
@@ -110,12 +113,12 @@ def _git_update_rules(git_worktree, rules_path, prefix, keep_revisions):
         except Exception:
             _logger.exception("Unable to checkout %s", commit)
 
-    return (prefix + commits[0], keep_modules)
+    return (PREFIX + commits[0], keep_modules)
 
 
-def _git_cleanup(rules_path, prefix, keep_modules):
+def _git_cleanup(rules_path, keep_modules):
     for module_name in os.listdir(rules_path):
-        if not module_name.startswith(prefix):
+        if not module_name.startswith(PREFIX):
             continue
         if not module_name in keep_modules:
             _logger.info("Removing the old module: %s", module_name)

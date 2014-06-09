@@ -42,14 +42,12 @@ O_RULES_HEAD    = "rules-head"
 O_IMPORT_ALIAS  = "import-alias"
 O_FETCH_INTERVAL = "fetch-interval"
 O_NODE_NAME      = "node-name"
-O_PROCESS_NAME   = "process-name"
 O_HANDLE_SIGNALS = "handle-signals"
 O_MAX_INPUT_QUEUE_SIZE = "max-input-queue-size"
 
 O_REPO_URL  = "repo-url"
 O_REPO_DIR  = "repo-dir"
 O_REVISIONS = "revisions"
-O_PREFIX    = "prefix"
 
 O_VERSION = "version"
 
@@ -109,7 +107,6 @@ CONFIG_MAP = {
         O_FETCH_INTERVAL: (60,            int),
 
         O_NODE_NAME:      (None,          _valid_maybe_empty_str),
-        O_PROCESS_NAME:   (None,          _valid_maybe_empty_str),
         O_HANDLE_SIGNALS: (True,          validators.common.valid_bool),
 
         O_MAX_INPUT_QUEUE_SIZE: (50000,   _valid_number_min_1),
@@ -119,7 +116,6 @@ CONFIG_MAP = {
         O_REPO_URL:  ("http://example.com", str),
         O_REPO_DIR:  ("/tmp/rules.git",     str),
         O_REVISIONS: (10,                   lambda arg: validators.common.valid_number(arg, 1)),
-        O_PREFIX:    ("git_",               str),
     },
 
     S_LOGGING: {
@@ -265,4 +261,3 @@ class _YamlLoader(yaml.loader.Loader):
         with open(file_path) as stream:
             return _load_yaml(stream)
 _YamlLoader.add_constructor("!include", _YamlLoader.include) # pylint: disable=E1101
-
