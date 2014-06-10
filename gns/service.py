@@ -41,13 +41,13 @@ O_RULES_DIR     = "rules-dir"
 O_RULES_HEAD    = "rules-head"
 O_IMPORT_ALIAS  = "import-alias"
 O_FETCH_INTERVAL = "fetch-interval"
+O_NODE_NAME      = "node-name"
 O_HANDLE_SIGNALS = "handle-signals"
 O_MAX_INPUT_QUEUE_SIZE = "max-input-queue-size"
 
 O_REPO_URL  = "repo-url"
 O_REPO_DIR  = "repo-dir"
 O_REVISIONS = "revisions"
-O_PREFIX    = "prefix"
 
 O_VERSION = "version"
 
@@ -83,11 +83,14 @@ def _valid_number_min_1(arg):
 def _valid_maybe_empty_object(arg):
     return validators.common.valid_maybe_empty(arg, validators.python.valid_object_name)
 
+def _valid_maybe_empty_str(arg):
+    return validators.common.valid_maybe_empty(arg, str)
+
 _DAEMON_MAP = {
     O_WORKERS:   (10,   _valid_number_min_1),
     O_DIE_AFTER: (100,  lambda arg: validators.common.valid_maybe_empty(arg, _valid_number_min_0)),
     O_QUIT_WAIT: (10,   _valid_number_min_0),
-    O_RECHECK:   (0.01, _valid_float_min_0),
+    O_RECHECK:   (5,    _valid_number_min_1),
 }
 
 CONFIG_MAP = {
@@ -103,6 +106,7 @@ CONFIG_MAP = {
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
         O_FETCH_INTERVAL: (60,            int),
 
+        O_NODE_NAME:      (None,          _valid_maybe_empty_str),
         O_HANDLE_SIGNALS: (True,          validators.common.valid_bool),
 
         O_MAX_INPUT_QUEUE_SIZE: (50000,   _valid_number_min_1),
@@ -112,7 +116,6 @@ CONFIG_MAP = {
         O_REPO_URL:  ("http://example.com", str),
         O_REPO_DIR:  ("/tmp/rules.git",     str),
         O_REVISIONS: (10,                   lambda arg: validators.common.valid_number(arg, 1)),
-        O_PREFIX:    ("git_",               str),
     },
 
     S_LOGGING: {
@@ -258,4 +261,3 @@ class _YamlLoader(yaml.loader.Loader):
         with open(file_path) as stream:
             return _load_yaml(stream)
 _YamlLoader.add_constructor("!include", _YamlLoader.include) # pylint: disable=E1101
-

@@ -6,8 +6,8 @@ import cherrypy
 from chrpc.server import Module
 from .. import service
 
-from . import rpc # pylint: disable=W0611
-from . import rest
+from . import jobs
+from . import state
 from . import golem
 
 
@@ -30,22 +30,22 @@ def _make_tree(config):
     root = Module()
     root.api = Module()
 
-    root.api.rpc = Module()
-    root.api.rpc.v1 = Module()
-    root.api.rpc.v1.events = rpc.EventsApi(config)
-
     root.api.rest = Module()
     root.api.rest.v1 = Module()
-    root.api.rest.v1.jobs = rest.JobsResource(config)
+    root.api.rest.v1.jobs = jobs.JobsResource(config)
+    root.api.rest.v1.system = Module()
+    root.api.rest.v1.system.state = state.StateResource(config)
 
     root.api.compat = Module()
     root.api.compat.golem = Module()
     root.api.compat.golem.submit = golem.SubmitApi(config)
 
     disp_dict = { "request.dispatch": cherrypy.dispatch.MethodDispatcher() }
-    return (root, {
-            "/api/rest/v1/jobs":        disp_dict,
-            "/api/compat/golem/submit": disp_dict,
+    return (root, { path: disp_dict for path in (
+                "/api/rest/v1/jobs",
+                "/api/rest/v1/system/state",
+                "/api/compat/golem/submit",
+            )
         })
 
 def _init(config, section):
