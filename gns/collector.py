@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 from raava import application
 from raava import appstate
 from raava import collector

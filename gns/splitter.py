@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 from raava import handlers
 from raava import application
 from raava import appstate
@@ -32,7 +29,7 @@ def run(config):
         ),
     )
 
-    def get_ext():
+    def get_rules_info():
         last_head = loader.get_last_head()
         last_commit = ( last_head[len(fetcher.PREFIX):] if last_head is not None else None )
         return {
@@ -46,7 +43,7 @@ def run(config):
         zoo_connect = zoo_connect,
         state_base  = zoo.STATE_SPLITTER,
         node_name   = core_opts[service.O_NODE_NAME],
-        get_ext     = get_ext,
+        get_ext     = get_rules_info,
     )
 
     app = application.Application(
