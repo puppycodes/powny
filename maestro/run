@@ -11,4 +11,4 @@ fi
 shift
 shift
 
-cat maestro/{fleet-$fleet,common,conf-$configuration}.yaml | maestro $@
+cat maestro/{fleet-$fleet,common,conf-$configuration}.yaml | maestro -f - $@
