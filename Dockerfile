@@ -16,7 +16,7 @@ RUN apt-get -y update \
 RUN easy_install -H *.python.org git+git://github.com/signalfuse/maestro-ng
 
 ADD . /root/gns
-RUN easy_install -H *.python.org /root/gns
+RUN easy_install -H *.python.org,github.com /root/gns
 RUN cp -r /root/gns/etc/gns-maestro.d /root/gns.d
 RUN rm -rf /root/gns
 
