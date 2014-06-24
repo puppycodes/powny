@@ -14,7 +14,7 @@ RUN apt-get -y update \
 	&& apt-get -y clean
 
 ADD . /root/gns
-RUN pip install -e /root/gns
+RUN pip3 install -e /root/gns
 
 VOLUME /etc/gns
 VOLUME /var/lib/gns/rules
