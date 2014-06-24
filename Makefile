@@ -26,10 +26,10 @@ clean-all: clean
 docker: docker-gns docker-gns-python3 docker-gns-uwsgi
 
 docker-gns:
-	./docker-build.sh . yandex/ubuntu-pypy3:latest -t gns $(DOCKER_BUILD_OPTS)
+	./docker-build.sh . yandex/trusty-with-pypy3:latest -t gns $(DOCKER_BUILD_OPTS)
 
 docker-gns-python3:
-	./docker-build.sh . yandex/ubuntu-python3:latest -t gns-python3 $(DOCKER_BUILD_OPTS)
+	./docker-build.sh . yandex/trusty-with-python3:latest -t gns-cpython $(DOCKER_BUILD_OPTS)
 
 docker-gns-uwsgi:
-	./docker-build.sh uwsgi gns-python3:latest -t gns-uwsgi $(DOCKER_BUILD_OPTS)
+	./docker-build.sh uwsgi gns-cpython:latest -t gns-uwsgi $(DOCKER_BUILD_OPTS)
