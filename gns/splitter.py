@@ -20,7 +20,6 @@ def run(config):
 
     loader = handlers.Loader(
         core_opts[service.O_RULES_DIR],
-        core_opts[service.O_RULES_HEAD],
         (
             chain.HANDLER.ON_EVENT,
             chain.HANDLER.ON_NOTIFY,

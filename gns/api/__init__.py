@@ -1,12 +1,10 @@
-#!/usr/bin/env python
-
-
 import cherrypy
 
 from chrpc.server import Module
 from .. import service
 
 from . import jobs
+from . import rules
 from . import state
 from . import golem
 
@@ -33,6 +31,8 @@ def _make_tree(config):
     root.api.rest = Module()
     root.api.rest.v1 = Module()
     root.api.rest.v1.jobs = jobs.JobsResource(config)
+    root.api.rest.v1.rules = Module()
+    root.api.rest.v1.rules.head = rules.HeadResource(config)
     root.api.rest.v1.system = Module()
     root.api.rest.v1.system.state = state.StateResource(config)
 
@@ -43,6 +43,7 @@ def _make_tree(config):
     disp_dict = { "request.dispatch": cherrypy.dispatch.MethodDispatcher() }
     return (root, { path: disp_dict for path in (
                 "/api/rest/v1/jobs",
+                "/api/rest/v1/rules/head",
                 "/api/rest/v1/system/state",
                 "/api/compat/golem/submit",
             )
@@ -53,4 +54,3 @@ def _init(config, section):
     server_opts = config[section].copy()
     server_opts.update(app_opts)
     return (root, server_opts)
-
