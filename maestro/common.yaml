@@ -1,0 +1,126 @@
+name: gns
+
+default_env: &default-env
+    GNS_CONFIG: /root/gns.d/gns.yaml
+    RULES_DIR: /root/rules
+    REPO_DIR: /root/rules.git
+    REPO_URL: !!python/object/apply:os.getenv [GNS_REPO_URL, "https://github.yandex-team.ru/monitoring/gns-rules"]
+    MAX_INPUT_QUEUE_SIZE: !!python/object/apply:os.getenv [MAX_INPUT_QUEUE_SIZE, 50000]
+    ELASTICSEARCH_URL: !!python/object/apply:os.getenv [ELASTICSEARCH_URL, "http://elasticlog.yandex.net:9200"]
+    GOLEM_SMS_URL: !!python/object/apply:os.getenv [GOLEM_SMS_URL, "http://localhost"]
+    EMAIL_FROM: !!python/object/apply:os.getenv [EMAIL_FROM, "gns@gns"]
+    BACKDOOR_ENABLED: !!python/object/apply:os.getenv [BACKDOOR_ENABLED, false]
+    BACKDOOR_PORT: !!python/object/apply:os.getenv [BACKDOOR_PORT, 12309]
+
+volumes: &volumes
+    /root/rules.git: /var/cache/gns-rules.git
+    /root/rules: /var/cache/gns-rules
+
+gns-image:         &gns-image         !!python/object/apply:os.getenv ["DOCKER_GNS_IMAGE",         "yandex/gns:latest"]
+gns-api-image:     &gns-api-image     !!python/object/apply:os.getenv ["DOCKER_GNS_API_IMAGE",     "yandex/gns:latest"]
+nginx-image:       &nginx-image       !!python/object/apply:os.getenv ["DOCKER_NGINX_IMAGE",       "yandex/nginx:latest"]
+zookeeper-image:   &zookeeper-image   !!python/object/apply:os.getenv ["DOCKER_ZOOKEEPER_IMAGE",   "yandex/zookeeper:latest"]
+smtp-image:        &smtp-image        !!python/object/apply:os.getenv ["DOCKER_SMTP_IMAGE",        "yandex/exim:latest"]
+
+ships: *fleet
+
+zookeeper: &zookeeper
+    ship: local
+    ports:
+        client: 2181
+        peer: 2888
+        leader_election: 3888
+    volumes:
+        /var/lib/zookeeper: /data/zookeeper
+    limits:
+        memory: 1100m
+        cpu: 10
+    env:
+        JVM_OPTS: "-Xmx1g"
+
+smtp: &smtp
+    ship: local
+    ports:
+        smtp: 25
+    limits:
+        memory: 200m
+        cpu: 1
+    stop_timeout: 2
+
+gns-fetcher: &gns-fetcher
+    ship: local
+    env:
+        <<: *default-env
+        GNS_MODULE: fetcher
+    volumes: *volumes
+    limits:
+        memory: 100m
+        cpu: 1
+    stop_timeout: 1
+
+gns-splitter: &gns-splitter
+    ship: local
+    env:
+        <<: *default-env
+        GNS_MODULE: splitter
+    volumes: *volumes
+    limits:
+        memory: 1g
+        cpu: 7
+    stop_timeout: 1
+
+gns-worker: &gns-worker
+    ship: local
+    env:
+        <<: *default-env
+        GNS_MODULE: worker
+    volumes: *volumes
+    limits:
+        memory: 1g
+        cpu: 7
+    stop_timeout: 1
+
+gns-collector: &gns-collector
+    ship: local
+    env:
+        <<: *default-env
+        GNS_MODULE: collector
+    limits:
+        memory: 200m
+        cpu: 9
+    stop_timeout: 1
+
+gns-reinit: &gns-reinit
+    ship: local
+    env:
+        <<: *default-env
+        GNS_MODULE: reinit
+    limits:
+        memory: 200m
+        cpu: 5
+    stop_timeout: 1
+
+gns-api: &gns-api
+    ship: local
+    ports:
+        http: 7886
+    env:
+        <<: *default-env
+        GNS_MODULE: api
+    limits:
+        memory: 1500m
+        cpu: 5
+    stop_timeout: 1
+
+nginx: &nginx
+    ship: local
+    ports:
+        http: 7887
+        https: 443
+    env:
+        <<: *default-env
+        NGINX_UPSTREAM_SERVICE: gns-api
+    limits:
+        memory: 200m
+        cpu: 5
+    stop_timeout: 1

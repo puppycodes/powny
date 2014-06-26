@@ -1,0 +1,14 @@
+#!/bin/bash
+
+fleet=$1
+configuration=$2
+
+if [ -z "$fleet" ] || [ -z "$configuration" ]; then
+    echo "usage: $0 <fleet name {local,zk,docker}> <configuration name {dev,test,reinit}> [<maestro args...>]"
+    exit 1
+fi
+
+shift
+shift
+
+cat maestro/{fleet-$fleet,common,conf-$configuration}.yaml | maestro -f - $@

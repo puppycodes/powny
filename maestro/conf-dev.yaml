@@ -1,0 +1,46 @@
+services:
+    zookeeper:
+        image: *zookeeper-image
+        instances:
+            zookeeper: *zookeeper
+    smtp:
+        image: *smtp-image
+        instances:
+            smtp: *smtp
+    gns-fetcher:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-fetcher: *gns-fetcher
+    gns-api:
+        image: *gns-api-image
+        requires:
+            - zookeeper
+        instances:
+            gns-api: *gns-api
+    gns-splitter:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-splitter: *gns-splitter
+    gns-worker:
+        image: *gns-image
+        requires:
+            - zookeeper
+            - smtp
+        instances:
+            gns-worker: *gns-worker
+    gns-collector:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-collector: *gns-collector
+    nginx:
+        image: *nginx-image
+        requires:
+            - gns-api
+        instances:
+            nginx: *nginx

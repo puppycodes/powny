@@ -1,0 +1,110 @@
+services:
+    zookeeper:
+        image: *zookeeper-image
+        instances:
+            zookeeper-1:
+                <<: *zookeeper
+                ship: *ship-1
+            zookeeper-2:
+                <<: *zookeeper
+                ship: *ship-2
+            zookeeper-3:
+                <<: *zookeeper
+                ship: *ship-3
+    smtp:
+        image: *smtp-image
+        instances:
+            smtp-1:
+                <<: *smtp
+                ship: *ship-1
+            smtp-2:
+                <<: *smtp
+                ship: *ship-2
+            smtp-3:
+                <<: *smtp
+                ship: *ship-3
+    gns-fetcher:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-fetcher-1:
+                <<: *gns-fetcher
+                ship: *ship-1
+            gns-fetcher-2:
+                <<: *gns-fetcher
+                ship: *ship-2
+            gns-fetcher-3:
+                <<: *gns-fetcher
+                ship: *ship-3
+    gns-api:
+        image: *gns-api-image
+        requires:
+            - zookeeper
+        instances:
+            gns-api-1:
+                <<: *gns-api
+                ship: *ship-1
+            gns-api-2:
+                <<: *gns-api
+                ship: *ship-2
+            gns-api-3:
+                <<: *gns-api
+                ship: *ship-3
+    gns-splitter:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-splitter-1:
+                <<: *gns-splitter
+                ship: *ship-1
+            gns-splitter-2:
+                <<: *gns-splitter
+                ship: *ship-2
+            gns-splitter-3:
+                <<: *gns-splitter
+                ship: *ship-3
+    gns-worker:
+        image: *gns-image
+        requires:
+            - zookeeper
+            - smtp
+        instances:
+            gns-worker-1:
+                <<: *gns-worker
+                ship: *ship-1
+            gns-worker-2:
+                <<: *gns-worker
+                ship: *ship-2
+            gns-worker-3:
+                <<: *gns-worker
+                ship: *ship-3
+    gns-collector:
+        image: *gns-image
+        requires:
+            - zookeeper
+        instances:
+            gns-collector-1:
+                <<: *gns-collector
+                ship: *ship-1
+            gns-collector-2:
+                <<: *gns-collector
+                ship: *ship-2
+            gns-collector-3:
+                <<: *gns-collector
+                ship: *ship-3
+    nginx:
+        image: *nginx-image
+        requires:
+            - gns-api
+        instances:
+            nginx-1:
+                <<: *nginx
+                ship: *ship-1
+            nginx-2:
+                <<: *nginx
+                ship: *ship-2
+            nginx-3:
+                <<: *nginx
+                ship: *ship-3

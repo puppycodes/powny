@@ -1,0 +1,38 @@
+core:
+    import-alias: rules
+    zoo-nodes: !!python/object/apply:maestro.guestutils.get_node_list ["zookeeper", ["client"]]
+    rules-dir: !!python/object/apply:os.getenv [RULES_DIR]
+    max-input-queue-size: !!python/object/apply:os.getenv [MAX_INPUT_QUEUE_SIZE]
+    node-name: !!python/object/apply:maestro.guestutils.get_container_name []
+
+git:
+    repo-dir: !!python/object/apply:os.getenv [REPO_DIR]
+    repo-url: !!python/object/apply:os.getenv [REPO_URL]
+
+logging: !include logging.yaml
+
+backdoor:
+    enabled: !!python/object/apply:os.getenv [BACKDOOR_ENABLED]
+    port: !!python/object/apply:os.getenv [BACKDOOR_PORT]
+
+splitter:
+    workers: !!python/object/apply:os.getenv [GNS_SPLITTER_WORKERS, 1]
+    die-after: !!python/object/apply:os.getenv [GNS_SPLITTER_DIE_AFTER]
+worker:
+    workers: !!python/object/apply:os.getenv [GNS_WORKER_WORKERS, 1]
+    die-after: !!python/object/apply:os.getenv [GNS_WORKER_DIE_AFTER]
+collector:
+    workers: !!python/object/apply:os.getenv [GNS_COLLECTOR_WORKERS, 1]
+    die-after: !!python/object/apply:os.getenv [GNS_COLLECTOR_DIE_AFTER]
+
+output:
+    sms:
+        send-url: !!python/object/apply:os.getenv [GOLEM_SMS_URL, "http://localhost"]
+    email:
+        from: !!python/object/apply:os.getenv [EMAIL_FROM, "gns@localhost"]
+        server: !!python/object/apply:maestro.guestutils.get_container_host_address []
+        port: !!python/object/apply:maestro.guestutils.get_port ["smtp", 25]
+
+cherry:
+    global:
+        server.socket_port: !!python/object/apply:maestro.guestutils.get_port ["http", 7887]
