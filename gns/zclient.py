@@ -11,6 +11,7 @@ def connect(config):
         zoo_nodes=core_attrs[service.O_ZOO_NODES],
         timeout=core_attrs[service.O_ZOO_TIMEOUT],
         start_timeout=core_attrs[service.O_ZOO_START_TIMEOUT],
+        start_retries=core_attrs[service.O_ZOO_START_RETRIES],
         randomize_hosts=core_attrs[service.O_ZOO_RANDOMIZE],
         chroot=core_attrs[service.O_ZOO_CHROOT],
     )

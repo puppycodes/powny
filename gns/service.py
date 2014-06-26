@@ -35,6 +35,7 @@ S_BACKDOOR  = "backdoor"
 O_ZOO_NODES     = "zoo-nodes"
 O_ZOO_TIMEOUT   = "zoo-timeout"
 O_ZOO_START_TIMEOUT = "zoo-start-timeout"
+O_ZOO_START_RETRIES = "zoo-start-retries"
 O_ZOO_RANDOMIZE = "zoo-randomize"
 O_ZOO_CHROOT    = "zoo-chroot"
 O_RULES_DIR     = "rules-dir"
@@ -98,6 +99,7 @@ CONFIG_MAP = {
         O_ZOO_NODES:     (("localhost",),  validators.common.valid_string_list),
         O_ZOO_TIMEOUT:   (10,              _valid_float_min_01),
         O_ZOO_START_TIMEOUT: (10,          _valid_float_min_01),
+        O_ZOO_START_RETRIES: (None,        lambda arg: validators.common.valid_maybe_empty(arg, _valid_number_min_1)),
         O_ZOO_RANDOMIZE: (True,            validators.common.valid_bool),
         O_ZOO_CHROOT:    ("/gns",          str),
 

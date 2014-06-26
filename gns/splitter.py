@@ -8,14 +8,13 @@ from gns import service
 from gns import zclient
 from gns import core
 from gns import chain
-from gns import fetcher
 
 
 # =====
 def run(config):
     core_opts = config[service.S_CORE]
     app_opts = config[service.S_SPLITTER]
-    zoo_connect = ( lambda: zclient.connect(config) )
+    zoo_connect = (lambda: zclient.connect(config))
 
     core.init_rules_environment(config)
 
@@ -31,7 +30,8 @@ def run(config):
 
     def get_rules_info():
         last_head = loader.get_last_head()
-        last_commit = ( last_head[len(fetcher.PREFIX):] if last_head is not None else None )
+        # Supposed module_prefix is 'git_' (defined in docker-gitsplit postreceive hook) and should be constant
+        last_commit = (last_head[len('git_'):] if last_head is not None else None)
         return {
             "loader": {
                 "rules_dir":   core_opts[service.O_RULES_DIR],
