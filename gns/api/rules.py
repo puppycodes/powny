@@ -20,7 +20,10 @@ class HeadResource(chrpc.server.WebObject):
     @cherrypy.tools.json_out()
     def GET(self): # pylint: disable=C0103
         with zclient.get_context(self._config) as client:
-            return {"head": events.get_head(client)}
+            # Supposed module_prefix is 'git_' (defined in docker-gitsplit postreceive hook) and should be constant
+            head = events.get_head(client)
+            last_commit = (head[len('git_'):] if head is not None else None)
+            return {"head": last_commit}
 
     def POST(self, head): # pylint: disable=C0103
         try:
@@ -28,4 +31,4 @@ class HeadResource(chrpc.server.WebObject):
         except validatorlib.ValidatorError as err:
             raise cherrypy.HTTPError(400, str(err))
         with zclient.get_context(self._config) as client:
-            events.set_head(client, head)
+            events.set_head(client, "git_" + head)
