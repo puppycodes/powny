@@ -25,10 +25,13 @@ class HeadResource(chrpc.server.WebObject):
             last_commit = (head[len('git_'):] if head is not None else None)
             return {"head": last_commit}
 
-    def POST(self, head): # pylint: disable=C0103
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.json_out()
+    def POST(self): # pylint: disable=C0103
         try:
-            head = validators.python.valid_object_name(head)
+            head = validators.python.valid_object_name(cherrypy.request.json["head"])
         except validatorlib.ValidatorError as err:
             raise cherrypy.HTTPError(400, str(err))
         with zclient.get_context(self._config) as client:
             events.set_head(client, "git_" + head)
+        return {"head": head}
