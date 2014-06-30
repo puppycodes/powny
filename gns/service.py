@@ -39,7 +39,6 @@ O_ZOO_START_RETRIES = "zoo-start-retries"
 O_ZOO_RANDOMIZE = "zoo-randomize"
 O_ZOO_CHROOT    = "zoo-chroot"
 O_RULES_DIR     = "rules-dir"
-O_RULES_HEAD    = "rules-head"
 O_IMPORT_ALIAS  = "import-alias"
 O_FETCH_INTERVAL = "fetch-interval"
 O_NODE_NAME      = "node-name"
@@ -104,7 +103,6 @@ CONFIG_MAP = {
         O_ZOO_CHROOT:    ("/gns",          str),
 
         O_RULES_DIR:    ("rules",         str),
-        O_RULES_HEAD:   ("HEAD",          str),
         O_IMPORT_ALIAS: (None,            _valid_maybe_empty_object),
         O_FETCH_INTERVAL: (60,            int),
 
