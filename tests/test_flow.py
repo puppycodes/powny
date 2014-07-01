@@ -49,7 +49,7 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
 
         request = urllib.request.Request(  # Push the HEAD
             "http://localhost:7887/api/rest/v1/rules/head",
-            data=b"{\"head\": \"head_version\"}",
+            data=b"{\"head\": \"0123456789abcdef\"}",
             headers={ "Content-Type": "application/json" },
         )
         opener = urllib.request.build_opener()
