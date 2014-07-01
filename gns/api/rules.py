@@ -5,7 +5,7 @@ from raava import events
 
 from ulib import validatorlib
 from ulib import validators
-import ulib.validators.python # pylint: disable=W0611
+import ulib.validators.extra # pylint: disable=W0611
 
 from .. import zclient
 
@@ -29,7 +29,7 @@ class HeadResource(chrpc.server.WebObject):
     @cherrypy.tools.json_out()
     def POST(self): # pylint: disable=C0103
         try:
-            head = validators.python.valid_object_name(cherrypy.request.json["head"])
+            head = validators.extra.valid_hex_string(cherrypy.request.json["head"])
         except validatorlib.ValidatorError as err:
             raise cherrypy.HTTPError(400, str(err))
         with zclient.get_context(self._config) as client:
