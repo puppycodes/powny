@@ -8,7 +8,7 @@ import setuptools
 if __name__ == "__main__":
     setuptools.setup(
         name="gns",
-        version="0.1",
+        version="0.2",
         url="https://github.com/yandex-sysmon/gns",
         license="GPLv3",
         author="Devaev Maxim",
@@ -27,7 +27,7 @@ if __name__ == "__main__":
             ]
         },
 
-        classifiers=( # http://pypi.python.org/pypi?:action=list_classifiers
+        classifiers=[ # http://pypi.python.org/pypi?:action=list_classifiers
             "Development Status :: 2 - Pre-Alpha",
             "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
             "Operating System :: POSIX :: Linux",
@@ -36,7 +36,7 @@ if __name__ == "__main__":
             "Topic :: Software Development :: Libraries :: Python Modules",
             "Topic :: System :: Distributed Computing",
             "Topic :: System :: Networking :: Monitoring",
-        ),
+        ],
 
         install_requires=[
             "raava >= 0.16",
