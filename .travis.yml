@@ -17,6 +17,25 @@ script:
     - /usr/lib/pypy3/bin/tox -v
 after_success:
     - /usr/lib/pypy3/bin/coveralls
+before_deploy:
+    - git checkout master
+    - git config user.email "travisbot@travis-ci.org"
+    - git config user.name "Travis-CI Bot"
+    - (git log -1 --pretty=%B | grep 'Merge pull request') && bumpversion --verbose minor || true
+    - git remote remove origin
+    - git remote add origin git@github.com:yandex-sysmon/gns
+    - openssl rsa -in .deploy.pem -passin env:DEPLOYKEYPASS >> ~/.ssh/id_rsa
+    - chmod 0600 ~/.ssh/id_rsa
+    - git push origin master
+    - git push --tags --force
+deploy:
+    provider: pypi
+    user: nikicat
+    password:
+        secure: i9zNWTqaqWjKp4hHVXA0wWvCFS5ic7ne3nc6WP7fanQLC5y1/tQxsnmMVN02aThfpNoCZKh82rWjs/wXXxUq5Q4egXFaOjMPoyIsb8EGHFi4y1FMW/wSnw/iBXFYruWf/k+JQz2t+dj1/EpHj4sLGMPRjANdK2+fwrDFNIlUIBs=
+    distributions: sdist
+    on:
+        repo: yandex-sysmon/gns
 notifications:
     hipchat:
         rooms:
