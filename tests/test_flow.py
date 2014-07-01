@@ -47,17 +47,13 @@ class TestFlow(unittest.TestCase): # pylint: disable=R0904
             service.start()
         time.sleep(3) # wait for services to start and initialize
 
-        try:
-            request = urllib.request.Request(  # Push the HEAD
-                "http://localhost:7887/api/rest/v1/rules/head",
-                data=b"{\"head\": \"head_version\"}",
-                headers={ "Content-Type": "application/json" },
-            )
-            opener = urllib.request.build_opener()
-            opener.open(request)
-        except:
-            #time.sleep(3600)
-            raise
+        request = urllib.request.Request(  # Push the HEAD
+            "http://localhost:7887/api/rest/v1/rules/head",
+            data=b"{\"head\": \"head_version\"}",
+            headers={ "Content-Type": "application/json" },
+        )
+        opener = urllib.request.build_opener()
+        opener.open(request)
 
 
     ### Tests ###
