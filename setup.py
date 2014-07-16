@@ -43,7 +43,7 @@ if __name__ == "__main__":
             "elog >= 0.4",
             "chrpc >= 0.1",
             "meters >= 0.3",
-            "gns-helpers >= 0.1",
+            "gns-helpers >= 0.4",
 
             "ulib >= 0.24",
             "pyyaml >= 3.10",
