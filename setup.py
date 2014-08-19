@@ -8,7 +8,7 @@ import setuptools
 if __name__ == "__main__":
     setuptools.setup(
         name="gns",
-        version="0.3",
+        version="0.4",
         url="https://github.com/yandex-sysmon/gns",
         license="GPLv3",
         author="Devaev Maxim",
