@@ -1,20 +1,15 @@
-import sys
 import setuptools
-
-sys.path.append("./powny/core")
-import const  # pylint: disable=F0401
-sys.path.remove("./powny/core")
 
 
 # =====
 if __name__ == "__main__":
     setuptools.setup(
         name="powny",
-        version=const.__version__,
-        url=const.__url__,
-        license=const.__license__,
-        author=const.__author__,
-        author_email=const.__email__,
+        version="1.0",
+        url="https://github.com/yandex-sysmon/powny",
+        license="GPLv3",
+        author="Devaev Maxim",
+        author_email="mdevaev@gmail.com",
         description="Distributed events processor, based on stackless technology of PyPy3",
         platforms="any",
 
@@ -69,6 +64,7 @@ if __name__ == "__main__":
             "decorator",
             "contextlog",
             "colorlog",
+            "pkginfo",
 
             # Optconf
             "Tabloid",

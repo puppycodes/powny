@@ -4,6 +4,15 @@
 [![Dependency Status](https://gemnasium.com/yandex-sysmon/gns2.svg)](https://gemnasium.com/yandex-sysmon/gns2)
 [![Gitter chat](https://badges.gitter.im/yandex-sysmon/gns2.png)](https://gitter.im/yandex-sysmon/gns2)
 
+
+###Debugging###
+```
+pip install --user -e .
+~/.local/bin/powny-api
+~/.local/bin/powny-worker
+~/.local/bin/powny-collector
+```
+
 ###TODO & FIXME###
   * Контекстный логгер не пиклится, нужно удалять его объект перед чекпоинтом из области видимости.
   * Какая-то странная хрень с относительным импортированием в хелперах, пока использую абсолютное:

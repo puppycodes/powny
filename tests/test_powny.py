@@ -4,7 +4,7 @@
 
 import time
 
-from powny.core import const
+from powny.core import __version__
 
 from .fixtures.application import powny_api
 from .fixtures.application import as_dict
@@ -59,7 +59,7 @@ def test_api_v1_system_info():
         with test_client() as api:
             result = as_dict(api.get("/v1/system/info"))
             assert result[0] == 200
-            assert result[1]["version"] == const.__version__
+            assert result[1]["version"] == __version__
             assert result[1]["backend"]["name"] == config.core.backend
 
 

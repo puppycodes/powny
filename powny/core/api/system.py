@@ -1,4 +1,4 @@
-from .. import const
+from .. import tools
 from .. import optconf
 
 
@@ -54,7 +54,7 @@ class InfoResource:
 
         with self._pool.get_backend() as backend:
             return {
-                "version": const.__version__,
+                "version": tools.get_powny_version(),
                 "backend": {
                     "name": self._pool.get_backend_name(),
                     "info": backend.get_info(),

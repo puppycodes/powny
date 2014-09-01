@@ -1,6 +1,8 @@
 import os
 import pickle
 
+import pkginfo
+
 from contextlog import get_logger
 
 from . import imprules
@@ -8,6 +10,10 @@ from . import rules
 
 
 # =====
+def get_powny_version():
+    pkg = pkginfo.get_metadata("powny")
+    return (pkg.version if pkg is not None else None)
+
 def make_rules_path(rules_root, head):
     return os.path.join(rules_root, head)
 

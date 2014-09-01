@@ -47,7 +47,6 @@ class TestImpRules:
         "powny.core.apps.collector",
         "powny.core.apps.worker",
         "powny.core.backends",
-        "powny.core.const",
         "powny.core.context",
         "powny.core.imprules",
         "powny.core.optconf",
