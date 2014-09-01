@@ -1,0 +1,323 @@
+import pickle
+import threading
+
+import decorator
+import kazoo.client
+import kazoo.exceptions
+from kazoo.protocol.paths import join
+
+from contextlog import get_logger
+
+
+# =====
+class NoNodeError(Exception):
+    pass
+
+class NodeExistsError(Exception):
+    pass
+
+
+class EmptyValue:  # pylint: disable=W0232
+    def __new__(cls):
+        raise RuntimeError("Use a class rather than an object of class")
+
+
+# ====
+def _encode_value(value):
+    if value is EmptyValue:
+        return b""
+    else:
+        return pickle.dumps(value)
+
+def _decode_value(value):
+    assert isinstance(value, bytes), "Invalid ZK output value type: {}".format(type(value))
+    if len(value) == 0:
+        return EmptyValue
+    else:
+        return pickle.loads(value)
+
+def _catch_zk(method):
+    def wrap(method, *args, **kwargs):
+        try:
+            return method(*args, **kwargs)
+        except kazoo.exceptions.NoNodeError as err:
+            raise NoNodeError from err
+        except kazoo.exceptions.NodeExistsError as err:
+            raise NodeExistsError from err
+    return decorator.decorator(wrap, method)
+
+
+# ====
+class Client:
+    def __init__(self, nodes, timeout, start_timeout, start_retries, randomize_hosts, chroot):
+        assert isinstance(nodes, (list, tuple))
+        self._hosts = ",".join(nodes)
+        self._timeout = timeout
+        self._start_timeout = start_timeout
+        self._start_retries = start_retries
+        self._randomize_hosts = randomize_hosts
+        self._chroot = chroot
+        self.zk = None
+
+    def open(self):
+        self.zk = kazoo.client.KazooClient(
+            hosts=self._hosts,
+            timeout=self._timeout,
+            randomize_hosts=self._randomize_hosts,
+        )
+        if self._chroot is not None:
+            self.zk.chroot = self._chroot
+
+        logger = get_logger()
+
+        start_retries = self._start_retries
+        while True:
+            remaining = ("inf" if start_retries is None else start_retries)
+            logger.debug("Trying to connect to ZK, attempts remaining: %s (timeout: %d)",
+                         remaining, self._start_timeout, hosts=self._hosts)
+            try:
+                self.zk.start(timeout=self._start_timeout)
+                break
+            except Exception:
+                logger.exception("Can't connect to ZK in this time")
+                if start_retries is not None:
+                    if start_retries > 0:
+                        start_retries -= 1
+                    else:
+                        raise
+        logger.debug("Started ZK client", hosts=self._hosts)
+
+    def close(self):
+        self.zk.stop()
+        self.zk.close()
+        self.zk = None
+        get_logger().debug("ZK client has been closed", hosts=self._hosts)
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    # ===
+
+    def get_server_info(self):
+        return dict(
+            item.split("=", 1)
+            for item in filter(None, self.zk.command(b"envi").split("\n")[1:])
+        )
+
+    # ===
+
+    @_catch_zk
+    def get_children(self, path):
+        return self.zk.get_children(path)
+
+    @_catch_zk
+    def get_children_count(self, path):
+        stat = self.zk.retry(self.zk.get, path)[1]
+        return stat.children_count
+
+    @_catch_zk
+    def exists(self, path, watch=None):
+        return (self.zk.exists(path, watch=watch) is not None)
+
+    def get(self, path, default=EmptyValue):
+        try:
+            return _decode_value(self.zk.get(path)[0])
+        except kazoo.exceptions.NoNodeError:
+            if default is EmptyValue:
+                raise NoNodeError
+            return default
+
+    def get_write_request(self, comment="<unnamed>"):
+        return _WriteRequest(self, comment)
+
+    # ===
+
+    def get_lock(self, path, comment="<unnamed>"):
+        return _Lock(self, path, comment)
+
+    def get_queue(self, path):
+        return _Queue(self, path)
+
+    def get_counter(self, path):
+        return _Counter(self, path)
+
+
+class _WriteRequest:
+    def __init__(self, client, comment):
+        self._client = client
+        self._comment = comment
+        self._ops = []
+
+    def create(self, path, value=EmptyValue, ephemeral=False, sequence=False, recursive=False):
+        kwargs = {
+            "path":      path,
+            "value":     _encode_value(value),
+            "ephemeral": ephemeral,
+            "sequence":  sequence,
+        }
+        if recursive:
+            kwargs["makepath"] = True  # XXX: Only for a single operation!
+        self._ops.append(("create", kwargs))
+
+    def set(self, path, value=EmptyValue):
+        self._ops.append(("set", {
+            "path":  path,
+            "value": _encode_value(value),
+        }))
+
+    def delete(self, path, recursive=False):
+        kwargs = {"path": path}
+        if recursive:
+            kwargs["recursive"] = True  # XXX: Only for a single operation!
+        self._ops.append(("delete", kwargs))
+
+    def __enter__(self):
+        get_logger().debug("Created write-request", comment=self._comment)
+        return self
+
+    @_catch_zk  # for "len(self._ops) == 1"
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_value is not None:
+            raise exc_value
+        assert len(self._ops) > 0, "_WriteRequest() does not contain operations"
+        if len(self._ops) == 1:
+            (op_name, kwargs) = self._ops[0]
+            getattr(self._client.zk, op_name)(**kwargs)
+        else:
+            trans = self._client.zk.transaction()
+            for (op_name, kwargs) in self._ops:
+                if op_name == "set":
+                    op_name = "set_data"
+                getattr(trans, op_name)(**kwargs)
+            results = trans.commit()
+            need_err = False
+            for result in reversed(results):
+                if isinstance(result, kazoo.exceptions.RuntimeInconsistency):
+                    need_err = True
+                    continue
+                elif isinstance(result, Exception):
+                    raise result
+            assert not need_err, "No other exceptions, but runtime is inconsistent: {}".format(results)
+        get_logger().debug("Completed write-request", comment=self._comment)
+
+
+# =====
+class _Lock:
+    def __init__(self, client, path, comment):
+        self._client = client
+        self._path = path
+        self._comment = comment
+
+    def is_locked(self):
+        return (self._client.zk.exists(self._path) is not None)
+
+    def acquire(self, request):
+        request.create(self._path, ephemeral=True)
+
+    def release(self, request):
+        request.delete(self._path)
+
+    def __enter__(self):
+        get_logger().debug("Acquiring lock", comment=self._comment)
+        while not self._try_acquire():
+            wait = threading.Event()
+            if self._client.zk.exists(self._path, watch=lambda _: wait.set()) is not None:
+                wait.wait()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            self._client.zk.delete(self._path)
+        except kazoo.exceptions.NoNodeError:
+            pass
+        get_logger().debug("Released lock", comment=self._comment)
+
+    def _try_acquire(self):
+        try:
+            self._client.zk.create(self._path, ephemeral=True)
+            return True
+        except kazoo.exceptions.NodeExistsError:
+            return False
+
+
+class _Queue:
+    # This class based on the recipe for the queue from here:
+    #   https://zookeeper.apache.org/doc/r3.1.2/recipes.html#sc_recipes_Queues
+    # XXX: This class does not save items order on failure (when consume() has not been called).
+    # This behaviour is acceptable for our purposes.
+
+    def __init__(self, client, path):
+        self._client = client
+        self._path = path
+        self._children = []
+        self._last = None
+
+    def put(self, request, value):
+        assert isinstance(request, _WriteRequest), "Required _WriteRequest() object or None"
+        assert not isinstance(value, EmptyValue), "Why do you need a queue for the EmptyValue?"
+        path = join(self._path, "entry-")
+        request.create(path, value, sequence=True)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        # FIXME: need children watcher
+        if self._last is not None:
+            self._children.pop(0)
+            self._last = None
+
+        while True:
+            if len(self._children) == 0:
+                try:
+                    self._children = self._client.zk.retry(self._client.zk.get_children, self._path)  # FIXME: retry?
+                except kazoo.exceptions.NoNodeError:
+                    raise NoNodeError
+                self._children = list(sorted(self._children))
+            if len(self._children) == 0:
+                raise StopIteration
+
+            name = self._children[0]
+            path = join(self._path, name)
+            try:
+                self._client.zk.create(join(path, "__lock__"), ephemeral=True)
+            except (kazoo.exceptions.NoNodeError, kazoo.exceptions.NodeExistsError):
+                self._children.pop(0)  # FIXME: need a watcher
+                continue
+            self._last = name
+
+            return _decode_value(self._client.zk.get(path)[0])
+
+    def consume(self, request):
+        request.delete(join(self._path, self._last, "__lock__"))
+        request.delete(join(self._path, self._last))
+
+    def __len__(self):
+        return self._client.get_children_count(self._path)
+
+
+class _Counter:
+    def __init__(self, client, path):
+        self._client = client
+        self._path = path
+
+    def get(self):
+        try:
+            value = _decode_value(self._client.zk.get(self._path)[0])
+            if value is EmptyValue:
+                return 0
+            else:
+                return value
+        except kazoo.exceptions.NoNodeError:
+            raise NoNodeError
+
+    def increment(self):
+        with self._client.zk.Lock(join(self._path, "__lock__")):
+            old = self.get()
+            new = old + 1
+            self._client.zk.set(self._path, _encode_value(new))
+            get_logger().debug("Value changed: %d -> %d", old, new, comment=self._path)
+        return old

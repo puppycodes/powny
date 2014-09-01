@@ -1,34 +1,57 @@
-#!/usr/bin/env python
-
-
+import sys
 import setuptools
 
+sys.path.append("./powny/core")
+import const  # pylint: disable=F0401
+sys.path.remove("./powny/core")
 
-##### Main #####
+
+# =====
 if __name__ == "__main__":
     setuptools.setup(
-        name="gns",
-        version="0.4",
-        url="https://github.com/yandex-sysmon/gns",
-        license="GPLv3",
-        author="Devaev Maxim",
-        author_email="mdevaev@gmail.com",
-        description="Universal distributed notification service",
+        name="powny",
+        version=const.__version__,
+        url=const.__url__,
+        license=const.__license__,
+        author=const.__author__,
+        author_email=const.__email__,
+        description="Distributed events processor, based on stackless technology of PyPy3",
         platforms="any",
 
-        packages=(
-            "gns",
-            "gns/api",
-        ),
+        packages=[
+            "powny",
+            "powny.core",
+            "powny.core.api",
+            "powny.core.apps",
+            "powny.core.optconf",  # TODO: Make a separate package
+            "powny.core.optconf.loaders",
+            "powny.backends.zookeeper",
+            "powny.helpers.cmp",
+            "powny.helpers.email",
+            "powny.helpers.hipchat",
+        ],
+
+        package_data={
+            "powny.core.api": ["templates/*.html"],
+            "powny.core.apps": ["configs/*.yaml"],
+        },
+
+        namespace_packages=[
+            "powny",
+            "powny.backends",
+            "powny.helpers",
+        ],
 
         entry_points={
             "console_scripts": [
-                "gns = gns.cli:main",
+                "powny-api = powny.core.apps.api:run",
+                "powny-worker = powny.core.apps.worker:run",
+                "powny-collector = powny.core.apps.collector:run",
             ]
         },
 
-        classifiers=[ # http://pypi.python.org/pypi?:action=list_classifiers
-            "Development Status :: 2 - Pre-Alpha",
+        classifiers=[  # http://pypi.python.org/pypi?:action=list_classifiers
+            "Development Status :: 4 - Beta",
             "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
             "Operating System :: POSIX :: Linux",
             "Programming Language :: Python :: 3",
@@ -39,17 +62,20 @@ if __name__ == "__main__":
         ],
 
         install_requires=[
-            "raava >= 0.20",
-            "elog >= 0.4",
-            "chrpc >= 0.1",
-            "meters >= 0.3",
-            "gns-helpers >= 0.4",
+            "kazoo.yandex",
+            "pyyaml.yandex",
+            "Flask-API.yandex",
+            "ulib",
+            "decorator",
+            "contextlog",
+            "colorlog",
 
-            "ulib >= 0.24",
-            "pyyaml >= 3.10",
-            "decorator >= 3.4.0",
-            "manhole >= 0.6.1",
-            "objgraph >= 1.8.1",
-            "membug >= 0.1",
+            # Optconf
+            "Tabloid",
+            "colorama",
+            "pygments",
+
+            # Helpers
+            "requests",
         ],
     )

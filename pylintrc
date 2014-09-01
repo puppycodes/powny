@@ -1,0 +1,56 @@
+[MASTER]
+ignore=.git
+load-plugins=ulib.tools.lintfix
+
+[DESIGN]
+min-public-methods=0
+max-args=8
+
+[TYPECHECK]
+ignored-classes=pytest,pygments.lexers,pygments.formatters,AnsiCodes
+
+[MESSAGES CONTROL]
+# W0511 -- FIXME/TODO/XXX
+# C0111 -- Missing docstring
+# I0011 -- Locally disabling
+# C0325 -- Unnecessary parens
+# W0142 -- Used * or ** magic
+# R0201 -- Method could be a function
+# R0801 -- Similar lines
+# C0330 -- Wrong hanging indentation before block
+# C0326 -- Exactly one space required after comma
+# R0901 -- Too many ancestors
+# R0904 -- Too many public methods
+# W0232 -- Class has no __init__ method
+# W0603 -- Using the global statement
+# R0921 -- Abstract class not referenced
+# W0703 -- Catching too general exception Exception (Лунная Пони - Лунная Пони)
+disable=C0111,W0511,I0011,C0325,W0142,R0201,R0801,C0330,C0326,R0901,R0904,W0232,W0603,R0921,W0703
+
+[REPORTS]
+msg-template={msg_id}: {path}:{line}({obj}): {msg}
+
+[FORMAT]
+max-line-length=120
+
+[BASIC]
+# List of builtins function names that should not be used, separated by a comma
+bad-functions=
+
+# Regular expression matching correct method names
+method-rgx=[a-z_][a-z0-9_]{2,50}$
+
+# Regular expression matching correct function names
+function-rgx=[a-z_][a-z0-9_]{2,50}$
+
+# Regular expression which should only match correct module level names
+const-rgx=([a-zA-Z_][a-zA-Z0-9_]*)$
+
+# Regular expression which should only match correct argument names
+argument-rgx=[a-z_][a-z0-9_]{1,30}$
+
+# Regular expression which should only match correct variable names
+variable-rgx=[a-z_][a-z0-9_]{1,30}$
+
+# Regular expression which should only match correct instance attribute names
+attr-rgx=[a-z_][a-z0-9_]{1,30}$

@@ -4,32 +4,16 @@ all:
 tox:
 	pypy3 -m tox
 
-pylint:
-	pypy3 -m tox -e pylint
-
-test:
-	pypy3 -m tox -e unittest
-
-pypi:
-	python setup.py register
-	python setup.py sdist upload
+apps:
+	for app in api worker collector; do \
+		echo -e "#!/usr/bin/env pypy3\nfrom powny.core.apps.$$app import run\nimport sys\nsys.exit(run())" > run-$$app.py; \
+		chmod +x run-$$app.py; \
+	done
 
 clean:
-	rm -f test.log
-	rm -rf build dist gns.egg-info
+	rm -rf build dist *.egg-info
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name __pycache__ -delete
 
 clean-all: clean
-	rm -rf .tox
-
-docker: docker-gns docker-gns-python3 docker-gns-uwsgi
-
-docker-gns:
-	./docker-build.sh . yandex/trusty-with-pypy3:latest -t gns $(DOCKER_BUILD_OPTS)
-
-docker-gns-python3:
-	./docker-build.sh . yandex/trusty-with-python3:latest -t gns-cpython $(DOCKER_BUILD_OPTS)
-
-docker-gns-uwsgi:
-	./docker-build.sh uwsgi gns-cpython:latest -t gns-uwsgi $(DOCKER_BUILD_OPTS)
+	rm -rf .tox .coverage run-*.py
