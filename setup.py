@@ -72,6 +72,6 @@ if __name__ == "__main__":
             "pygments",
 
             # Helpers
-            "requests <= 2.3.0",  # FIXME: https://github.com/kevin1024/vcrpy/issues/94
+            "requests == 2.3.0",  # FIXME: https://github.com/kevin1024/vcrpy/issues/94
         ],
     )
