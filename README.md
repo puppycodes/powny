@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/yandex-sysmon/gns2.svg?branch=master)](https://travis-ci.org/yandex-sysmon/gns2)
-[![Coverage Status](https://coveralls.io/repos/yandex-sysmon/gns2/badge.png?branch=master)](https://coveralls.io/r/yandex-sysmon/gns2?branch=master)
-[![Latest Version](https://pypip.in/v/gns2/badge.png)](https://pypi.python.org/pypi/gns2/)
-[![Dependency Status](https://gemnasium.com/yandex-sysmon/gns2.svg)](https://gemnasium.com/yandex-sysmon/gns2)
-[![Gitter chat](https://badges.gitter.im/yandex-sysmon/gns2.png)](https://gitter.im/yandex-sysmon/gns2)
+[![Build Status](https://travis-ci.org/yandex-sysmon/powny.svg?branch=master)](https://travis-ci.org/yandex-sysmon/powny)
+[![Coverage Status](https://coveralls.io/repos/yandex-sysmon/powny/badge.png?branch=master)](https://coveralls.io/r/yandex-sysmon/powny?branch=master)
+[![Latest Version](https://pypip.in/v/powny/badge.png)](https://pypi.python.org/pypi/powny/)
+[![Dependency Status](https://gemnasium.com/yandex-sysmon/powny.svg)](https://gemnasium.com/yandex-sysmon/powny)
+[![Gitter chat](https://badges.gitter.im/yandex-sysmon/powny.png)](https://gitter.im/yandex-sysmon/powny)
 
 
 ###Debugging###
@@ -17,7 +17,7 @@ pip install --user -e .
   * Контекстный логгер не пиклится, нужно удалять его объект перед чекпоинтом из области видимости.
   * Какая-то странная хрень с относительным импортированием в хелперах, пока использую абсолютное:
 ```
-File "/home/mdevaev/projects/yandex/gns2/powny/helpers/email/__init__.py", line 13, in <module>
+File "/home/mdevaev/projects/yandex/powny/powny/helpers/email/__init__.py", line 13, in <module>
     from ...core.optconf import Option
 ImportError: No module named powny.helpers.core
 ```
