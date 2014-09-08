@@ -58,7 +58,7 @@ def init(name, description, args=None):
     logging.captureWarnings(True)
     logging_config = conf_parser.get_raw().get("logging")
     if logging_config is None:
-        logging_config = yaml.load(pkgutil.get_data(__name__, "config/logging.yaml"))
+        logging_config = yaml.load(pkgutil.get_data(__name__, "configs/logging.yaml"))
     if options.log_level is not None:
         logging_config.setdefault("root", {})
         logging_config["root"]["level"] = options.log_level
