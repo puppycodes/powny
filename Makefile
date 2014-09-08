@@ -4,6 +4,10 @@ all:
 tox:
 	pypy3 -m tox
 
+pypi:
+	python setup.py register
+	python setup.py sdist upload
+
 clean:
 	rm -rf build dist *.egg-info
 	find . -type f -name '*.pyc' -delete
