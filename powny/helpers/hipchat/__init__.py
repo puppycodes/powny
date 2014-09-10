@@ -4,13 +4,21 @@ import requests
 
 from contextlog import get_logger
 
-from ulib import validators
-import ulib.validators.common  # pylint: disable=W0611
+from ulib.validators.common import (
+    valid_number,
+    valid_bool,
+    valid_empty,
+    valid_range,
+)
 
-from powny.core.optconf import Option
-from powny.core.optconf import SecretOption
-from powny.core import get_config
-from powny.core import get_context
+from powny.core.optconf import (
+    Option,
+    SecretOption,
+)
+from powny.core import (
+    get_config,
+    save_job_state,
+)
 
 
 # =====
@@ -18,29 +26,27 @@ def get_options():
     return {
         "hipchat": {
             "noop": Option(
-                default=False, validator=validators.common.valid_bool,
+                default=False, type=valid_bool,
                 help="Noop HipChat messages (log only)",
             ),
             "url": Option(
-                default="https://api.hipchat.com/v1", validator=str,
+                default="https://api.hipchat.com/v1", type=str,
                 help="HipChat API URL",
             ),
             "timeout": Option(
-                default=10, validator=(lambda arg: validators.common.valid_number(arg, 0)),
+                default=10, type=(lambda arg: valid_number(arg, 0)),
                 help="Socket timeout for connection",
             ),
             "token": SecretOption(
-                default=None, validator=validators.common.valid_empty,
+                default=None, type=valid_empty,
                 help="Default auth token (see https://www.hipchat.com/docs/api/auth)",
             ),
             "sender": Option(
-                default="Switty Bot", validator=str,
+                default="Switty Bot", type=str,
                 help="Default sender name",
             ),
             "color": Option(
-                default=COLOR.PURPLE, validator=(lambda arg: validators.common.valid_range(
-                    arg, [getattr(COLOR, name) for name in dir(COLOR) if not name.startswith("_")],
-                )),
+                default="purple", type=(lambda arg: valid_range(arg, _COLORS)),
                 help="Default message color (see https://www.hipchat.com/docs/api/method/rooms/message)",
             ),
         },
@@ -48,13 +54,7 @@ def get_options():
 
 
 # ====
-class COLOR:
-    YELLOW = "yellow"
-    RED    = "red"
-    GREEN  = "green"
-    PURPLE = "purple"
-    GRAY   = "gray"
-    RANDOM = "random"
+_COLORS = ("yellow", "red", "green", "purple", "gray", "random")
 
 
 def send_to_room(to, body, sender=None, color=None, notify=False, token=None, fatal=False):
@@ -64,6 +64,8 @@ def send_to_room(to, body, sender=None, color=None, notify=False, token=None, fa
     ok = False
     noop = ("[NOOP] " if config.noop else "")
     logger.info("%sSending HipChat message to room: %s; message: %s", noop, to, body)
+
+    color = valid_range((color or config.color), _COLORS)
 
     if not config.noop:
         try:
@@ -76,7 +78,7 @@ def send_to_room(to, body, sender=None, color=None, notify=False, token=None, fa
                 "from":           (sender or config.sender)[:15],
                 "message":        body,
                 "message_format": "text",
-                "color":          (color or config.color),
+                "color":          color,
                 "notify":         int(notify),
             }, params={
                 "auth_token": token,
@@ -92,5 +94,5 @@ def send_to_room(to, body, sender=None, color=None, notify=False, token=None, fa
         logger.info("%sHipChat message sent to room: %s", noop, to)
 
     del logger
-    get_context().save()
+    save_job_state()
     return ok

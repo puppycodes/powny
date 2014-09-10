@@ -1,5 +1,6 @@
 import pickle
 import threading
+import contextlib
 
 import decorator
 import kazoo.client
@@ -17,7 +18,7 @@ class NodeExistsError(Exception):
     pass
 
 
-class EmptyValue:  # pylint: disable=W0232
+class EmptyValue:  # pylint: disable=no-init
     def __new__(cls):
         raise RuntimeError("Use a class rather than an object of class")
 
@@ -40,15 +41,20 @@ def _catch_zk(method):
     def wrap(method, *args, **kwargs):
         try:
             return method(*args, **kwargs)
-        except kazoo.exceptions.NoNodeError as err:
-            raise NoNodeError from err
-        except kazoo.exceptions.NodeExistsError as err:
-            raise NodeExistsError from err
+        except kazoo.exceptions.NoNodeError:
+            raise NoNodeError
+        except kazoo.exceptions.NodeExistsError:
+            raise NodeExistsError
     return decorator.decorator(wrap, method)
 
 
 # ====
 class Client:
+    """
+        This interface provides a simple low-level abstraction for ZooKeeper (using kazoo),
+        with a friendly interface and the logged write operations.
+    """
+
     def __init__(self, nodes, timeout, start_timeout, start_retries, randomize_hosts, chroot):
         assert isinstance(nodes, (list, tuple))
         self._hosts = ",".join(nodes)
@@ -59,7 +65,33 @@ class Client:
         self._chroot = chroot
         self.zk = None
 
+    @contextlib.contextmanager
+    def connected(self):
+        self.open()
+        try:
+            yield self
+        finally:
+            self.close()
+
+    def _ensure_chroot(self):
+        with Client(
+            nodes=self._hosts.split(","),
+            timeout=self._timeout,
+            start_timeout=self._start_timeout,
+            start_retries=self._start_retries,
+            randomize_hosts=self._randomize_hosts,
+            chroot=None,
+        ).connected() as client:
+            try:
+                with client.get_write_request("ensure_chroot()") as request:
+                    request.create(self._chroot, recursive=True)
+            except NodeExistsError:
+                pass
+
     def open(self):
+        if self._chroot is not None:
+            self._ensure_chroot()
+
         self.zk = kazoo.client.KazooClient(
             hosts=self._hosts,
             timeout=self._timeout,
@@ -92,13 +124,6 @@ class Client:
         self.zk.close()
         self.zk = None
         get_logger().debug("ZK client has been closed", hosts=self._hosts)
-
-    def __enter__(self):
-        self.open()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
 
     # ===
 
@@ -147,6 +172,11 @@ class Client:
 
 
 class _WriteRequest:
+    """
+        This class is used to perform write operations in a single context.
+        For several operations, the transaction is automatically used.
+    """
+
     def __init__(self, client, comment):
         self._client = client
         self._comment = comment
@@ -207,6 +237,11 @@ class _WriteRequest:
 
 # =====
 class _Lock:
+    """
+        Easy lock primitive with no queue of those who try to acqurie it.
+        It can be acquired and released in the transaction.
+    """
+
     def __init__(self, client, path, comment):
         self._client = client
         self._path = path
@@ -244,10 +279,13 @@ class _Lock:
 
 
 class _Queue:
-    # This class based on the recipe for the queue from here:
-    #   https://zookeeper.apache.org/doc/r3.1.2/recipes.html#sc_recipes_Queues
-    # XXX: This class does not save items order on failure (when consume() has not been called).
-    # This behaviour is acceptable for our purposes.
+    """
+        The queue primitive.
+        This class based on the official queue recipe:
+            https://zookeeper.apache.org/doc/r3.1.2/recipes.html#sc_recipes_Queues
+        Our implementation does not save items order on failure (when consume() has not been called).
+        This behaviour is acceptable for Powny.
+    """
 
     def __init__(self, client, path):
         self._client = client
@@ -300,6 +338,10 @@ class _Queue:
 
 
 class _Counter:
+    """
+        Incremental integer counter.
+    """
+
     def __init__(self, client, path):
         self._client = client
         self._path = path

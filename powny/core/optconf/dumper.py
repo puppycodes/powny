@@ -6,18 +6,18 @@ import pygments
 import pygments.lexers
 import pygments.formatters
 
-from ulib import ui
-import ulib.ui.term  # pylint: disable=W0611
+from ulib.ui.term import terminalSize
 
 from . import tree
 
 
 # =====
 def print_config_dump(config, split_by, output=sys.stdout):
-    table = tabloid.FormattedTable(
-        width=ui.term.terminalSize(output=output)[0],
-        header_background=colorama.Back.BLUE,
-    )
+    print(make_config_dump(config, split_by, terminalSize(output=output)[0]), file=output)
+
+
+def make_config_dump(config, split_by, width):
+    table = tabloid.FormattedTable(width=width, header_background=colorama.Back.BLUE)
     table.add_column("Option", _highlight_option)
     table.add_column("Value", _highlight_python)
     table.add_column("Default", _highlight_python)
@@ -28,7 +28,7 @@ def print_config_dump(config, split_by, output=sys.stdout):
             table.add_row((" ") * 4)
         else:
             table.add_row(row)
-    print("\n".join(table.get_table()), file=output)
+    return "\n".join(table.get_table())
 
 
 def _highlight_option(name):
@@ -57,12 +57,12 @@ def _make_plain_dump(config, split_by=(), path=()):
                 plain.append(None)
             plain += _make_plain_dump(value, split_by, path + (key,))
         else:
-            default = config._get_default(key)  # pylint: disable=W0212
+            default = config._get_default(key)  # pylint: disable=protected-access
             changed = (default != value)
             plain.append((
                 ".".join(path + (key,)).replace("_", "-") + ("!" if changed else ""),  # FIXME: crutch for tabloid
                 repr(value),
                 (repr(default) if changed else ""),
-                config._get_help(key),  # pylint: disable=W0212
+                config._get_help(key),  # pylint: disable=protected-access
             ))
     return plain

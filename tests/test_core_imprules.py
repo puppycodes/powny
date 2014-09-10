@@ -1,7 +1,3 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-
-
 import os
 import contextlib
 import pprint
@@ -35,7 +31,7 @@ class TestImpRules:
         "powny",
         "powny.backends",
         "powny.backends.zookeeper",
-        "powny.backends.zookeeper.scheme",
+        "powny.backends.zookeeper.ifaces",
         "powny.backends.zookeeper.zoo",
         "powny.core",
         "powny.core.api",
@@ -68,7 +64,7 @@ class TestImpRules:
         "tests.fixtures.tmp",
         "tests.fixtures.zookeeper",
         "tests.test_backends_zookeeper",
-        "tests.test_backends_zookeeper_scheme",
+        "tests.test_backends_zookeeper_ifaces",
         "tests.test_backends_zookeeper_zoo",
         "tests.test_core_apps",
         "tests.test_core_backends",
@@ -87,26 +83,20 @@ class TestImpRules:
         @imprules.expose
         def foobar():
             pass
-        assert getattr(foobar, imprules._ATTR_EXPOSED)
+        assert getattr(foobar, imprules._ATTR_EXPOSED)  # pylint: disable=protected-access
 
     def test_get_all_modules_rel(self):
-        names = imprules._get_all_modules(".")
+        names = imprules._get_all_modules(".")  # pylint: disable=protected-access
         pprint.pprint(names)
         assert names == self._names
 
     def test_get_all_modules_cwd(self):
-        names = imprules._get_all_modules(os.getcwd())
+        names = imprules._get_all_modules(os.getcwd())  # pylint: disable=protected-access
         pprint.pprint(names)
         assert names == self._names
 
 
 class TestLoader:
-    def setup_method(self, _):
-        imprules.setup_hooks()
-
-    def teardown_method(self, _):
-        imprules.remove_hooks()
-
     def test_loader_replace(self):
         defined = set((
             "rules.foo",

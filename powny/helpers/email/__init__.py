@@ -7,14 +7,26 @@ import contextlib
 
 from contextlog import get_logger
 
-from ulib import validators
-import ulib.validators.common  # pylint: disable=W0611
-import ulib.validators.network
+from ulib.validators.common import (
+    valid_number,
+    valid_bool,
+    valid_empty,
+    valid_string_list,
+)
+from ulib.validators.network import (
+    valid_ip_or_host,
+    valid_port,
+)
 
-from powny.core.optconf import Option
-from powny.core.optconf import SecretOption
-from powny.core import get_config
-from powny.core import get_context
+from powny.core.optconf import (
+    Option,
+    SecretOption,
+)
+from powny.core import (
+    get_config,
+    get_job_id,
+    save_job_state,
+)
 
 
 # =====
@@ -22,39 +34,39 @@ def get_options():
     return {
         "email": {
             "noop": Option(
-                default=False, validator=validators.common.valid_bool,
+                default=False, type=valid_bool,
                 help="Noop emails (log only)",
             ),
             "server": Option(
-                default="localhost", validator=(lambda arg: validators.network.valid_ip_or_host(arg)[0]),
+                default="localhost", type=(lambda arg: valid_ip_or_host(arg)[0]),
                 help="SMTP-server hostname or IP (without port)",
             ),
             "port": Option(
-                default=0, validator=validators.network.valid_port,
+                default=0, type=valid_port,
                 help="SMTP/SMTP-SSL port",
             ),
             "ssl": Option(
-                default=False, validator=validators.common.valid_bool,
+                default=False, type=valid_bool,
                 help="Use SSL connection to SMTP",
             ),
             "timeout": Option(
-                default=10, validator=(lambda arg: validators.common.valid_number(arg, 0)),
+                default=10, type=(lambda arg: valid_number(arg, 0)),
                 help="Socket timeout for connection",
             ),
             "user": Option(
-                default=None, validator=validators.common.valid_empty,
+                default=None, type=valid_empty,
                 help="Username, none for anonymous",
             ),
             "passwd": SecretOption(
-                default="", validator=str,
+                default="", type=str,
                 help="Password",
             ),
             "from": Option(
-                default="root@localhost", validator=str,
+                default="root@localhost", type=str,
                 help="Sender of the email",
             ),
             "cc": Option(
-                default=[], validator=validators.common.valid_string_list,
+                default=[], type=valid_string_list,
                 help="To always forward all emails",
             ),
         },
@@ -62,25 +74,12 @@ def get_options():
 
 
 # ====
-def send_email(to, subject, body, cc=(), headers=None, fatal=False):
+def send_email(to, subject, body, html=False, cc=(), headers=None, fatal=False):
     config = get_config(check_helpers=(__name__,)).helpers.email
+    to = valid_string_list(to)
+    cc = list(set(valid_string_list(cc) + config.cc))
 
-    to = validators.common.valid_string_list(to)
-    cc = list(set(validators.common.valid_string_list(cc) + config.cc))
-
-    message = email.mime.multipart.MIMEMultipart()
-    message["From"] = config["from"]
-    message["To"] = ", ".join(to)
-    if len(cc) > 0:
-        message["CC"] = ", ".join(cc)
-    message["Date"] = email.utils.formatdate(localtime=True)
-    message["Subject"] = subject
-    message.attach(email.mime.text.MIMEText(body))
-
-    email_headers = {"Powny-Job-Id": get_context().get_job_id()}
-    email_headers.update(headers or {})
-    for name in email_headers:
-        message[name] = email.header.Header(header_name=name, s=email_headers[name])
+    message = _make_message(config["from"], to, subject, body, html, cc, headers)
 
     logger = get_logger()
 
@@ -107,5 +106,24 @@ def send_email(to, subject, body, cc=(), headers=None, fatal=False):
         logger.info("%sEmail sent to: %s; cc: %s; subject: %s", noop, to, cc, subject)
 
     del logger
-    get_context().save()
+    save_job_state()
     return ok
+
+
+def _make_message(sender, to, subject, body, html=False, cc=(), headers=None):
+    message = email.mime.multipart.MIMEMultipart()
+
+    message["From"] = sender
+    message["To"] = ", ".join(to)
+    if len(cc) > 0:
+        message["CC"] = ", ".join(cc)
+    message["Date"] = email.utils.formatdate(localtime=True)
+    message["Subject"] = subject
+    message.attach(email.mime.text.MIMEText(body, ("html" if html else "plain")))
+
+    email_headers = {"Powny-Job-Id": get_job_id()}
+    email_headers.update(headers or {})
+    for name in email_headers:
+        message[name] = email.header.Header(header_name=name, s=email_headers[name])
+
+    return message

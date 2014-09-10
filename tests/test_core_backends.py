@@ -1,6 +1,4 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-# pylint: disable=W0621
+# pylint: disable=redefined-outer-name
 
 
 import pytest
@@ -8,31 +6,31 @@ import pytest
 from powny.core import backends
 import powny.backends.zookeeper
 
-from .fixtures.zookeeper import zclient  # pylint: disable=W0611
-from .fixtures.zookeeper import zbackend_kwargs  # pylint: disable=W0611
+from .fixtures.zookeeper import zclient  # pylint: disable=unused-import
+from .fixtures.zookeeper import zbackend_kwargs  # pylint: disable=unused-import
 
 
 # =====
 class TestBackends:
     def test_get_backend_zookeeper(self):
-        assert backends.get_backend("zookeeper") == powny.backends.zookeeper.Backend
+        assert backends.get_backend_class("zookeeper") == powny.backends.zookeeper.Backend
 
     def test_get_backend_import_error(self):
         with pytest.raises(ImportError):
-            backends.get_backend("foobar")
+            backends.get_backend_class("foobar")
 
 
 @pytest.mark.usefixtures("zclient")
 class TestZookeeperPool:
     def test_fill_free(self, zbackend_kwargs):
         pool = backends.Pool(5, "zookeeper", zbackend_kwargs)
-        pool.fill()
+        pool.__enter__()
         assert len(pool) == 5
         with pytest.raises(AssertionError):
-            pool.fill()
-        pool.free()
+            pool.__enter__()
+        pool.__exit__(None, None, None)
         with pytest.raises(AssertionError):
-            pool.free()
+            pool.__exit__(None, None, None)
 
     def test_get_backend_name(self, zbackend_kwargs):
         with backends.Pool(1, "zookeeper", zbackend_kwargs) as pool:
@@ -41,19 +39,19 @@ class TestZookeeperPool:
     def test_get_backend(self, zbackend_kwargs):
         with backends.Pool(5, "zookeeper", zbackend_kwargs) as pool:
             with pool.get_backend() as backend:
-                job_id = backend.jobs.control.add_job("13", "foobar", b"code", {})
+                job_id = backend.jobs_control.add_job("13", "foobar", b"code", {})
                 assert len(pool) == 4
             assert len(pool) == 5
 
             with pool.get_backend() as backend:
-                job_info = backend.jobs.control.get_job_info(job_id)
-                assert job_info["name"] == "foobar"
+                job_info = backend.jobs_control.get_job_info(job_id)
+                assert job_info["method"] == "foobar"
                 assert len(pool) == 4
             assert len(pool) == 5
 
     def test_get_backend_with_exception(self, zbackend_kwargs):
         with backends.Pool(5, "zookeeper", zbackend_kwargs) as pool:
-            old_backends = set(pool._backends)
+            old_backends = set(pool._backends)  # pylint: disable=protected-access
             assert len(old_backends) == 5
 
             with pytest.raises(RuntimeError):
@@ -61,7 +59,7 @@ class TestZookeeperPool:
                     assert isinstance(backend, powny.backends.zookeeper.Backend)
                     raise RuntimeError
 
-            new_backends = set(pool._backends)
+            new_backends = set(pool._backends)  # pylint: disable=protected-access
             assert len(new_backends) == 5
             assert old_backends != new_backends
             assert len(pool) == 5

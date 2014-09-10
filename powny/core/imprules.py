@@ -3,7 +3,6 @@ import os
 import importlib
 import traceback
 import threading
-import collections
 
 from contextlog import get_logger
 
@@ -22,14 +21,24 @@ def expose(method):
 
 
 class Loader:
+    """
+        Loader() обеспечивает загрузку и перезагрузку пакета с правилами.
+        При вызове get_exposed(), он добавляет указанный путь в sys.path и пытается
+        загрузить пакет module_base, рекурсивно загружая все подмодули в нем.
+        Далее, все функции, находящиеся в этих модулях, анализируются с помощью набора фильтров
+        в group_by (вида {"key": lambda func: True}), и группируются по указанным ключам.
+        При вызове get_exposed() с другим путем, все модули, относящиеся к module_base
+        будут выгружены из sys.modules и заменены новыми. Данная операция не является
+        атомарной и функции, которые во время модулей обратились к пакету module_base,
+        потерпят сбой. FIXME: исправить это.
+    """
+
     _lock = threading.Lock()
 
     def __init__(self, module_base, group_by=None):
         self.module_base = module_base
         self._group_by = group_by
         self._cache = {}
-# FIXME
-#        self._lock = threading.Lock()
         self.thread = None
 
     def get_exposed(self, path):
@@ -51,8 +60,8 @@ class Loader:
                     methods = {}
                     for (name, method) in exposed_methods.items():
                         for (sub, test) in self._group_by:
+                            methods.setdefault(sub, {})
                             if test(method):
-                                methods.setdefault(sub, {})
                                 methods[sub][name] = method
                                 break
                     self._cache[path] = (methods, errors)
@@ -60,46 +69,6 @@ class Loader:
             finally:
                 self.thread = None
                 self._lock.release()
-
-
-def setup_hooks():
-    pass
-# FIXME
-#    assert not isinstance(sys.path, _SysPath), "Double-called setup_hooks()"
-#    assert not isinstance(sys.modules, _SysModules), "Double-called setup_hooks()"
-#    sys.path = _SysPath()
-#    sys.modules = _SysModules()
-
-def remove_hooks():
-    pass
-#    assert isinstance(sys.path, _SysPath), "setup_hooks() was not called"
-#    assert isinstance(sys.modules, _SysModules), "setup_hooks() was not called"
-#    sys.path = sys.path.orig
-#    sys.modules = sys.modules.orig
-
-
-# =====
-class _SysPath(collections.UserList):
-    def __init__(self):  # pylint: disable=W0231
-        self.orig = sys.path
-        self._local = threading.local()
-
-    @property
-    def data(self):
-        if not hasattr(self._local, "data"):
-            self._local.data = list(self.orig)
-        return self._local.data
-
-class _SysModules(collections.UserDict):
-    def __init__(self):  # pylint: disable=W0231
-        self.orig = sys.modules
-        self._local = threading.local()
-
-    @property
-    def data(self):
-        if not hasattr(self._local, "data"):
-            self._local.data = dict(self.orig)
-        return self._local.data
 
 
 # =====

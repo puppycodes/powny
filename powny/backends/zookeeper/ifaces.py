@@ -34,9 +34,6 @@ def _get_path_job_state(job_id):
 def _get_path_job_delete(job_id):
     return zoo.join(_get_path_job(job_id), "delete")
 
-def _get_state(client, job_id):
-    return client.get(_get_path_job_state(job_id), {"finished": None, "state": None})
-
 def _get_path_app_state(node_name, app_name):
     return zoo.join(_PATH_APPS_STATE, "{}@{}".format(app_name, node_name))
 
@@ -46,23 +43,30 @@ def _parse_app_state_node(node_name):
 
 # =====
 def init(client):
-    try:
-        with client.get_write_request("scheme.init()") as request:
-            request.create(_PATH_INPUT_QUEUE)
-            request.create(_PATH_SYSTEM)
-            request.create(_PATH_JOBS_COUNTER)
-            request.create(_PATH_RULES_HEAD)
-            request.create(_PATH_APPS_STATE)
-            request.create(_PATH_JOBS)
-        get_logger().debug("Scheme has been created")
-        return True
-    except zoo.NodeExistsError:
-        get_logger().debug("Scheme is already exists")
-        return False
+    logger = get_logger()
+    for path in (
+        _PATH_INPUT_QUEUE,
+        _PATH_SYSTEM,
+        _PATH_JOBS_COUNTER,
+        _PATH_RULES_HEAD,
+        _PATH_APPS_STATE,
+        _PATH_JOBS,
+    ):
+        try:
+            with client.get_write_request("backend::init()::create({})".format(path)) as request:
+                request.create(path)
+            logger.debug("Backend init: path '%s' has been created", path)
+        except zoo.NodeExistsError:
+            logger.debug("Backend init: path '%s' is already exists", path)
 
 
 # =====
-class JobsControlScheme:
+class JobsControl:
+    """
+        Interface to managing the jobs (add, delete, get metadata).
+        Needs for powny.core.apps.api.
+    """
+
     def __init__(self, client):
         self._client = client
         self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
@@ -77,19 +81,25 @@ class JobsControlScheme:
     def get_jobs_count(self):
         return self._client.get_children_count(_PATH_JOBS)
 
-    def add_job(self, version, name, func, kwargs):
+    def add_job(self, version, method_name, kwargs, state):
         job_id = make_job_id()
         number = self._jobs_counter.increment()
-        logger = get_logger(job_id=job_id, number=number, func_name=name)
+        logger = get_logger(job_id=job_id, number=number, method=method_name)
         logger.info("Registering job")
         with self._client.get_write_request("add_job()") as request:
             request.create(_get_path_job(job_id), {
                 "version": version,
-                "name":    name,
-                "func":    func,
+                "method":    method_name,
                 "kwargs":  kwargs,
                 "created": time.time(),
                 "number":  number,
+            })
+            request.create(_get_path_job_state(job_id), {
+                "state":    state,
+                "stack":    None,
+                "finished": None,
+                "retval":   None,
+                "exc":      None,
             })
             self._input_queue.put(request, job_id)
         logger.info("Registered job")
@@ -118,13 +128,12 @@ class JobsControlScheme:
     def get_job_info(self, job_id):
         try:
             job_info = self._client.get(_get_path_job(job_id))  # init info
-            job_info.pop("func")
 
             job_info["deleted"] = self._client.exists(_get_path_job_delete(job_id))
             job_info["locked"] = self._client.exists(_get_path_job_lock(job_id))
             job_info["taken"] = self._client.get(_get_path_job_taken(job_id), None)
 
-            state_info = _get_state(self._client, job_id)
+            state_info = self._client.get(_get_path_job_state(job_id))
             state_info.pop("state", None)  # Remove state
             job_info["finished"] = state_info.pop("finished")
             job_info.update(state_info)  # + stack OR retval OR exc
@@ -134,7 +143,12 @@ class JobsControlScheme:
             return None
 
 
-class JobsProcessScheme:
+class JobsProcess:
+    """
+        Interface to processing the jobs.
+        Needs for powny.core.apps.worker.
+    """
+
     def __init__(self, client):
         self._client = client
         self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
@@ -142,22 +156,18 @@ class JobsProcessScheme:
     def get_ready_jobs(self):
         for job_id in self._input_queue:
             job_info = self._client.get(_get_path_job(job_id))
-            exec_info = self._client.get(_get_path_job_state(job_id), None)
+            exec_info = self._client.get(_get_path_job_state(job_id))
 
             with self._client.get_write_request("get_ready_jobs()") as request:
                 self._client.get_lock(_get_path_job_lock(job_id)).acquire(request)
                 request.create(_get_path_job_taken(job_id), time.time())
-                if exec_info is None:
-                    request.create(_get_path_job_state(job_id), {"finished": None, "state": None})
                 self._input_queue.consume(request)
 
             yield ReadyJob(
                 job_id=job_id,
                 number=job_info["number"],
                 version=job_info["version"],
-                func=job_info["func"],
-                kwargs=job_info["kwargs"],
-                state=(exec_info["state"] if exec_info is not None else None),
+                state=exec_info["state"],
             )
 
     def associate_job(self, job_id):
@@ -176,21 +186,28 @@ class JobsProcessScheme:
                 "state":    state,
                 "stack":    stack,
                 "finished": None,
+                "retval":   None,
+                "exc":      None,
             })
 
     def done_job(self, job_id, retval, exc):
-        finished = time.time()
         with self._client.get_write_request("done_job()") as request:
-            result = {"finished": finished}
-            if exc is None:
-                result["retval"] = retval
-            else:
-                result["exc"] = exc
-            request.set(_get_path_job_state(job_id), result)
+            request.set(_get_path_job_state(job_id), {
+                "state":    None,
+                "stack":    None,
+                "finished": time.time(),
+                "retval":   retval,
+                "exc":      exc,
+            })
             self._client.get_lock(_get_path_job_lock(job_id)).release(request)
 
 
-class JobsGcScheme:
+class JobsGc:
+    """
+        Interface for garbage collector.
+        Needs for powny.core.apps.collector.
+    """
+
     def __init__(self, client):
         self._client = client
         self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
@@ -202,7 +219,7 @@ class JobsGcScheme:
             lock = self._client.get_lock(_get_path_job_lock(job_id))
 
             if (to_delete or taken) and not lock.is_locked():
-                finished = _get_state(self._client, job_id)["finished"]
+                finished = self._client.get(_get_path_job_state(job_id))["finished"]
                 if to_delete or finished is None or finished + done_lifetime <= time.time():
                     try:
                         with self._client.get_write_request("get_unfinished_jobs()") as request:
@@ -221,17 +238,21 @@ class JobsGcScheme:
         with self._client.get_write_request("remove_job_data()") as request:
             for path_maker in (
                 _get_path_job_delete,
-                _get_path_job_state,
                 _get_path_job_taken,
             ):
                 path = path_maker(job_id)
                 if self._client.exists(path):
                     request.delete(path)
             request.delete(_get_path_job_lock(job_id))
+            request.delete(_get_path_job_state(job_id))
             request.delete(_get_path_job(job_id))
 
 
-class RulesScheme:
+class Rules:
+    """
+        Interface to managing the rules HEAD.
+    """
+
     def __init__(self, client):
         self._client = client
 
@@ -247,7 +268,12 @@ class RulesScheme:
             return head
 
 
-class AppsStateScheme:
+class AppsState:
+    """
+        Interface to the system statistics about the internal processes
+        (like the worker and collector).
+    """
+
     def __init__(self, client):
         self._client = client
 

@@ -1,33 +1,36 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
+# pylint: disable=redefined-outer-name
 
 
 import pytest
 
+from ulib import typetools
+
 from powny.core import optconf
+from powny.core.optconf.loaders import yaml
 from powny.backends import zookeeper
 
 from .fixtures.tmp import write_file
 
 
 # =====
-class TestYamlLoader:
-    _scheme = {
-        "key1": optconf.Option(default=1, validator=int, help=""),
-        "key2": optconf.Option(default=2, validator=int, help=""),
+@pytest.fixture
+def scheme():
+    return {
+        "key1": optconf.Option(default=1, type=int, help=""),
+        "key2": optconf.Option(default=2, type=int, help=""),
         "section1": {
-            "key11": optconf.Option(default=11, validator=float, help=""),
-            "key12": optconf.Option(default=12, validator=float, help=""),
+            "key11": optconf.Option(default=11, type=float, help=""),
+            "key12": optconf.Option(default=12, type=float, help=""),
             "section2": {
-                "key21": optconf.Option(default="21", validator=str, help=""),
+                "key21": optconf.Option(default="21", type=str, help=""),
             },
         },
     }
 
-    def test_default(self):
-        parser = optconf.YamlLoader(self._scheme, None)
-        assert parser.get_raw() == {}
-        config = parser.get_config()
+
+class TestLoadFromYaml:
+    def test_default(self, scheme):
+        config = optconf.make_config({}, scheme)
 
         assert config.key1 == 1
         assert config.key2 == 2
@@ -39,11 +42,9 @@ class TestYamlLoader:
             assert kwargs == {"key21": "21"}
         unpack(**config.section1.section2)
 
-    def test_with_update(self):
-        parser = optconf.YamlLoader(self._scheme, None)
-        parser.load()
-        parser.update_scheme({"backend": zookeeper.Backend.get_options()})
-        config = parser.get_config()
+    def test_with_update(self, scheme):
+        typetools.merge_dicts(scheme, {"backend": zookeeper.Backend.get_options()})
+        config = optconf.make_config({}, scheme)
 
         assert config.key1 == 1
         assert config.key2 == 2
@@ -61,48 +62,44 @@ class TestYamlLoader:
     def test_with_include(self):
         with write_file("nodes:\n  - foo\n  - bar\nstart-retries: 1") as include_path:
             with write_file("core:\n  backend: zookeeper\nbackend: !include {}".format(include_path)) as main_path:
-                parser = optconf.YamlLoader({
+                raw = yaml.load_file(main_path)
+                scheme = {
                     "core": {
-                        "backend": optconf.Option(default="noop", validator=str, help=""),
+                        "backend": optconf.Option(default="noop", type=str, help=""),
                     },
-                }, main_path)
-                parser.load()
-                assert parser.get_raw()["backend"]["nodes"] == ["foo", "bar"]
-                assert parser.get_config().core.backend == "zookeeper"
+                }
+                config = optconf.make_config(raw, scheme)
+                assert raw["backend"]["nodes"] == ["foo", "bar"]
+                assert config.core.backend == "zookeeper"
 
-                parser.update_scheme({"backend": zookeeper.Backend.get_options()})
-                config = parser.get_config()
+                typetools.merge_dicts(scheme, {"backend": zookeeper.Backend.get_options()})
+                config = optconf.make_config(raw, scheme)
                 assert config.backend.nodes == ["foo", "bar"]
                 assert config.backend.timeout == 10.0
 
-    def test_yaml_root_error(self):
+    def test_yaml_root_error(self, scheme):
         with write_file("foobar") as path:
-            parser = optconf.YamlLoader(self._scheme, path)
-            parser.load()
+            raw = yaml.load_file(path)
             with pytest.raises(ValueError):
-                parser.get_config()
+                optconf.make_config(raw, scheme)
 
     def test_yaml_syntax_error(self):
         with write_file("&") as path:
-            parser = optconf.YamlLoader(self._scheme, path)
             with pytest.raises(ValueError):
-                parser.load()
+                yaml.load_file(path)
 
-    def test_yaml_invalid_value(self):
+    def test_yaml_invalid_value(self, scheme):
         with write_file("key1: x") as path:
-            parser = optconf.YamlLoader(self._scheme, path)
-            parser.load()
+            raw = yaml.load_file(path)
             with pytest.raises(ValueError):
-                parser.get_config()
+                optconf.make_config(raw, scheme)
 
-    def test_yaml_not_a_section(self):
+    def test_yaml_not_a_section(self, scheme):
         with write_file("section1: 5") as path:
-            parser = optconf.YamlLoader(self._scheme, path)
-            parser.load()
+            raw = yaml.load_file(path)
             with pytest.raises(ValueError):
-                parser.get_config()
+                optconf.make_config(raw, scheme)
 
     def test_invalid_scheme(self):
-        parser = optconf.YamlLoader({"foo": "bar"}, None)
         with pytest.raises(RuntimeError):
-            parser.get_config()
+            optconf.make_config({}, {"foo": "bar"})

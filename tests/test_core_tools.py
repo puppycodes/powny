@@ -1,11 +1,9 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-# pylint: disable=W0621
+# pylint: disable=redefined-outer-name
 
 
 from powny.core import tools
 
-from .fixtures.zookeeper import zbackend  # pylint: disable=W0611
+from .fixtures.zookeeper import zbackend  # pylint: disable=unused-import
 
 
 # =====
@@ -42,16 +40,16 @@ def test_exposed_ok(zbackend):
 
 def test_get_func_method(zbackend):
     exposed = _get_exposed(zbackend, "./rules", "0123456789abcdef")[1]
-    func = tools.get_func_method("rules.test.empty_method", exposed)
-    assert isinstance(func, bytes)
+    state = tools.get_dumped_method("rules.test.empty_method", {}, exposed)
+    assert isinstance(state, bytes)
 
 def test_get_func_method_invalid(zbackend):
     exposed = _get_exposed(zbackend, "./rules", "0123456789abcdef")[1]
-    func = tools.get_func_method("rules.test.test_method_not_found", exposed)
-    assert func is None
+    state = tools.get_dumped_method("rules.test.test_method_not_found", {}, exposed)
+    assert state is None
 
 def test_get_func_handlers(zbackend):
     exposed = _get_exposed(zbackend, "./rules", "0123456789abcdef")[1]
-    funcs = tools.get_func_handlers({}, exposed)
-    assert len(funcs) == 1
-    assert isinstance(funcs["rules.test.empty_handler"], bytes)
+    states = tools.get_dumped_handlers({}, exposed)
+    assert len(states) == 1
+    assert isinstance(states["rules.test.empty_handler"], bytes)

@@ -1,6 +1,5 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-# pylint: disable=W0621
+# pylint: disable=protected-access
+# pylint: disable=redefined-outer-name
 
 
 import threading
@@ -13,8 +12,8 @@ import pytest
 
 from powny.backends.zookeeper import zoo
 
-from .fixtures.zookeeper import zclient  # pylint: disable=W0611
-from .fixtures.zookeeper import zbackend_kwargs  # pylint: disable=W0611
+from .fixtures.zookeeper import zclient  # pylint: disable=unused-import
+from .fixtures.zookeeper import zbackend_kwargs  # pylint: disable=unused-import
 
 
 # =====
@@ -94,7 +93,7 @@ class TestClient:
                 start_retries=1,
                 randomize_hosts=True,
                 chroot=None,
-            ):
+            ).connected():
                 pass
 
     def test_get_server_info(self, zclient):
@@ -344,6 +343,6 @@ class TestCounter:
         assert counter.get() == 5
 
     def _lock_queue(self, client_kwargs):
-        with zoo.Client(**client_kwargs) as client:
+        with zoo.Client(**client_kwargs).connected() as client:
             with client.zk.Lock("/counter/__lock__"):
                 time.sleep(1)

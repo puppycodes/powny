@@ -28,7 +28,7 @@ def match_event(*matchers):
 
 def check_match(method, event):
     for matcher in getattr(method, _ATTR_MATCHERS, []):
-        logger = get_logger(func_name="{}.{}".format(method.__module__, method.__name__))
+        logger = get_logger(method="{}.{}".format(method.__module__, method.__name__))
         try:
             if not matcher(event):
                 logger.debug("Event is not matched by %s; data: %s", matcher, event)

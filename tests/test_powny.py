@@ -1,7 +1,3 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-
-
 import time
 
 from powny.core import __version__
@@ -78,11 +74,12 @@ def _test_api_v1_jobs_delete(url, kwargs):
 
             result = as_dict(api.post(url, **from_dict(kwargs)))
             assert result[0] == 200
-            (job_id, func_name) = tuple(result[1].items())[0]
+            (job_id, job_info) = tuple(result[1].items())[0]
+            method_name = job_info["method"]
 
             result = as_dict(api.get("/v1/jobs/" + job_id))
             assert result[0] == 200
-            assert result[1]["name"] == func_name
+            assert result[1]["method"] == method_name
             assert result[1]["deleted"] is False
 
             result = as_dict(api.delete("/v1/jobs/" + job_id))

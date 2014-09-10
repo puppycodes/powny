@@ -6,21 +6,22 @@ class Section(dict):
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         self._meta = {}
-        self._secrets = []
-        self._defaults = {}
-        self._helps = {}
 
-    def _set_meta(self, name, secret, default, help):  # pylint: disable=W0622
-        self._meta[name] = (secret, default, help)
+    def _set_meta(self, name, secret, default, help):  # pylint: disable=redefined-builtin
+        self._meta[name] = {
+            "secret":  secret,
+            "default": default,
+            "help":    help,
+        }
 
     def _is_secret(self, name):
-        return self._meta[name][0]
+        return self._meta[name]["secret"]
 
     def _get_default(self, name):
-        return self._meta[name][1]
+        return self._meta[name]["default"]
 
     def _get_help(self, name):
-        return self._meta[name][2]
+        return self._meta[name]["help"]
 
     def __getattribute__(self, name):
         if name in self:
@@ -31,7 +32,7 @@ class Section(dict):
 
 Option = collections.namedtuple("Option", (
     "default",
-    "validator",
+    "type",
     "help",
 ))
 

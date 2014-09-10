@@ -1,30 +1,28 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-# pylint: disable=W0621
+# pylint: disable=redefined-outer-name
 
 
-from powny.backends.zookeeper import scheme
+from powny.backends.zookeeper import ifaces
 from powny.backends import zookeeper
 
-from .fixtures.zookeeper import zclient  # pylint: disable=W0611
-from .fixtures.zookeeper import zclient_kwargs  # pylint: disable=W0611
-from .fixtures.zookeeper import zclient_chroot  # pylint: disable=W0611
+from .fixtures.zookeeper import zclient  # pylint: disable=unused-import
+from .fixtures.zookeeper import zclient_kwargs  # pylint: disable=unused-import
+from .fixtures.zookeeper import zclient_chroot  # pylint: disable=unused-import
 
 
 # =====
 def test_connect(zclient_kwargs, zclient_chroot):
-    with zookeeper.Backend(chroot=zclient_chroot, **zclient_kwargs):
+    with zookeeper.Backend(chroot=zclient_chroot, **zclient_kwargs).connected():
         pass
 
 
 def test_get_info(zclient_kwargs, zclient_chroot):
-    with zookeeper.Backend(chroot=zclient_chroot, **zclient_kwargs) as backend:
+    with zookeeper.Backend(chroot=zclient_chroot, **zclient_kwargs).connected() as backend:
         assert "zookeeper.version" in backend.get_info()
 
 
-def test_schemes(zclient_kwargs, zclient_chroot):
-    with zookeeper.Backend(chroot=zclient_chroot, **zclient_kwargs) as backend:
-        assert isinstance(backend.jobs.control, scheme.JobsControlScheme)
-        assert isinstance(backend.jobs.process, scheme.JobsProcessScheme)
-        assert isinstance(backend.rules, scheme.RulesScheme)
-        assert isinstance(backend.system.apps_state, scheme.AppsStateScheme)
+def test_ifaces(zclient_kwargs, zclient_chroot):
+    with zookeeper.Backend(chroot=zclient_chroot, **zclient_kwargs).connected() as backend:
+        assert isinstance(backend.jobs_control, ifaces.JobsControl)
+        assert isinstance(backend.jobs_process, ifaces.JobsProcess)
+        assert isinstance(backend.rules, ifaces.Rules)
+        assert isinstance(backend.system_apps_state, ifaces.AppsState)

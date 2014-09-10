@@ -1,15 +1,9 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-
-
-import smtplib
-
 import pytest
 
 from powny.helpers import email
 
 from .fixtures.application import configured
-from .fixtures.context import fake_context  # pylint: disable=W0611
+from .fixtures.context import run_in_context
 
 
 # ====
@@ -19,7 +13,26 @@ def test_not_configured():
             email.send_email("root@localhost", "Test", "Message")
 
 
-@pytest.mark.usefixtures("fake_context")
+def test_html(smtpserver):
+    with configured("""
+        helpers:
+            configure:
+                - powny.helpers.email
+            email:
+                server: {server}
+                port: {port}
+    """.format(server=smtpserver.addr[0], port=smtpserver.addr[1])):
+        assert run_in_context(
+            method=email.send_email,
+            kwargs={
+                "to":      "root@localhost",
+                "subject": "Test",
+                "body":    "<h4>TEST</h4>",
+            },
+        ).end.retval is True
+    assert len(smtpserver.outbox) == 1
+
+
 def test_anon_with_cc(smtpserver):
     with configured("""
         helpers:
@@ -29,11 +42,18 @@ def test_anon_with_cc(smtpserver):
                 server: {server}
                 port: {port}
     """.format(server=smtpserver.addr[0], port=smtpserver.addr[1])):
-        assert email.send_email("root@localhost", "Test", "Message", cc="cjohnson@aperturescience.com") is True
+        assert run_in_context(
+            method=email.send_email,
+            kwargs={
+                "to":      "root@localhost",
+                "subject": "Test",
+                "body":    "Message",
+                "cc":      "cjohnson@aperturescience.com",
+            },
+        ).end.retval is True
     assert len(smtpserver.outbox) == 1
 
 
-@pytest.mark.usefixtures("fake_context")
 def test_with_login(smtpserver):
     with configured("""
         helpers:
@@ -45,12 +65,20 @@ def test_with_login(smtpserver):
                 user: foo
                 passwd: bar
     """.format(server=smtpserver.addr[0], port=smtpserver.addr[1])):
-        with pytest.raises(smtplib.SMTPException):
-            email.send_email("root@localhost", "Test", "Message", fatal=True)
+        with pytest.raises(RuntimeError):
+            assert run_in_context(
+                method=email.send_email,
+                kwargs={
+                    "to":      "root@localhost",
+                    "subject": "Test",
+                    "body":    "Message",
+                    "fatal":   True,
+                },
+                fatal=True,
+            ).end.retval is True
     assert len(smtpserver.outbox) == 0
 
 
-@pytest.mark.usefixtures("fake_context")
 def test_noop():
     with configured("""
         helpers:
@@ -59,4 +87,11 @@ def test_noop():
             email:
                 noop: true
     """):
-        assert email.send_email("root@localhost", "Test", "Message") is True
+        assert run_in_context(
+            method=email.send_email,
+            kwargs={
+                "to":      "root@localhost",
+                "subject": "Test",
+                "body":    "Message",
+            },
+        ).end.retval is True

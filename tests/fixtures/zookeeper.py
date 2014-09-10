@@ -8,14 +8,14 @@ from powny.backends.zookeeper import Backend
 
 # =====
 def _cleanup():
-    with zoo.Client(chroot=None, **zclient_kwargs()) as client:
+    with zoo.Client(chroot=None, **zclient_kwargs()).connected() as client:
         with client.get_write_request("cleanup()") as request:
             request.delete(zclient_chroot(), recursive=True)
 
 @contextlib.contextmanager
 def _make_client():
     _cleanup()
-    with zoo.Client(chroot=None, **zclient_kwargs()) as client:
+    with zoo.Client(chroot=None, **zclient_kwargs()).connected() as client:
         with client.get_write_request() as request:
             request.create(zclient_chroot())
         client = zoo.Client(chroot=zclient_chroot(), **zclient_kwargs())
@@ -58,5 +58,5 @@ def zbackend_kwargs():
 @pytest.yield_fixture
 def zbackend():
     with _make_client():
-        with Backend(**zbackend_kwargs()) as backend:
+        with Backend(**zbackend_kwargs()).connected() as backend:
             yield backend

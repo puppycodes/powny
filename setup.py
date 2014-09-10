@@ -14,7 +14,6 @@ if __name__ == "__main__":
         platforms="any",
 
         packages=[
-            "powny",
             "powny.core",
             "powny.core.api",
             "powny.core.apps",
@@ -58,8 +57,8 @@ if __name__ == "__main__":
 
         install_requires=[
             "kazoo.yandex",
-            "pyyaml.yandex",
             "Flask-API.yandex",
+            "pyyaml",
             "ulib",
             "decorator",
             "contextlog",

@@ -1,8 +1,9 @@
 import flask
 import flask_api.app
 
+from contextlog import get_logger
+
 from .. import backends
-from .. import imprules
 from .. import tools
 from .. import api
 
@@ -19,10 +20,14 @@ from . import init
 
 
 # =====
-class _Api(flask_api.app.FlaskAPI):  # pylint: disable=R0904
-    def __init__(self, *args, **kwargs):  # pylint: disable=W0231
+class _Api(flask_api.app.FlaskAPI):
+    """
+        Versioned REST API.
+    """
+
+    def __init__(self, *args, **kwargs):  # pylint: disable=super-init-not-called
         # Yes, __init__ not from a base class
-        flask.Flask.__init__(self, *args, **kwargs)  # pylint: disable=W0233
+        flask.Flask.__init__(self, *args, **kwargs)  # pylint: disable=non-parent-init-called
         self.api_settings = flask_api.app.APISettings(self.config)
         self.jinja_env.filters["urlize_quoted_links"] = flask_api.app.urlize_quoted_links
         self.register_blueprint(flask.Blueprint(
@@ -63,6 +68,10 @@ class _Api(flask_api.app.FlaskAPI):  # pylint: disable=R0904
 
 # =====
 def make_app(only_return=True, args=None, config=None):
+    """
+        Use this functions without arguments to create UWSGI app.
+    """
+
     if config is None:
         config = init(__name__, "Powny HTTP API WebApp/Daemon", args)
 
@@ -72,9 +81,8 @@ def make_app(only_return=True, args=None, config=None):
         backend_opts=config.backend,
     )
     if only_return:
-        pool.fill()
+        pool.__enter__()  # TODO: make 'with' if possible
 
-    imprules.setup_hooks()
     loader = tools.make_loader(config.core.rules_module)
 
     app = _Api(__name__)
@@ -100,7 +108,14 @@ def make_app(only_return=True, args=None, config=None):
         return (config, pool, app)
 
 def run(args=None, config=None):
-    (config, pool, app) = make_app(only_return=False, args=args, config=config)  # pylint: disable=W0633
+    get_logger(app="api")  # App-level context
+    # TODO: Add this for make_app()
+
+    (config, pool, app) = make_app(  # pylint: disable=unpacking-non-sequence
+        only_return=False,
+        args=args,
+        config=config,
+    )
     with pool:
         app.run(
             host=config.api.run.host,

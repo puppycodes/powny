@@ -1,7 +1,3 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-
-
 import pytest
 
 from powny.helpers import cmp

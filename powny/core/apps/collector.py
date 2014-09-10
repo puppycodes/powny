@@ -2,8 +2,6 @@ import time
 
 from contextlog import get_logger
 
-from .. import backends
-
 from . import init
 from . import Application
 
@@ -22,6 +20,12 @@ def run(args=None, config=None):
 
 # =====
 class _Collector(Application):
+    """
+        This application provides cleaning storage of data left after the execution
+        of the jobs. Incomplete jobs (due to the failure) are returned to the input
+        queue. The completed jobs after expiration of the lifetime are deleted.
+    """
+
     def __init__(self, config):
         Application.__init__(self, "collector", config)
         self._processed = 0
@@ -29,7 +33,7 @@ class _Collector(Application):
     def process(self):
         logger = get_logger()
         logger.info("Ready to work")
-        with backends.get_backend(self._config.core.backend)(**self._config.backend) as backend:
+        with self.get_backend_object().connected() as backend:
             sleep_mode = False
             while not self._stop_event.is_set():
                 sleep_mode = (not self._gc_jobs(backend))  # Separate function for a different log context
@@ -42,14 +46,14 @@ class _Collector(Application):
     def _gc_jobs(self, backend):
         processed = 0
         self._write_app_state(backend)
-        for (job_id, done) in backend.jobs.gc.get_jobs(self._app_config.done_lifetime):
+        for (job_id, done) in backend.jobs_gc.get_jobs(self._app_config.done_lifetime):
             logger = get_logger(job_id=job_id)
             logger.debug("Processing: done=%s", done)
             if done:
-                backend.jobs.gc.remove_job_data(job_id)
+                backend.jobs_gc.remove_job_data(job_id)
                 logger.info("Removed done job")
             else:
-                backend.jobs.gc.push_back_job(job_id)
+                backend.jobs_gc.push_back_job(job_id)
                 logger.info("Pushed-back unfinished job")
             processed += 1
             self._processed += 1
@@ -57,6 +61,6 @@ class _Collector(Application):
         return bool(processed)
 
     def _write_app_state(self, backend):
-        backend.system.apps_state.set_state(*self.make_write_app_state({
+        backend.system_apps_state.set_state(*self.make_write_app_state({
             "processed": self._processed,
         }))

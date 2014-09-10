@@ -1,17 +1,24 @@
 import os
-import pickle
 
 import pkginfo
 
 from contextlog import get_logger
 
+from . import context
 from . import imprules
 from . import rules
 
 
 # =====
 def get_powny_version():
-    pkg = pkginfo.get_metadata("powny")
+    try:
+        pkg = pkginfo.get_metadata("powny")
+    except AttributeError:
+        # FIXME: Crutch for namespace packages on Python 3.2
+        #  File "/opt/pypy3/site-packages/pkginfo/installed.py", line 29, in read
+        #    package = self.package.__package__
+        #  AttributeError: 'module' object has no attribute '__package__'
+        return None
     return (pkg.version if pkg is not None else None)
 
 def make_rules_path(rules_root, head):
@@ -39,16 +46,16 @@ def get_exposed(backend, loader, rules_root):
             get_logger().exception("Can't load HEAD '%s'", head)
     return (head, exposed, errors, exc)
 
-def get_func_method(name, exposed):
+def get_dumped_method(name, kwargs, exposed):
     method = exposed.get("methods", {}).get(name)
     if method is None:
         return None
     else:
-        return pickle.dumps(method)
+        return context.dump_call(method, kwargs)
 
-def get_func_handlers(kwargs, exposed):
+def get_dumped_handlers(kwargs, exposed):
     return {
-        name: pickle.dumps(handler)
+        name: context.dump_call(handler, kwargs)
         for (name, handler) in exposed.get("handlers", {}).items()
         if rules.check_match(handler, kwargs)
     }

@@ -9,7 +9,8 @@ formatters:
             - contextlog.PartialFormatter
             - contextlog.ExceptionLocalsFormatter
         style: "{"
-        format: "{yellow}{job_id:36.36}{reset} {log_color}{levelname:>7} {purple}{name:35.35}{reset} {message} -- {cyan}{_extra}{reset}"
+        datefmt: "%H:%M:%S"
+        format: "{asctime} {fg_bold_blue}{app:9.9} {purple}{name:35.35} {log_color}{levelname:>7} {yellow}{job_id:36.36}{reset} {message} -- {cyan}{_extra}{reset}"
 
 handlers:
     console:

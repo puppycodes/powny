@@ -1,7 +1,3 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-
-
 import pytest
 
 from powny.core import apps
@@ -12,7 +8,7 @@ from .fixtures.tmp import write_file
 # =====
 class TestService:
     def teardown_method(self, _):
-        apps._config = None
+        apps._config = None  # pylint: disable=protected-access
 
     def test_init_and_get_config(self):
         config = apps.init("test_init", "TestService", [])

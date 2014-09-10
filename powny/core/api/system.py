@@ -25,9 +25,9 @@ class StateResource:
         with self._pool.get_backend() as backend:
             return {
                 "jobs": {
-                    "input": backend.jobs.control.get_input_size(),
-                    "all":   backend.jobs.control.get_jobs_count(),
-                    "apps":  backend.system.apps_state.get_full_state(),
+                    "input": backend.jobs_control.get_input_size(),
+                    "all":   backend.jobs_control.get_jobs_count(),
+                    "apps":  backend.system_apps_state.get_full_state(),
                 },
             }
 
@@ -40,7 +40,7 @@ class InfoResource:
 
     def handler(self):
         """
-            GET -- Returns some information about the system in next format:
+            GET -- Returns some information about the system in format:
                        # =====
                        {
                            "version": "<digits.and.dots>",
@@ -69,7 +69,10 @@ class ConfigResource:
         self._public = self._make_public(config)
 
     def handler(self):
-        """ GET -- Returns a dictionary with the system configuration """
+        """
+            GET -- Returns a dictionary with the system configuration except
+                   some secret options (passwords, tokens, etc.).
+        """
         return self._public
 
     def _make_public(self, config):
@@ -77,6 +80,6 @@ class ConfigResource:
         for (key, value) in config.items():
             if isinstance(value, optconf.Section):
                 public[key] = self._make_public(value)
-            elif not config._is_secret(key):  # pylint: disable=W0212
+            elif not config._is_secret(key):  # pylint: disable=protected-access
                 public[key] = value
         return public

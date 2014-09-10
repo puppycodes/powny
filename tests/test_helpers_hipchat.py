@@ -1,14 +1,10 @@
-# pylint: disable=R0904
-# pylint: disable=W0212
-
-
 import pytest
 import vcr
 
 from powny.helpers import hipchat
 
 from .fixtures.application import configured
-from .fixtures.context import fake_context  # pylint: disable=W0611
+from .fixtures.context import run_in_context
 
 
 # ====
@@ -18,7 +14,6 @@ def test_not_configured():
             hipchat.send_to_room("robots", "Test")
 
 
-@pytest.mark.usefixtures("fake_context")
 def test_no_token():
     with configured("""
         helpers:
@@ -26,11 +21,17 @@ def test_no_token():
                 - powny.helpers.hipchat
     """):
         with pytest.raises(RuntimeError):
-            hipchat.send_to_room("robots", "Test", fatal=True)
+            run_in_context(
+                method=hipchat.send_to_room,
+                kwargs={
+                    "to":    "robots",
+                    "body":  "Test",
+                    "fatal": True,
+                },
+            )
 
 
 @vcr.use_cassette("tests/fixtures/vcr/helpers_hipchat_test_ok.yaml")
-@pytest.mark.usefixtures("fake_context")
 def test_ok():
     with configured("""
         helpers:
@@ -39,10 +40,16 @@ def test_ok():
             hipchat:
                 token: FAKE_TOKEN
     """):
-        assert hipchat.send_to_room("robots", "Test", fatal=True) is True
+        assert run_in_context(
+            method=hipchat.send_to_room,
+            kwargs={
+                "to":    "robots",
+                "body":  "Test",
+                "fatal": True,
+            },
+        ).end.retval is True
 
 
-@pytest.mark.usefixtures("fake_context")
 def test_noop():
     with configured("""
         helpers:
@@ -51,4 +58,10 @@ def test_noop():
             hipchat:
                 noop: true
     """):
-        assert hipchat.send_to_room("robots", "Test") is True
+        assert run_in_context(
+            method=hipchat.send_to_room,
+            kwargs={
+                "to":    "robots",
+                "body":  "Test",
+            },
+        ).end.retval is True

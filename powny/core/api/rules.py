@@ -20,11 +20,29 @@ class RulesResource:
 
     def handler(self):
         """
-            TODO
-            GET  -- Returns the current version of the rules in format {"head": "version"}.
-                    If the version has not yet been set, returns null: {"head": null}.
-            POST -- Takes the value of the version in the same format that is used in the GET,
-                    applies it, and returns the new current version.
+            GET  -- Returns a current version of the rules in format:
+                    # =====
+                    {
+                        "head":    "<version>"
+                        "errors":  {"<path.to.module>": "<Traceback>", ...}
+                        "exposed": {
+                            "methods":  ["<path.to.function>", ...],
+                            "handlers": ["<path.to.function>", ...],
+                        },
+                    }
+                    # =====
+                    @head    -- Current version of the rules. Null if the version has not yet been set.
+                    @errors  -- Errors that occurred while loading the specified modules.
+                    @exposed -- Functions loaded from the rules and ready for execution.
+                    @exposed.methods  -- List of functions that can be called directly by name.
+                    @exposed.handlers -- List of event handlers that are selected based on filters.
+                                         They may also be called manually as methods.
+
+            POST -- Takes a version in the format: {"head": "<version>"}, applies it and returns
+                    the result of the load process, in the same format as GET.
+
+            Errors:
+                    400 -- On error while loading the rules.
         """
 
         with self._pool.get_backend() as backend:

@@ -3,82 +3,93 @@ import inspect
 import pickle
 import copy
 import threading
-import collections
 
 from contextlog import get_logger
 
 
 # =====
-_fake_context = None  # For tests
-
 def get_context():
-    if _fake_context is not None:
-        return _fake_context
     thread = threading.current_thread()
     assert isinstance(thread, JobThread), "Called not from a job context!"
-    job_context = thread.get_job_context()  # pylint: disable=E1103
-    del thread
-    return _JobContextProxy(job_context)
+    return thread
 
+def get_job_id():
+    return get_context().get_job_id()  # pylint: disable=maybe-no-member
 
-Step = collections.namedtuple("Step", (
-    "job_id",
-    "state",
-    "stack_or_retval",
-    "exc",
-    "done",
-))
+def get_extra():
+    return get_context().get_extra()  # pylint: disable=maybe-no-member
 
-
-class JobThread(threading.Thread):
-    def __init__(self, save_context, *args, **kwargs):
-        self._save_context = save_context  # save_context(job_id, state, stack_or_retval, exc)
-        self._job_context = _JobContext(*args, **kwargs)
-        self._job_id = self._job_context.get_job_id()
-        threading.Thread.__init__(self, name="JobThread::" + self._job_id)
-
-    def get_job_context(self):
-        return self._job_context
-
-    def run(self):
-        logger = get_logger(job_id=self._job_id)
-
-        try:
-            self._job_context.init()
-        except Exception:
-            logger.exception("Context initialization has failed")
-            self._save_context(Step(
-                job_id=self._job_id,
-                state=None,
-                stack_or_retval=None,
-                exc=traceback.format_exc(),
-                done=True,
-            ))
-            return
-
-        for step in self._job_context.step_by_step():
-            self._save_context(step)
-
-        logger.info("Finished")
+def save_job_state():
+    return get_context().save()  # pylint: disable=maybe-no-member
 
 
 # =====
-class _JobContextProxy:
-    def __init__(self, job_context):
-        self.get_job_id = job_context.get_job_id
-        self.get_extra = job_context.get_extra
-        self.save = job_context.save
+def dump_call(method, kwargs):
+    """ Собирает из метода и его аргументов континулет и пиклит его """
+
+    get_logger().debug("Creating a new continulet...")
+    import _continuation
+    return pickle.dumps(_continuation.continulet(lambda _: method(**kwargs)))
+
+def restore_call(state):
+    """ Распикливает состояние (континулет) для запуска """
+
+    get_logger().debug("Restoring the continulet state...")
+    import _continuation
+    cont = pickle.loads(state)
+    assert isinstance(cont, _continuation.continulet), "The unpickled state is a garbage!"
+    return cont
 
 
-class _JobContext:
-    def __init__(self, job_id, func, kwargs, state, extra):
-        assert bool(func) ^ bool(state), "Required func OR state"
+class JobThread(threading.Thread):
+    """
+        JobThread() предназначен для запуска ранее запикленной в континулет функции (с помощью dump_call()).
+        Внутри потока континулет распикливается и исполняется, сохраняя свое состояние в переданный бекенд
+        функциями backend.jobs_process.save_job_state() и backend.jobs_process.done_job().
+        Поток нужен не только для исполнения континулета, но и для того, чтобы изнутри континулета можно было
+        получить метаданные текущей задачи, используя threading.current_thread().
+    """
+
+    def __init__(self, backend, job_id, state, extra, __unpickle=False):  # pylint: disable=unused-argument
+        threading.Thread.__init__(self, name="JobThread::" + job_id)
+        self._backend = backend
         self._job_id = job_id
-        self._func = func
-        self._kwargs = (kwargs or {})
         self._state = state
         self._extra = extra
         self._cont = None
+        self._log_context = get_logger(job_id=job_id).get_context()  # Proxy context into the continulet
+
+    def __getstate__(self):
+        # Шаг 1. Запикливаемся, как строка с айдишником задачи. Он нужен только для того, чтобы
+        #        проверить, что потом мы распиклились в новом контексте, но с тем же айдишником.
+        #        При распикливании новый объект не создается, а возвращается ссылка на текущий
+        #        контекст, чтобы одну и ту же задачу не представляло два разных объекта (хоть и
+        #        с одинаковым стейтом).
+        return self._job_id
+
+    def __getnewargs__(self):
+        # Шаг 2. Распикливаемся, передавая в __new__ аргумент о том, что мы именно распикливаемся,
+        #        а не создаем новый контекст.
+        #        https://docs.python.org/3.2/library/pickle.html#pickle.object.__getnewargs__
+        return ((None,) * 4) + (True,)  # Unpickle as current context
+
+    def __new__(cls, backend, job_id, state, extra, __unpickle=False):
+        if __unpickle:
+            # Шаг 3. При распикливании, вместо создания нового объекта, возвращаем ссылку на текущий
+            #        контекст, предполагая, что он и является контекстом той задачи, в которой
+            #        произошло распикливание.
+            context = get_context()
+            return context  # Return the current context instead of the new object
+        else:
+            return super(JobThread, cls).__new__(cls, backend, job_id, state, extra)
+
+    def __setstate__(self, job_id):
+        # Шаг 4. После распикливания, проверяем, что мы распиклились в правильном контексте. Айдишник
+        #        задачи текущего контекста должен совпадать с айдишником объекта и с тем айдишником,
+        #        контекст которого хотели распиклить.
+        assert get_context().get_job_id() == self._job_id == job_id  # pylint: disable=maybe-no-member
+
+    ###
 
     def get_job_id(self):
         return self._job_id
@@ -90,45 +101,49 @@ class _JobContext:
         stack = traceback.extract_stack(inspect.currentframe())
         self._cont.switch(stack)
 
-    def init(self):
-        import _continuation
-        logger = get_logger(job_id=self._job_id)
-        if self._func is not None:
-            logger.debug("Creating a new continulet...")
-            method = pickle.loads(self._func)
-            cont = _continuation.continulet(lambda _: method(**self._kwargs))
-        elif self._state is not None:
-            logger.debug("Restoring the old state...")
-            cont = pickle.loads(self._state)
-            assert isinstance(cont, _continuation.continulet), "The unpickled state is a garbage!"
-        logger.debug("Continulet is ready to run")
-        self._cont = cont
+    ###
 
-    def step_by_step(self):
-        logger = get_logger(job_id=self._job_id)
+    def run(self):
+        logger = get_logger(**self._log_context)
+
+        logger.debug("Initializing context...")
+        try:
+            self._cont = restore_call(self._state)
+        except Exception:
+            logger.exception("Context initialization has failed")
+            self._backend.jobs_process.done_job(
+                job_id=self._job_id,
+                retval=None,
+                exc=traceback.format_exc(),
+            )
+            raise
+
         logger.debug("Activation...")
         while self._cont.is_pending():
             try:
                 stack_or_retval = self._cont.switch()
-                yield Step(
-                    job_id=self._job_id,
-                    state=pickle.dumps(self._cont),
-                    stack_or_retval=stack_or_retval,
-                    exc=None,
-                    done=(not self._cont.is_pending())
-                )
+                if self._cont.is_pending():  # In progress
+                    self._backend.jobs_process.save_job_state(
+                        job_id=self._job_id,
+                        state=pickle.dumps(self._cont),
+                        stack=stack_or_retval,
+                    )
+                else:  # Done
+                    self._backend.jobs_process.done_job(
+                        job_id=self._job_id,
+                        retval=stack_or_retval,
+                        exc=None,
+                    )
             except Exception:
                 logger.exception("Unhandled step error")
                 # self._cont.switch() switches the stack, so we will see a valid exception, up to this place
                 # in the rule. sys.exc_info() return a raw exception data. Some of them can't be pickled, for
                 # example, traceback-object. For those who use the API, easier to read the text messages.
                 # traceback.format_exc() simply converts data from sys.exc_info() into a string.
-                yield Step(
+                self._backend.jobs_process.done_job(
                     job_id=self._job_id,
-                    state=None,
-                    stack_or_retval=None,
+                    retval=None,
                     exc=traceback.format_exc(),
-                    done=True,
                 )
                 break
         logger.debug("Job finished")

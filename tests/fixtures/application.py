@@ -4,7 +4,6 @@ import threading
 import uuid
 import json
 
-from powny.core import imprules
 from powny.core import apps
 from powny.core.apps import api
 from powny.core.apps import worker
@@ -24,7 +23,7 @@ def configured(text=None):
     try:
         yield config
     finally:
-        apps._config = None  # pylint: disable=W0212
+        apps._config = None  # pylint: disable=protected-access
 
 
 @contextlib.contextmanager
@@ -42,20 +41,21 @@ def powny_api(text=None, with_worker=False):
             collector_thread.daemon = True
             collector_thread.start()
 
-            (_, api_pool, api_app) = api.make_app(only_return=False, config=config)  # pylint: disable=W0633
+            (_, api_pool, api_app) = api.make_app(  # pylint: disable=unpacking-non-sequence
+                only_return=False,
+                config=config,
+            )
             with api_pool:
                 api_app.debug = True
                 api_app.testing = True
                 yield (api_app.test_client, config)
         finally:
             if with_worker:
-                worker._stop()  # pylint: disable=W0212
+                worker._stop()  # pylint: disable=protected-access
                 worker_thread.join()
 
-            collector._stop()  # pylint: disable=W0212
+            collector._stop()  # pylint: disable=protected-access
             collector_thread.join()
-
-            imprules.remove_hooks()
 
 # TODO FIXME XXX: WHAT THE FUCK?!
 # [zk: localhost:2181(CONNECTED) 40] ls /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state

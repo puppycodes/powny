@@ -16,8 +16,6 @@ ReadyJob = collections.namedtuple("ReadyJob", (
     "job_id",
     "number",
     "version",
-    "func",
-    "kwargs",
     "state",
 ))
 
@@ -26,34 +24,31 @@ def make_job_id():
 
 
 # =====
-def get_backend(name):
+def get_backend_class(name):
     module = importlib.import_module("powny.backends." + name)
     return getattr(module, "Backend")
 
 
 class Pool:
+    """
+        This pool contains several ready-to-use backend objects.
+        Some code that wants to use the backend, asks it from the pool.
+        After using backend, it's returned to the pool. If the exception occurred,
+        backend object will be removed with closing the internal connection and
+        replaced to the new object.
+    """
+
     def __init__(self, size, name, backend_opts):
         self._size = size
         self._name = name
         self._backend_opts = backend_opts
-        self._backend_class = get_backend(name)
+        self._backend_class = get_backend_class(name)
         self._queue = queue.Queue(self._size)
         self._backends = []
         self._filled = False
 
     def get_backend_name(self):
         return self._name
-
-    def fill(self):
-        assert not self._filled, "Pool is disposable"
-        for _ in range(self._queue.qsize(), self._size):
-            self._queue.put(self._open_backend())
-        self._filled = True
-
-    def free(self):
-        assert len(self._backends) != 0, "Is already free"
-        for backend in list(self._backends):
-            self._close_backend(backend)
 
     @contextlib.contextmanager
     def get_backend(self):
@@ -71,13 +66,16 @@ class Pool:
             self._queue.put(backend)
 
     def __enter__(self):
-        self.fill()
+        assert not self._filled, "Pool is disposable"
+        for _ in range(self._queue.qsize(), self._size):
+            self._queue.put(self._open_backend())
+        self._filled = True
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.free()
-        if exc_value is not None:
-            raise exc_value
+        assert len(self._backends) != 0, "Is already free"
+        for backend in list(self._backends):
+            self._close_backend(backend)
 
     def __len__(self):
         return self._queue.qsize()  # Number of unused backends
