@@ -1,9 +1,6 @@
 all:
 	true
 
-tox:
-	pypy3 -m tox
-
 pypi:
 	python setup.py register
 	python setup.py sdist upload
