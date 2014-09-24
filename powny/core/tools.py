@@ -26,6 +26,10 @@ def get_powny_version():
     return (pkg.version if pkg is not None else None)
 
 
+def get_user_agent():
+    return "Powny/{}".format(get_powny_version() or "0.001")  # FIXME: crutch for ^^^
+
+
 # =====
 def make_isotime(unix=None):  # ISO 8601
     if unix is None:

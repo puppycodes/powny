@@ -17,6 +17,7 @@ from powny.core.optconf import (
 )
 from powny.core import (
     get_config,
+    get_user_agent,
     save_job_state,
 )
 
@@ -82,6 +83,8 @@ def send_to_room(to, body, html=False, sender=None, color=None, notify=False, to
                 "notify":         int(notify),
             }, params={
                 "auth_token": token,
+            }, headers={
+                "User-Agent": get_user_agent(),
             }, timeout=config.timeout).raise_for_status()
             ok = True
         except Exception:

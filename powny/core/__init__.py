@@ -1,4 +1,7 @@
-from .tools import get_powny_version
+from .tools import (
+    get_powny_version,
+    get_user_agent,
+)
 
 from .apps import get_config
 
