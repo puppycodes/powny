@@ -88,11 +88,21 @@ def _test_api_v1_jobs_delete(url, kwargs):
             result = as_dict(api.get("/v1/jobs/" + job_id))
             assert result[0] == 404
 
+
 def test_api_v1_jobs_handler_delete():
     _test_api_v1_jobs_delete("/v1/jobs", {})
 
+
 def test_api_v1_jobs_method_delete():
     _test_api_v1_jobs_delete("/v1/jobs?method=rules.test.empty_method", {})
+
+
+def test_api_v1_jobs_handler_execution(smtpserver):
+    _test_api_v1_jobs_execution(smtpserver, None, "rules.test.send_email_by_event_handler", 5)
+
+
+def test_api_v1_jobs_method_execution(smtpserver):
+    _test_api_v1_jobs_execution(smtpserver, "rules.test.send_email_by_event", "rules.test.send_email_by_event", 5)
 
 
 def _test_api_v1_jobs_execution(smtpserver, method, find, repeat):
@@ -130,9 +140,3 @@ def _test_api_v1_jobs_execution(smtpserver, method, find, repeat):
                 time.sleep(1)
             assert result[0] == 200
             assert len(smtpserver.outbox) == repeat
-
-def test_api_v1_jobs_handler_execution(smtpserver):
-    _test_api_v1_jobs_execution(smtpserver, None, "rules.test.send_email_by_event_handler", 5)
-
-def test_api_v1_jobs_method_execution(smtpserver):
-    _test_api_v1_jobs_execution(smtpserver, "rules.test.send_email_by_event", "rules.test.send_email_by_event", 5)

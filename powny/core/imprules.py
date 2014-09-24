@@ -107,6 +107,7 @@ def _get_exposed_unsafe(module_base, path):
     finally:
         sys.path.remove(path)
 
+
 def _get_all_modules(base_path):
     base_path = os.path.abspath(base_path)
     make_rel = (lambda root, item: os.path.relpath(os.path.join(root, item), base_path))
@@ -124,6 +125,7 @@ def _get_all_modules(base_path):
                     objects.append(obj_path)
     return sorted(objects)
 
+
 def _is_package_root(base_path, root):
     root = os.path.relpath(root, base_path)
     if root == ".":
@@ -137,6 +139,7 @@ def _is_package_root(base_path, root):
             return False
     return True
 
+
 def _is_object_name(name):
     try:
         valid_object_name(name)
@@ -144,10 +147,12 @@ def _is_object_name(name):
     except ValidatorError:
         return False
 
+
 def _is_package(path):
     if path.endswith("__pycache__"):
         return False
     return os.path.isfile(os.path.join(path, "__init__.py"))
+
 
 def _is_module(path):
     return (os.path.basename(path) != "__init__.py" and path.endswith(".py"))

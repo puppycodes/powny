@@ -21,12 +21,14 @@ def test_iso8601_funcs():
     now = int(time.time())
     assert tools.from_isotime(tools.make_isotime(now)) == now
 
+
 def test_exposed_no_head(zbackend):
     (head, exposed, errors, exc) = _get_exposed(zbackend, "./rules")
     assert head is None
     assert exposed is None
     assert errors is None
     assert exc is None
+
 
 def test_exposed_invalid_head(zbackend):
     test_head = "0"
@@ -36,6 +38,7 @@ def test_exposed_invalid_head(zbackend):
     assert errors is None
     assert isinstance(exc, str)
 
+
 def test_exposed_ok(zbackend):
     test_head = "0123456789abcdef"
     (head, exposed, errors, exc) = _get_exposed(zbackend, "./rules", test_head)
@@ -44,15 +47,18 @@ def test_exposed_ok(zbackend):
     assert len(errors) > 0
     assert exc is None
 
+
 def test_get_func_method(zbackend):
     exposed = _get_exposed(zbackend, "./rules", "0123456789abcdef")[1]
     state = tools.get_dumped_method("rules.test.empty_method", {}, exposed)
     assert isinstance(state, bytes)
 
+
 def test_get_func_method_invalid(zbackend):
     exposed = _get_exposed(zbackend, "./rules", "0123456789abcdef")[1]
     state = tools.get_dumped_method("rules.test.test_method_not_found", {}, exposed)
     assert state is None
+
 
 def test_get_func_handlers(zbackend):
     exposed = _get_exposed(zbackend, "./rules", "0123456789abcdef")[1]

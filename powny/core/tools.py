@@ -26,18 +26,22 @@ def get_powny_version():
     return (pkg.version if pkg is not None else None)
 
 
+# =====
 def make_isotime(unix=None):  # ISO 8601
     if unix is None:
         unix = time.time()
     return datetime.datetime.utcfromtimestamp(unix).strftime("%Y-%m-%d %H:%M:%S.%fZ")
+
 
 def from_isotime(line):
     dt = dateutil.parser.parse(line)
     return calendar.timegm(dt.utctimetuple()) + dt.microsecond / 10 ** 6  # pylint: disable=maybe-no-member
 
 
+# =====
 def make_rules_path(rules_root, head):
     return os.path.join(rules_root, head)
+
 
 def make_loader(rules_base):
     return imprules.Loader(
@@ -47,6 +51,7 @@ def make_loader(rules_base):
             ("methods",  lambda _: True),
         ),
     )
+
 
 def get_exposed(backend, loader, rules_root):
     head = backend.rules.get_head()
@@ -61,12 +66,14 @@ def get_exposed(backend, loader, rules_root):
             get_logger().exception("Can't load HEAD '%s'", head)
     return (head, exposed, errors, exc)
 
+
 def get_dumped_method(name, kwargs, exposed):
     method = exposed.get("methods", {}).get(name)
     if method is None:
         return None
     else:
         return context.dump_call(method, kwargs)
+
 
 def get_dumped_handlers(kwargs, exposed):
     return {

@@ -14,6 +14,7 @@ from contextlog import get_logger
 class NoNodeError(Exception):
     pass
 
+
 class NodeExistsError(Exception):
     pass
 
@@ -30,12 +31,14 @@ def _encode_value(value):
     else:
         return pickle.dumps(value)
 
+
 def _decode_value(value):
     assert isinstance(value, bytes), "Invalid ZK output value type: {}".format(type(value))
     if len(value) == 0:
         return EmptyValue
     else:
         return pickle.loads(value)
+
 
 def _catch_zk(method):
     def wrap(method, *args, **kwargs):

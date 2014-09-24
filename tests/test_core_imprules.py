@@ -13,6 +13,7 @@ def _loader(module_base, group_by=None):
     loader = imprules.Loader(module_base, group_by)
     yield loader
 
+
 def _make_defines(value):
     expose = "from powny.core.imprules import expose\n"
     return (

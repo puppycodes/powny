@@ -14,6 +14,7 @@ def test_on_event():
     assert not rules.is_event_handler(method)
     assert not rules.is_event_handler(lambda: None)
 
+
 def test_check_match():
     @rules.match_event(lambda kwargs: kwargs["x"] == 1)
     @rules.match_event(lambda kwargs: kwargs["y"] == 2, lambda kwargs: kwargs["z"] == 3)
@@ -22,6 +23,7 @@ def test_check_match():
     assert rules.check_match(method, {"x": 1, "y": 2, "z": 3})
     assert rules.check_match(method, {"x": 1, "y": 2, "z": 3, "a": 5})
     assert not rules.check_match(method, {"x": 1, "y": 0, "z": 3})
+
 
 def test_check_match_exception():
     def matcher(kwargs):

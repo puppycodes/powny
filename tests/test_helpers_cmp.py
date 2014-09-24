@@ -1,3 +1,6 @@
+# E712 -- comparison to False should be 'if cond is False:' or 'if not cond:'
+# flake8: noqa
+
 import pytest
 
 from powny.helpers import cmp

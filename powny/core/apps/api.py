@@ -107,6 +107,7 @@ def make_app(only_return=True, args=None, config=None):
     else:
         return (config, pool, app)
 
+
 def run(args=None, config=None):
     get_logger(app="api")  # App-level context
     # TODO: Add this for make_app()

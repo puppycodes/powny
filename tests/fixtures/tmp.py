@@ -16,6 +16,7 @@ def write_file(text):
     finally:
         os.remove(path)
 
+
 @contextlib.contextmanager
 def write_tree(content):
     try:

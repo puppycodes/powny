@@ -73,8 +73,10 @@ def powny_api(text=None, with_worker=False):
 #            else:
 #                raise NotImplementedError
 
+
 def as_dict(response):
     return (response.status_code, json.loads(response.data.decode()))
+
 
 def from_dict(attrs):
     return {

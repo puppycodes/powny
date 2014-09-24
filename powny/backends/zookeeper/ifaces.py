@@ -26,20 +26,26 @@ _PATH_JOBS = "/jobs"
 def _get_path_job(job_id):
     return zoo.join(_PATH_JOBS, job_id)
 
+
 def _get_path_job_lock(job_id):
     return zoo.join(_get_path_job(job_id), "lock")
+
 
 def _get_path_job_taken(job_id):
     return zoo.join(_get_path_job(job_id), "taken")
 
+
 def _get_path_job_state(job_id):
     return zoo.join(_get_path_job(job_id), "state")
+
 
 def _get_path_job_delete(job_id):
     return zoo.join(_get_path_job(job_id), "delete")
 
+
 def _get_path_app_state(node_name, app_name):
     return zoo.join(_PATH_APPS_STATE, "{}@{}".format(app_name, node_name))
+
 
 def _parse_app_state_node(node_name):
     return tuple(reversed(node_name.split("@")))

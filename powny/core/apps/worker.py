@@ -15,6 +15,7 @@ from . import Application
 # =====
 _stop = None
 
+
 def run(args=None, config=None):
     if config is None:
         config = init(__name__, "Powny Worker", args)

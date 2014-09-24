@@ -10,6 +10,7 @@ def get_from_path(event, path):
         event = event[part]
     return event  # As value
 
+
 def _make_cmp(name, method):
     class comparator:  # pylint: disable=invalid-name
         def __init__(self, path, *args):

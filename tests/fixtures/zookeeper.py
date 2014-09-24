@@ -12,6 +12,7 @@ def _cleanup():
         with client.get_write_request("cleanup()") as request:
             request.delete(zclient_chroot(), recursive=True)
 
+
 @contextlib.contextmanager
 def _make_client():
     _cleanup()
@@ -40,20 +41,24 @@ def zclient_kwargs():
         "randomize_hosts": True,
     }
 
+
 @pytest.fixture
 def zclient_chroot():
     return "/powny-tests"
+
 
 @pytest.yield_fixture
 def zclient():
     with _make_client() as client:
         yield client
 
+
 @pytest.fixture
 def zbackend_kwargs():
     kwargs = dict(zclient_kwargs())
     kwargs["chroot"] = zclient_chroot()
     return kwargs
+
 
 @pytest.yield_fixture
 def zbackend():

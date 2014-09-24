@@ -41,6 +41,7 @@ from ..optconf.loaders.yaml import load_file as load_yaml_file
 # =====
 _config = None
 
+
 def get_config(check_helpers=()):
     if len(check_helpers) > 0:
         for helper in check_helpers:
@@ -169,11 +170,14 @@ def _valid_log_level(arg):
     except ValueError:
         return logging._nameToLevel[arg.upper()]  # pylint: disable=protected-access
 
+
 def _valid_number_min_1(arg):
     return valid_number(arg, 1)
 
+
 def _valid_empty_or_number_min_0(arg):
     return valid_maybe_empty(arg, lambda arg: valid_number(arg, 0))
+
 
 def _get_config_scheme():
     scheme = {

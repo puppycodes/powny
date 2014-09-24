@@ -13,11 +13,14 @@ def get_context():
     assert isinstance(thread, JobThread), "Called not from a job context!"
     return thread
 
+
 def get_job_id():
     return get_context().get_job_id()  # pylint: disable=maybe-no-member
 
+
 def get_extra():
     return get_context().get_extra()  # pylint: disable=maybe-no-member
+
 
 def save_job_state():
     return get_context().save()  # pylint: disable=maybe-no-member
@@ -30,6 +33,7 @@ def dump_call(method, kwargs):
     get_logger().debug("Creating a new continulet...")
     import _continuation
     return pickle.dumps(_continuation.continulet(lambda _: method(**kwargs)))
+
 
 def restore_call(state):
     """ Распикливает состояние (континулет) для запуска """

@@ -11,8 +11,10 @@ def on_event(method):
     setattr(method, _ATTR_ON_EVENT, True)
     return method
 
+
 def is_event_handler(method):
     return getattr(method, _ATTR_ON_EVENT, False)
+
 
 def match_event(*matchers):
     assert len(matchers) > 0, "Required minimum one matcher"
@@ -25,6 +27,7 @@ def match_event(*matchers):
         return method
 
     return decorator
+
 
 def check_match(method, event):
     for matcher in getattr(method, _ATTR_MATCHERS, []):

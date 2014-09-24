@@ -19,6 +19,7 @@ ReadyJob = collections.namedtuple("ReadyJob", (
     "state",
 ))
 
+
 def make_job_id():
     return str(uuid.uuid4())
 

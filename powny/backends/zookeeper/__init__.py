@@ -17,11 +17,14 @@ from . import ifaces
 def _valid_float_min_01(arg):
     return valid_number(arg, 0.1, value_type=float)
 
+
 def _valid_number_min_1(arg):
     return valid_number(arg, 1)
 
+
 def _valid_float_min_1_or_none(arg):
     return valid_maybe_empty(arg, _valid_number_min_1)
+
 
 def _valid_str_or_none(arg):
     return valid_maybe_empty(arg, str)
