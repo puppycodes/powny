@@ -1,5 +1,5 @@
 from .tools import (
-    get_powny_version,
+    get_version,
     get_user_agent,
 )
 
@@ -19,4 +19,4 @@ from .context import (
     save_job_state,
 )
 
-__version__ = get_powny_version()
+__version__ = get_version()

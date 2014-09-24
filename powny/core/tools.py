@@ -14,7 +14,7 @@ from . import rules
 
 
 # =====
-def get_powny_version():
+def get_version():
     try:
         pkg = pkginfo.get_metadata("powny")
     except AttributeError:
@@ -27,7 +27,7 @@ def get_powny_version():
 
 
 def get_user_agent():
-    return "Powny/{}".format(get_powny_version() or "0.001")  # FIXME: crutch for ^^^
+    return "Powny/{}".format(get_version() or "0.001")  # FIXME: crutch for ^^^
 
 
 # =====

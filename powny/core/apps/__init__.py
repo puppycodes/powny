@@ -55,7 +55,7 @@ def init(name, description, args=None):
     assert _config is None, "init() has already been called"
 
     args_parser = argparse.ArgumentParser(prog=name, description=description)
-    args_parser.add_argument("-v", "--version", action="version", version=tools.get_powny_version())
+    args_parser.add_argument("-v", "--version", action="version", version=tools.get_version())
     args_parser.add_argument("-c", "--config", dest="config_file_path", default=None, metavar="<file>")
     args_parser.add_argument("-l", "--level", dest="log_level", default=None)
     args_parser.add_argument("-m", "--dump-config", dest="dump_config", action="store_true")

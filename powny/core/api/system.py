@@ -54,7 +54,7 @@ class InfoResource:
 
         with self._pool.get_backend() as backend:
             return {
-                "version": tools.get_powny_version(),
+                "version": tools.get_version(),
                 "backend": {
                     "name": self._pool.get_backend_name(),
                     "info": backend.get_info(),
