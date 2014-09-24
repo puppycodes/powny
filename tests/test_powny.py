@@ -95,7 +95,10 @@ def test_api_v1_jobs_method_delete():
     _test_api_v1_jobs_delete("/v1/jobs?method=rules.test.empty_method", {})
 
 
-def _test_api_v1_jobs_execution(smtpserver, url, repeat, sleep):
+def _test_api_v1_jobs_execution(smtpserver, method, find, repeat):
+    url = "/v1/jobs"
+    if method is not None:
+        url += "?method=" + method
     with powny_api("""
         helpers:
             configure:
@@ -106,16 +109,30 @@ def _test_api_v1_jobs_execution(smtpserver, url, repeat, sleep):
     """.format(server=smtpserver.addr[0], port=smtpserver.addr[1]), with_worker=True) as (test_client, config):
         with test_client() as api:
             assert as_dict(api.post("/v1/rules", **from_dict({"head": "0123456789abcdef"})))[0] == 200
-            assert as_dict(api.post(url, **from_dict({
+            result = as_dict(api.post(url, **from_dict({
                 "test":   "send_email_by_event",
                 "repeat": repeat,
-                "sleep":  sleep,
-            })))[0] == 200
-            time.sleep(config.worker.empty_sleep + repeat * sleep + 10)
+                "sleep":  0,
+            })))
+            assert result[0] == 200
+            for (job_id, job_info) in result[1].items():
+                if job_info["method"] == find:
+                    break
+            else:
+                job_id = None
+            assert job_id is not None
+
+            for _ in range(config.worker.empty_sleep + 300):
+                result = as_dict(api.get("/v1/jobs/" + job_id))
+                assert result[0] == 200
+                if result[1]["finished"] is not None:
+                    break
+                time.sleep(1)
+            assert result[0] == 200
             assert len(smtpserver.outbox) == repeat
 
 def test_api_v1_jobs_handler_execution(smtpserver):
-    _test_api_v1_jobs_execution(smtpserver, "/v1/jobs", 5, 0)
+    _test_api_v1_jobs_execution(smtpserver, None, "rules.test.send_email_by_event_handler", 5)
 
 def test_api_v1_jobs_method_execution(smtpserver):
-    _test_api_v1_jobs_execution(smtpserver, "/v1/jobs?method=rules.test.send_email_by_event", 5, 0)
+    _test_api_v1_jobs_execution(smtpserver, "rules.test.send_email_by_event", "rules.test.send_email_by_event", 5)
