@@ -1,5 +1,9 @@
 import os
+import time
+import datetime
+import calendar
 
+import dateutil.parser
 import pkginfo
 
 from contextlog import get_logger
@@ -20,6 +24,17 @@ def get_powny_version():
         #  AttributeError: 'module' object has no attribute '__package__'
         return None
     return (pkg.version if pkg is not None else None)
+
+
+def make_isotime(unix=None):  # ISO 8601
+    if unix is None:
+        unix = time.time()
+    return datetime.datetime.utcfromtimestamp(unix).strftime("%Y-%m-%d %H:%M:%S.%fZ")
+
+def from_isotime(line):
+    dt = dateutil.parser.parse(line)
+    return calendar.timegm(dt.utctimetuple()) + dt.microsecond / 10 ** 6  # pylint: disable=maybe-no-member
+
 
 def make_rules_path(rules_root, head):
     return os.path.join(rules_root, head)

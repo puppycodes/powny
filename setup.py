@@ -58,6 +58,7 @@ if __name__ == "__main__":
         install_requires=[
             "kazoo.yandex",
             "Flask-API.yandex",
+            "python-dateutil",
             "pyyaml",
             "ulib",
             "decorator",

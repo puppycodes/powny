@@ -150,7 +150,7 @@ class TestJobs:
         assert job_info["version"] == self.func_version
         assert job_info["method"] == self.func_name
         assert job_info["kwargs"] == self.func_kwargs
-        assert isinstance(job_info["created"], float)
+        assert isinstance(job_info["created"], str)
         assert isinstance(job_info["number"], int)
 
     def _assert_job_info_new(self, job_info):
@@ -165,7 +165,7 @@ class TestJobs:
     def _assert_job_info_taken(self, job_info):
         self._assert_job_info(job_info)
         assert job_info["locked"]
-        assert isinstance(job_info["taken"], float)
+        assert isinstance(job_info["taken"], str)
         assert job_info["finished"] is None
         assert job_info["stack"] is None
         assert job_info["retval"] is None
@@ -174,7 +174,7 @@ class TestJobs:
     def _assert_job_info_in_progress(self, job_info):
         self._assert_job_info(job_info)
         assert job_info["locked"]
-        assert isinstance(job_info["taken"], float)
+        assert isinstance(job_info["taken"], str)
         assert job_info["finished"] is None
         assert isinstance(job_info["stack"], list)
         assert job_info["retval"] is None
@@ -183,8 +183,8 @@ class TestJobs:
     def _assert_job_info_finished(self, job_info, ok):
         self._assert_job_info(job_info)
         assert not job_info["locked"]
-        assert isinstance(job_info["taken"], float)
-        assert isinstance(job_info["finished"], float)
+        assert isinstance(job_info["taken"], str)
+        assert isinstance(job_info["finished"], str)
         if ok:
             assert job_info["exc"] is None
         else:

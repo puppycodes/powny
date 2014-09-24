@@ -124,11 +124,11 @@ class JobControlResource:
                        "version":  "<HEAD>",  # HEAD of the rules for this job
                        "kwargs":   {...},  # Function arguments
                        "number":   <int>,  # The serial number of the job
-                       "created":  <float>,  # UNIX-time when the job was created
+                       "created":  <str>,  # ISO 8601 time when the job was created
                        "locked":   <bool>,  # Job in progress
                        "deleted":  <bool>,  # Job is waiting for a forced stop and delete
-                       "taken":    <float|null>,  # UNIX-time when job was started (taken from queue)
-                       "finished": <float|null>,  # UNIX-time when job was finished
+                       "taken":    <str|null>,  # ISO 8601 time when job was started (taken from queue)
+                       "finished": <str|null>,  # ISO 8601 time when job was finished
                        "stack":    [...],  # Stack snapshot on last checkpoint.
                        "retval":   <some_type|null>,  # Return value if finished and not failed.
                        "exc":      <str|null>,  # Text exception if job was failed.

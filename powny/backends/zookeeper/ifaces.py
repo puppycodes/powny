@@ -6,6 +6,10 @@ from contextlog import get_logger
 from ...core.backends import DeleteTimeoutError
 from ...core.backends import ReadyJob
 from ...core.backends import make_job_id
+from ...core.tools import (
+    make_isotime,
+    from_isotime,
+)
 
 from . import zoo
 
@@ -91,7 +95,7 @@ class JobsControl:
                 "version": version,
                 "method":    method_name,
                 "kwargs":  kwargs,
-                "created": time.time(),
+                "created": make_isotime(),
                 "number":  number,
             })
             request.create(_get_path_job_state(job_id), {
@@ -160,7 +164,7 @@ class JobsProcess:
 
             with self._client.get_write_request("get_ready_jobs()") as request:
                 self._client.get_lock(_get_path_job_lock(job_id)).acquire(request)
-                request.create(_get_path_job_taken(job_id), time.time())
+                request.create(_get_path_job_taken(job_id), make_isotime())
                 self._input_queue.consume(request)
 
             yield ReadyJob(
@@ -195,7 +199,7 @@ class JobsProcess:
             request.set(_get_path_job_state(job_id), {
                 "state":    None,
                 "stack":    None,
-                "finished": time.time(),
+                "finished": make_isotime(),
                 "retval":   retval,
                 "exc":      exc,
             })
@@ -220,7 +224,7 @@ class JobsGc:
 
             if (to_delete or taken) and not lock.is_locked():
                 finished = self._client.get(_get_path_job_state(job_id))["finished"]
-                if to_delete or finished is None or finished + done_lifetime <= time.time():
+                if to_delete or finished is None or from_isotime(finished) + done_lifetime <= time.time():
                     try:
                         with self._client.get_write_request("get_unfinished_jobs()") as request:
                             lock.acquire(request)

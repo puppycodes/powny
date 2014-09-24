@@ -114,7 +114,7 @@ class Application(metaclass=abc.ABCMeta):
     def make_write_app_state(self, app_state):
         node_name = (self._config.core.node_name or platform.uname()[1])
         state = {
-            "when": time.time(),
+            "when": tools.make_isotime(),
             "host": {
                 "node": node_name,
                 "fqdn": socket.getfqdn(),
