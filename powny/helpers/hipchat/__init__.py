@@ -57,7 +57,7 @@ def get_options():
 _COLORS = ("yellow", "red", "green", "purple", "gray", "random")
 
 
-def send_to_room(to, body, sender=None, color=None, notify=False, token=None, fatal=False):
+def send_to_room(to, body, html=False, sender=None, color=None, notify=False, token=None, fatal=False):
     config = get_config(check_helpers=(__name__,)).helpers.hipchat
     logger = get_logger()
 
@@ -77,7 +77,7 @@ def send_to_room(to, body, sender=None, color=None, notify=False, token=None, fa
                 "room_id":        to,
                 "from":           (sender or config.sender)[:15],
                 "message":        body,
-                "message_format": "text",
+                "message_format": ("html" if html else "text"),
                 "color":          color,
                 "notify":         int(notify),
             }, params={
