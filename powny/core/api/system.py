@@ -1,15 +1,17 @@
 from .. import tools
 from .. import optconf
 
+from . import Resource
+
 
 # =====
-class StateResource:
+class StateResource(Resource):
     name = "Show the system state"
 
     def __init__(self, pool):
         self._pool = pool
 
-    def handler(self):
+    def process_request(self):
         """
             GET -- Returns some information about the system state:
                        # =====
@@ -32,13 +34,13 @@ class StateResource:
             }
 
 
-class InfoResource:
+class InfoResource(Resource):
     name = "The system information"
 
     def __init__(self, pool):
         self._pool = pool
 
-    def handler(self):
+    def process_request(self):
         """
             GET -- Returns some information about the system in format:
                        # =====
@@ -62,13 +64,13 @@ class InfoResource:
             }
 
 
-class ConfigResource:
+class ConfigResource(Resource):
     name = "The system configuration"
 
     def __init__(self, config):
         self._public = self._make_public(config)
 
-    def handler(self):
+    def process_request(self):
         """
             GET -- Returns a dictionary with the system configuration except
                    some secret options (passwords, tokens, etc.).

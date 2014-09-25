@@ -5,11 +5,14 @@ from ulib.validators.extra import valid_hex_string
 
 from .. import tools
 
-from . import make_error
+from . import (
+    ApiError,
+    Resource,
+)
 
 
 # =====
-class RulesResource:
+class RulesResource(Resource):
     name = "Operations with the rules HEAD"
     methods = ("GET", "POST")
 
@@ -18,7 +21,7 @@ class RulesResource:
         self._loader = loader
         self._rules_root = rules_root
 
-    def handler(self):
+    def process_request(self):
         """
             GET  -- Returns a current version of the rules in format:
                     # =====
@@ -51,7 +54,7 @@ class RulesResource:
                 try:
                     head = valid_hex_string(head)
                 except ValidatorError as err:
-                    return make_error(400, str(err), head=head)
+                    raise ApiError(400, str(err), head=head)
                 backend.rules.set_head(head)
 
             (head, exposed, errors, exc) = tools.get_exposed(backend, self._loader, self._rules_root)
@@ -62,4 +65,4 @@ class RulesResource:
                     exposed_names = None  # Not configured HEAD
                 return {"head": head, "exposed": exposed_names, "errors": errors}
             else:
-                return make_error(400, exc, head=head)
+                raise ApiError(400, exc, head=head)

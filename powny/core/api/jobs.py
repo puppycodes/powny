@@ -7,11 +7,14 @@ from ..backends import DeleteTimeoutError
 from .. import tools
 
 from . import get_url_for
-from . import make_error
+from . import (
+    Resource,
+    ApiError,
+)
 
 
 # =====
-class JobsResource:
+class JobsResource(Resource):
     name = "Create and view jobs"
     methods = ("GET", "POST")
 
@@ -21,7 +24,7 @@ class JobsResource:
         self._rules_root = rules_root
         self._input_limit = input_limit
 
-    def handler(self):
+    def process_request(self):
         """
             GET  -- Returns a dict of all jobs in the system:
                     # =====
@@ -71,7 +74,7 @@ class JobsResource:
 
     def _request_post(self, backend):
         if backend.jobs_control.get_input_size() >= self._input_limit:
-            return make_error(503, "In the queue is more then {} jobs".format(self._input_limit))
+            raise ApiError(503, "In the queue is more then {} jobs".format(self._input_limit))
 
         (head, exposed) = self._get_exposed(backend)
         method_name = request.args.get("method", None)
@@ -85,13 +88,13 @@ class JobsResource:
     def _get_exposed(self, backend):
         (head, exposed, _, _) = tools.get_exposed(backend, self._loader, self._rules_root)
         if exposed is None:
-            return make_error(503, "No HEAD or exposed methods")
+            raise ApiError(503, "No HEAD or exposed methods")
         return (head, exposed)
 
     def _run_method(self, backend, method_name, kwargs, head, exposed):
         state = tools.get_dumped_method(method_name, kwargs, exposed)  # Validation is not required
         if state is None:
-            return make_error(404, "Method not found")
+            raise ApiError(404, "Method not found")
         job_id = backend.jobs_control.add_job(head, method_name, kwargs, state)
         return {job_id: {"method": method_name, "url": self._get_job_url(job_id)}}
 
@@ -106,7 +109,7 @@ class JobsResource:
         return get_url_for(JobControlResource, job_id=job_id)
 
 
-class JobControlResource:
+class JobControlResource(Resource):
     name = "View and stop job"
     methods = ("GET", "DELETE")
     dynamic = True
@@ -115,7 +118,7 @@ class JobControlResource:
         self._pool = pool
         self._delete_timeout = delete_timeout
 
-    def handler(self, job_id):
+    def process_request(self, job_id):  # pylint: disable=arguments-differ
         """
             GET -- Returns the job state:
                    # =====
@@ -124,11 +127,11 @@ class JobControlResource:
                        "version":  "<HEAD>",  # HEAD of the rules for this job
                        "kwargs":   {...},  # Function arguments
                        "number":   <int>,  # The serial number of the job
-                       "created":  <str>,  # ISO 8601 time when the job was created
+                       "created":  <str>,  # ISO-8601-like time when the job was created
                        "locked":   <bool>,  # Job in progress
                        "deleted":  <bool>,  # Job is waiting for a forced stop and delete
-                       "taken":    <str|null>,  # ISO 8601 time when job was started (taken from queue)
-                       "finished": <str|null>,  # ISO 8601 time when job was finished
+                       "taken":    <str|null>,  # ISO-8601-like time when job was started (taken from queue)
+                       "finished": <str|null>,  # ISO-8601-like time when job was finished
                        "stack":    [...],  # Stack snapshot on last checkpoint.
                        "retval":   <some_type|null>,  # Return value if finished and not failed.
                        "exc":      <str|null>,  # Text exception if job was failed.
@@ -155,18 +158,18 @@ class JobControlResource:
         try:
             job_id = valid_uuid(job_id)
         except ValidatorError as err:
-            return make_error(400, str(err))
+            raise ApiError(400, str(err))
         job_info = backend.jobs_control.get_job_info(job_id)
         if job_info is None:
-            return make_error(404, "Job not found")
+            raise ApiError(404, "Job not found")
         return job_info
 
     def _request_delete(self, backend, job_id):
         try:
             deleted = backend.jobs_control.delete_job(job_id, timeout=self._delete_timeout)
         except DeleteTimeoutError as err:
-            return make_error(503, str(err))
+            raise ApiError(503, str(err))
         if not deleted:
-            return make_error(404, "Job not found")
+            raise ApiError(404, "Job not found")
         else:
             return {"deleted": job_id}

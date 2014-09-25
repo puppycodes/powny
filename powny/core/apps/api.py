@@ -49,7 +49,7 @@ class _Api(flask_api.app.FlaskAPI):
             url_rule,
             resource.name,
             resource.handler,
-            methods=getattr(resource, "methods", ("GET",)),
+            methods=resource.methods
         )
         self._resources.setdefault(version, [])
         self._resources[version].append(resource)
