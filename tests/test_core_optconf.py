@@ -7,9 +7,8 @@ from ulib import typetools
 
 from powny.core import optconf
 from powny.core.optconf.loaders import yaml
+from powny.testing.tmpfile import write_file
 from powny.backends import zookeeper
-
-from .fixtures.tmp import write_file
 
 
 # =====

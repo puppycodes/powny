@@ -1,31 +1,17 @@
 import contextlib
-import textwrap
 import threading
 import uuid
 import json
 
-from powny.core import apps
-from powny.core.apps import api
-from powny.core.apps import worker
-from powny.core.apps import collector
-
-from .tmp import write_file
+from powny.core.apps import (
+    api,
+    worker,
+    collector,
+)
+from powny.testing.application import configured
 
 
 # =====
-@contextlib.contextmanager
-def configured(text=None):
-    if text is not None:
-        with write_file(textwrap.dedent(text)) as file_path:
-            config = apps.init("test", "Test case", ["-c", file_path])
-    else:
-        config = apps.init("test", "Test case", [])
-    try:
-        yield config
-    finally:
-        apps._config = None  # pylint: disable=protected-access
-
-
 @contextlib.contextmanager
 def powny_api(text=None, with_worker=False):
     with configured(text) as config:

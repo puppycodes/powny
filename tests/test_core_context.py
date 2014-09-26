@@ -1,6 +1,5 @@
 from powny.core import context
-
-from .fixtures.context import run_in_context
+from powny.testing.context import run_in_context
 
 
 # =====

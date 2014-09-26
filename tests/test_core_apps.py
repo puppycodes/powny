@@ -1,8 +1,7 @@
 import pytest
 
 from powny.core import apps
-
-from .fixtures.tmp import write_file
+from powny.testing.tmpfile import write_file
 
 
 # =====

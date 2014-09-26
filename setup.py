@@ -23,6 +23,7 @@ if __name__ == "__main__":
             "powny.helpers.cmp",
             "powny.helpers.email",
             "powny.helpers.hipchat",
+            "powny.testing",
         ],
 
         package_data={

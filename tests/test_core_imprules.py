@@ -3,8 +3,7 @@ import contextlib
 import pprint
 
 from powny.core import imprules
-
-from .fixtures.tmp import write_tree
+from powny.testing.tmpfile import write_tree
 
 
 # =====
@@ -57,12 +56,14 @@ class TestImpRules:
         "powny.helpers.cmp",
         "powny.helpers.email",
         "powny.helpers.hipchat",
+        "powny.testing",
+        "powny.testing.application",
+        "powny.testing.context",
+        "powny.testing.tmpfile",
         "setup",
         "tests",
         "tests.fixtures",
         "tests.fixtures.application",
-        "tests.fixtures.context",
-        "tests.fixtures.tmp",
         "tests.fixtures.zookeeper",
         "tests.test_backends_zookeeper",
         "tests.test_backends_zookeeper_ifaces",

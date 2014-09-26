@@ -1,9 +1,8 @@
 import pytest
 
+from powny.testing.context import run_in_context
+from powny.testing.application import configured
 from powny.helpers import email
-
-from .fixtures.application import configured
-from .fixtures.context import run_in_context
 
 
 # ====
