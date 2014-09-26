@@ -33,7 +33,6 @@ class _Collector(Application):
 
     def process(self):
         logger = get_logger()
-        logger.info("Ready to work")
         with self.get_backend_object().connected() as backend:
             sleep_mode = False
             while not self._stop_event.is_set():

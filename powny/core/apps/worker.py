@@ -39,10 +39,7 @@ class _Worker(Application):
 
     def process(self):
         logger = get_logger()
-
-        logger.info("Ready to work")
         sleep_mode = False
-
         with self.get_backend_object().connected() as backend:
             while not self._stop_event.is_set():
                 gen_jobs = backend.jobs_process.get_ready_jobs()

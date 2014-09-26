@@ -112,7 +112,7 @@ def make_app(only_return=True, args=None, config=None):
 
 
 def run(args=None, config=None):
-    get_logger(app="api")  # App-level context
+    logger = get_logger(app="api")  # App-level context
     # TODO: Add this for make_app()
 
     (config, pool, app) = make_app(  # pylint: disable=unpacking-non-sequence
@@ -120,6 +120,7 @@ def run(args=None, config=None):
         args=args,
         config=config,
     )
+    logger.critical("Ready to work on %s:%s", config.api.run.host, config.api.run.port)
     with pool:
         app.run(
             host=config.api.run.host,

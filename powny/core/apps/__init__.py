@@ -140,15 +140,16 @@ class Application(metaclass=abc.ABCMeta):
         self._respawns = 0
         while not self._stop_event.is_set():
             if self._app_config.max_fails is not None and self._respawns >= self._app_config.max_fails + 1:
-                logger.error("Reached the respawn maximum, exiting...")
+                logger.critical("Reached the respawn maximum, exiting...")
                 return -1
             try:
+                logger.critical("Ready to work")
                 self.process()
             except KeyboardInterrupt:
-                logger.info("Received Ctrl+C, exiting...")
+                logger.critical("Received Ctrl+C, exiting...")
                 return 0
             except Exception:
-                logger.exception("Error in main loop, respawn...")
+                logger.critical("Error in main loop, respawn...", exc_info=True)
                 logger.warning("Sleeping %f seconds...", self._app_config.fail_sleep)
                 time.sleep(self._app_config.fail_sleep)
                 self._respawns += 1
