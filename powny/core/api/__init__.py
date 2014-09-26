@@ -5,22 +5,33 @@ import flask
 
 # =====
 class ApiError(Exception):
-    def __init__(self, code, message, **extra):
+    def __init__(self, code, message, result=None):
         super(ApiError, self).__init__()
         self.code = code
         self.message = message
-        self.extra = extra
+        self.result = result
 
 
 class Resource(metaclass=abc.ABCMeta):
+    name = "<Resource>"
+    dynamic = False
     methods = ("GET",)
+    docstring = None
 
     def handler(self, **kwargs):
         try:
-            return self.process_request(**kwargs)
+            (result, message) = self.process_request(**kwargs)
+            return {
+                "status":  "ok",
+                "message": message,
+                "result":  result
+            }
         except ApiError as err:
-            result = {"message": err.message}
-            result.update(err.extra)
+            result = {
+                "status":  "error",
+                "message": err.message,
+                "result":  err.result,
+            }
             return (result, err.code)
 
     @abc.abstractmethod

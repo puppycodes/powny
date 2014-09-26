@@ -45,10 +45,13 @@ class _Api(flask_api.app.FlaskAPI):
         self.add_url_rule("/", "API's list", self._get_apis)
 
     def add_url_resource(self, version, url_rule, resource):
+        def handler(**kwargs):
+            return resource.handler(**kwargs)
+        handler.__doc__ = resource.docstring
         self.add_url_rule(
             url_rule,
             resource.name,
-            resource.handler,
+            handler,
             methods=resource.methods
         )
         self._resources.setdefault(version, [])
@@ -60,7 +63,7 @@ class _Api(flask_api.app.FlaskAPI):
             version: [
                 {"name": resource.name, "url": api.get_url_for(resource)}
                 for resource in resources
-                if not getattr(resource, "dynamic", False)
+                if not resource.dynamic
             ]
             for (version, resources) in self._resources.items()
         }

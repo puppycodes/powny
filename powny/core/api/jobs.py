@@ -17,6 +17,49 @@ from . import (
 class JobsResource(Resource):
     name = "Create and view jobs"
     methods = ("GET", "POST")
+    docstring = """
+        GET  -- Returns a dict of all jobs in the system:
+                # =====
+                {
+                    {
+                        "status":   "ok",
+                        "message":  "<...>",
+                        "<job_id>": {
+                            "url": "<http://api/url/to/control/the/job>"},
+                        },
+                        ...
+                }
+                # =====
+
+        POST -- Run method or handler. If the argument "method" is specified, will
+                be running the specified method (requires the full path from the rules).
+                If this argument is not specified, it will be found and run the
+                appropriate handlers. The arguments passed to method/handler via request
+                body (in dict format).
+
+                Return value:
+                # =====
+                {
+                    "status":  "ok",
+                    "message": "<...>",
+                    "result":  {
+                        "<job_id>": {
+                            "method": "<path.to.function>",
+                            "url": "<http://api/url/to/control/the/job>"},
+                        },
+                        ...
+                    },
+                }
+                # =====
+
+                For explicit method call will be returnet only one job_id, for handlers
+                will be returned several identifiers for the appropriate handlers.
+
+                Possible POST errors (with status=="error"):
+                    404 -- Method not found (for method call).
+                    503 -- In the queue is more then N jobs.
+                    503 -- No HEAD or exposed methods.
+    """
 
     def __init__(self, pool, loader, rules_root, input_limit):
         self._pool = pool
@@ -25,41 +68,6 @@ class JobsResource(Resource):
         self._input_limit = input_limit
 
     def process_request(self):
-        """
-            GET  -- Returns a dict of all jobs in the system:
-                    # =====
-                    {
-                        "<job_id>": {
-                            "url": "<http://api/url/to/control/the/job>"},
-                        },
-                         ...
-                    }
-                    # =====
-
-            POST -- Run method or handler. If the argument "method" is specified, will
-                    be running the specified method (requires the full path from the rules).
-                    If this argument is not specified, it will be found and run the
-                    appropriate handlers. The arguments passed to method/handler via request
-                    body (in dict format).
-                    Return value:
-                    # =====
-                    {
-                        "<job_id>": {
-                            "method": "<path.to.function>",
-                            "url": "<http://api/url/to/control/the/job>"},
-                        },
-                        ...
-                    }
-                    # =====
-                    For explicit method call will be returnet only one job_id, for handlers
-                    will be returned several identifiers for the appropriate handlers.
-
-                    Possible POST errors:
-                        404 -- Method not found (for method call).
-                        503 -- In the queue is more then N jobs.
-                        503 -- No HEAD or exposed methods.
-        """
-
         with self._pool.get_backend() as backend:
             if request.method == "GET":
                 return self._request_get(backend)
@@ -67,10 +75,11 @@ class JobsResource(Resource):
                 return self._request_post(backend)
 
     def _request_get(self, backend):
-        return {
+        result = {
             job_id: {"url": self._get_job_url(job_id)}  # TODO: Add "method" key
             for job_id in backend.jobs_control.get_jobs_list()
         }
+        return (result, ("No jobs" if len(result) == 0 else "The list with all jobs"))
 
     def _request_post(self, backend):
         if backend.jobs_control.get_input_size() >= self._input_limit:
@@ -81,9 +90,11 @@ class JobsResource(Resource):
         kwargs = dict(request.data or {})
 
         if method_name is not None:
-            return self._run_method(backend, method_name, kwargs, head, exposed)
+            result = self._run_method(backend, method_name, kwargs, head, exposed)
+            return (result, "Method was launched")
         else:
-            return self._run_handlers(backend, kwargs, head, exposed)
+            result = self._run_handlers(backend, kwargs, head, exposed)
+            return (result, ("No matching handler" if len(result) == 0 else "Handlers were launched"))
 
     def _get_exposed(self, backend):
         (head, exposed, _, _) = tools.get_exposed(backend, self._loader, self._rules_root)
@@ -113,41 +124,54 @@ class JobControlResource(Resource):
     name = "View and stop job"
     methods = ("GET", "DELETE")
     dynamic = True
+    docstring = """
+        GET    -- Returns the job state:
+                  # =====
+                  {
+                      "status":  "ok",
+                      "message": "<...>",
+                      "result":  {
+                          "method":   "<path.to.function>",  # Full method path in the rules
+                          "version":  "<HEAD>",    # HEAD of the rules for this job
+                          "kwargs":   {...},       # Function arguments
+                          "number":   <int>,       # The serial number of the job
+                          "created":  <str>,       # ISO-8601-like time when the job was created
+                          "locked":   <bool>,      # Job in progress
+                          "deleted":  <bool>,      # Job is waiting for a forced stop and delete
+                          "taken":    <str|null>,  # ISO-8601-like time when job was started (taken from queue)
+                          "finished": <str|null>,  # ISO-8601-like time when job was finished
+                          "stack":    [...],       # Stack snapshot on last checkpoint
+                          "retval":   <any|null>,  # Return value if finished and not failed
+                          "exc":      <str|null>,  # Text exception if job was failed
+                      },
+                  }
+                  # =====
+
+        DELETE -- Request to immediate stop and remove the job. Waits until the collector does
+                  not remove the job.
+
+                  Return value:
+                  # =====
+                  {
+                      "status":  "ok",
+                      "message": "<...>",
+                      "result": {"deleted": "<job_id>"},
+                  }
+                  # =====
+
+                  Possible DELETE errors (with status=="error"):
+                      503 -- The collector did not have time to remove the job, try again.
+
+        Errors (with status=="error"):
+            400 -- Invalid job id.
+            404 -- Job not found (or DELETED).
+    """
 
     def __init__(self, pool, delete_timeout):
         self._pool = pool
         self._delete_timeout = delete_timeout
 
     def process_request(self, job_id):  # pylint: disable=arguments-differ
-        """
-            GET -- Returns the job state:
-                   # =====
-                   {
-                       "method":     "<path.to.function>",  # Full method path in the rules
-                       "version":  "<HEAD>",  # HEAD of the rules for this job
-                       "kwargs":   {...},  # Function arguments
-                       "number":   <int>,  # The serial number of the job
-                       "created":  <str>,  # ISO-8601-like time when the job was created
-                       "locked":   <bool>,  # Job in progress
-                       "deleted":  <bool>,  # Job is waiting for a forced stop and delete
-                       "taken":    <str|null>,  # ISO-8601-like time when job was started (taken from queue)
-                       "finished": <str|null>,  # ISO-8601-like time when job was finished
-                       "stack":    [...],  # Stack snapshot on last checkpoint.
-                       "retval":   <some_type|null>,  # Return value if finished and not failed.
-                       "exc":      <str|null>,  # Text exception if job was failed.
-                   }
-
-            DELETE -- Request to immediate stop and remove the job. Waits until the collector does
-                      not remove the job.
-
-                      Possible DELETE errors:
-                          503 -- The collector did not have time to remove the job, try again.
-
-            Errors:
-                400 -- Invalid job id.
-                404 -- Job not found (or DELETED).
-        """
-
         with self._pool.get_backend() as backend:
             if request.method == "GET":
                 return self._request_get(backend, job_id)
@@ -162,7 +186,7 @@ class JobControlResource(Resource):
         job_info = backend.jobs_control.get_job_info(job_id)
         if job_info is None:
             raise ApiError(404, "Job not found")
-        return job_info
+        return (job_info, "Information about the job")
 
     def _request_delete(self, backend, job_id):
         try:
@@ -172,4 +196,4 @@ class JobControlResource(Resource):
         if not deleted:
             raise ApiError(404, "Job not found")
         else:
-            return {"deleted": job_id}
+            return ({"deleted": job_id}, "The job has been removed")
