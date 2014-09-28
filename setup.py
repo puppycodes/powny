@@ -68,7 +68,7 @@ if __name__ == "__main__":
             "pkginfo",
 
             # Optconf
-            "Tabloid",
+            "tabloid",
             "colorama",
             "pygments",
 
