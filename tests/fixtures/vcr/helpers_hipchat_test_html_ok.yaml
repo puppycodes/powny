@@ -1,0 +1,30 @@
+interactions:
+- request:
+    body: from=Switty+Bot&message_format=html&color=purple&room_id=robots&notify=0&message=Test+%3Ci%3Etest%3C%2Fi%3E+%3Cb%3Etest%3C%2Fb%3E
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['129']
+      Content-Type: [application/x-www-form-urlencoded]
+      User-Agent: [Powny/1.0]
+    method: POST
+    uri: https://api.hipchat.com:443/v1/rooms/message?auth_token=FAKE_TOKEN
+  response:
+    body: {string: '{"status":"sent"}'}
+    headers:
+      Connection: [keep-alive]
+      Content-Length: ['17']
+      Content-Type: [application/json]
+      Date: ['Wed, 24 Sep 2014 20:16:47 GMT']
+      Server: [nginx]
+      Strict-Transport-Security: [max-age=31536000]
+      X-Content-Type-Options: [nosniff]
+      X-HipChat-Jobs: ['Want to help make HipChat better? Apply at hipchat.com/jobs
+          and mention this header.']
+      X-RateLimit-Limit: ['100']
+      X-RateLimit-Remaining: ['97']
+      X-RateLimit-Reset: ['1411589820']
+      X-XSS-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+version: 1

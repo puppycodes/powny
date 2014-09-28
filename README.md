@@ -1,79 +1,58 @@
 [![Build Status](https://travis-ci.org/yandex-sysmon/powny.svg?branch=master)](https://travis-ci.org/yandex-sysmon/powny)
-[![Coverage Status](https://coveralls.io/repos/yandex-sysmon/gns/badge.png?branch=master)](https://coveralls.io/r/yandex-sysmon/gns?branch=master)
-[![Docker Repository on Quay.io](https://quay.io/repository/yandexsysmon/gns/status "Docker Repository on Quay.io")](https://quay.io/repository/yandexsysmon/gns)
-[![Latest Version](https://pypip.in/v/gns/badge.png)](https://pypi.python.org/pypi/gns/)
-[![Dependency Status](https://gemnasium.com/yandex-sysmon/gns.svg)](https://gemnasium.com/yandex-sysmon/gns)
-[![Gitter chat](https://badges.gitter.im/yandex-sysmon/gns.png)](https://gitter.im/yandex-sysmon/gns)
+[![Coverage Status](https://coveralls.io/repos/yandex-sysmon/powny/badge.png?branch=master)](https://coveralls.io/r/yandex-sysmon/powny?branch=master)
+[![Latest Version](https://pypip.in/v/powny/badge.png)](https://pypi.python.org/pypi/powny/)
+[![Dependency Status](https://gemnasium.com/yandex-sysmon/powny.svg)](https://gemnasium.com/yandex-sysmon/powny)
+[![Gitter chat](https://badges.gitter.im/yandex-sysmon/powny.png)](https://gitter.im/yandex-sysmon/powny)
 
 
-##Global Notification System##
+###Что это?###
+Powny - это распределенная система обработки событий и исполнения функций по требованию. Функции пишутся на обычном Python и могут запрашивать создание контрольных точек во время работы. Таким образом, если исполнение было прервано в результате сбоя на одной из нод, другая нода продолжит выполнять функцию с последней контрольной точки.
+В основе принципа работы Powny лежит использование [континулетов](http://pypy.readthedocs.org/en/latest/stackless.html#continulet) - части stackless-возможностей PyPy. Каждая задача представляется в виде континулета, который, при запросе создания контрольной точки, сериализуется и сохраняется в распределенное хранилище (сейчас это - [Apache ZooKeeper](http://zookeeper.apache.org/)). Восстановление заключается в десериализации и запуске процесса, исполняющего функцию.
 
 
-###Quick start###
-To try GNS, you need to install Python 2 and [Docker](http://docker.io) from your repositories.
-Docker must be running on the local socket and a special network interface:
+###Установка для отладки###
+Вам понадобятся ZooKeeper и PyPy3 с pip. Для установки Powny выполните такие команды:
 ```
-sudo ip addr add 172.18.43.1/24 dev lo label lo:1
-sudo docker -d -H unix:///var/run/docker.sock -H tcp://172.18.43.1:4243
+git clone https://github.com/yandex-sysmon/powny.git
+cd powny
+pypy3 -m pip install --user -e
 ```
-For configuration management, we use [Maestro-NG](https://github.com/signalfuse/maestro-ng).
-You can install it from GitHub and register in the $PATH:
+Powny будет установлен в отладочном режиме. Для запуска системы используйте такие команды (находясь в каталоге `powny`):
 ```
-python2 -m pip install --user --upgrade git+https://github.com/signalfuse/maestro-ng.git
-export PATH=$PATH:~/.local/bin
+~/.local/bin/powny-api -l DEBUG
+~/.local/bin/powny-worker -l DEBUG
+~/.local/bin/powny-collector -l DEBUG
 ```
-Next, you can clone GNS from GitHub:
-```
-git clone https://github.com/yandex-sysmon/gns.git
-cd gns
-git submodule update --init --recursive
-```
-Run the maestro configuration. This command can take a long time, it needs to download several images:
-```
-./maestro/run local reinit start
-./maestro/run local reinit stop
-./maestro/run local dev start
-```
-You can change part of the configuration parameters using environment variables. For example, you should use your repository with the rules (variable `REPO_URL`). List of all parameters can be found in YAML-files in directory `./maestro`. See file `./maestro/common.yaml` for example.
+По-умолчанию, вам будут доступны правила из каталога `rules`.
 
 
-###Basic API usage###
-Compatibility layer with [Golem/submit.sbml](http://nda.ya.ru/3QTLzG):
+###Использование с Docker/Dominator###
+Для локального запуска в изолированной среде, вам потребуется [Docker](https://www.docker.com/) и [Dominator](https://github.com/yandex-sysmon/dominator). Для их настройки обратитесь в соответствующую документацию.
+Чтобы запустить Powny внутри Dominator, установите питоновый пакет [obedient.powny](https://pypi.python.org/pypi/obedient.powny/2.1.4), соберите образа и запустите их:
 ```
-curl --data 'info=test' 'http://localhost:7887/api/compat/golem/submit?object=foo&eventtype=bar&info=test&status=critical'
-```
-
-Native pushing of event:
-```
-curl -H 'Content-Type: application/json' --data '{"host":"foo", "service":"bar", "status":"CRIT", "description":"test"}' http://localhost:7887/api/rest/v1/jobs
-```
-Dropping the event:
-```
-curl -X DELETE http://localhost:7887/api/rest/v1/jobs/<UUID>
-```
-Getting the information about the event:
-```
-curl http://localhost:7887/api/rest/v1/jobs/<UUID>
+dominator -l DEBUG shipment generate obedient.powny local > powny.local.yaml
+dominator -l DEBUG -c powny.local.yaml image build
+dominator -l DEBUG -c powny.local.yaml container start
 ```
 
-###Build your own image###
-To build and run your locally changed GNS, you can use these following commands:
-```
-make docker
-export DOCKER_GNS_IMAGE=gns:latest
-export DOCKER_GNS_API_IMAGE=gns:latest
-./maestro/run local dev start
-```
 
-###Testing###
-To test your must have installed and configured ZooKeeper.
-Intall PyPy3 and dependencies:
+###TODO & FIXME###
+  * Контекстный логгер не пиклится, нужно удалять его объект из области видимости перед чекпоинтом.
+  * Какая-то странная бага с относительным импортированием в хелперах, пока использую абсолютное:
 ```
-wget https://bootstrap.pypa.io/ez_setup.py -O - | pypy3 - --user
-pypy3 -m easy_install tox
+File "/home/mdevaev/projects/yandex/powny/powny/helpers/email/__init__.py", line 13, in <module>
+    from ...core.optconf import Option
+ImportError: No module named powny.helpers.core
 ```
-Testing:
+  * Индивидуальные `sys.path` и `sys.modules` для отдельных потоков не работают из-за кеширования загруженных правил. Если не кешировать - то будет медленно. Закостылял локом и общими объектами.
+  * Тест для воркера: DELETE
+  * Тест для push-back в процессе коллектора
+  * Тест для секретных конфигов.
+  * Обрезать значения опций в `-m`.
+  * Баг в зукипере (см. `tests/fixtures/application.py`)?
 ```
-make tox
+[zk: localhost:2181(CONNECTED) 40] ls /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state
+[]
+[zk: localhost:2181(CONNECTED) 41] delete /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state
+Node not empty: /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state
 ```
-See all testing targets in Makefile.

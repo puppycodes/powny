@@ -1,0 +1,28 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+    standard:
+        (): contextlog.make_mixed_formatter
+        formatters:
+            - colorlog.ColoredFormatter
+            - contextlog.PartialFormatter
+            - contextlog.ExceptionLocalsFormatter
+        style: "{"
+        datefmt: "%H:%M:%S"
+        format: "{asctime} {fg_bold_blue}{app:9.9} {purple}{name:35.35} {log_color}{levelname:>7} {yellow}{job_id:36.36}{reset} {message} -- {cyan}{_extra}{reset}"
+
+handlers:
+    console:
+        level: DEBUG
+        class: logging.StreamHandler
+        formatter: standard
+
+root:
+    level: INFO
+    handlers:
+        - console
+
+loggers:
+    kazoo:
+        level: WARNING
