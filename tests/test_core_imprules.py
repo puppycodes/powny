@@ -49,7 +49,6 @@ class TestImpRules:
         "powny.core.optconf.dumper",
         "powny.core.optconf.loaders",
         "powny.core.optconf.loaders.yaml",
-        "powny.core.optconf.tree",
         "powny.core.rules",
         "powny.core.tools",
         "powny.helpers",

@@ -51,7 +51,7 @@ class TestLoadFromYaml:
         assert config.section1.key12 == 12.0
         assert config.section1.section2.key21 == "21"
 
-        assert config.backend.nodes == ["localhost"]
+        assert config.backend.nodes == ["localhost:2181"]
         assert config.backend.timeout == 10.0
         assert config.backend.start_timeout == 10.0
         assert config.backend.start_retries is None

@@ -10,26 +10,12 @@ import socket
 import time
 import abc
 
-from yaml import load as load_yaml
+import yaml
 
 import contextlog
 from contextlog import get_logger
 
 from ulib import typetools
-
-from ulib.validators.common import (
-    valid_number,
-    valid_bool,
-    valid_empty,
-    valid_maybe_empty,
-    valid_string_list,
-)
-from ulib.validators.network import (
-    valid_ip_or_host,
-    valid_port,
-)
-from ulib.validators.fs import valid_accessible_path
-from ulib.validators.python import valid_object_name
 
 from .. import tools
 from .. import backends
@@ -74,7 +60,7 @@ def init(name, description, args=None):
     logging.captureWarnings(True)
     logging_config = raw.get("logging")
     if logging_config is None:
-        logging_config = load_yaml(pkgutil.get_data(__name__, "configs/logging.yaml"))
+        logging_config = yaml.load(pkgutil.get_data(__name__, "configs/logging.yaml"))
     if options.log_level is not None:
         logging_config.setdefault("root", {})
         logging_config["root"]["level"] = _valid_log_level(options.log_level)
@@ -172,112 +158,52 @@ def _valid_log_level(arg):
         return logging._nameToLevel[arg.upper()]  # pylint: disable=protected-access
 
 
-def _valid_number_min_1(arg):
-    return valid_number(arg, 1)
-
-
-def _valid_empty_or_number_min_0(arg):
-    return valid_maybe_empty(arg, lambda arg: valid_number(arg, 0))
-
-
 def _get_config_scheme():
     scheme = {
         "core": {
-            "node-name": optconf.Option(
-                default=None, type=valid_empty,
-                help="Node name, must be a unique (uname by default)",
-            ),
-            "backend": optconf.Option(
-                default="zookeeper", type=valid_object_name,
-                help="Backend plugin",
-            ),
-            "rules-module": optconf.Option(
-                default="rules", type=valid_object_name,
-                help="Name of the rules module/package",
-            ),
-            "rules-dir": optconf.Option(
-                default="rules", type=valid_accessible_path,
-                help="Path to rules root",
-            ),
+            "node_name": optconf.Option(default=None, type=str, help="Node name, must be a unique (uname by default)"),
+            "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
+            "rules_module": optconf.Option(default="rules", help="Name of the rules module/package"),
+            "rules_dir": optconf.Option(default="rules", help="Path to rules root"),
         },
 
         "helpers": {
-            "configure": optconf.Option(
-                default=[], type=valid_string_list,
-                help="A list of modules that are configured",
-            ),
+            "configure": optconf.Option(default=[], help="A list of modules that are configured"),
         },
 
         "api": {
-            "backend-connections": optconf.Option(
-                default=5, type=_valid_number_min_1,
-                help="The number of connections to the backend supported by pool",
-            ),
-            "input-limit": optconf.Option(
-                default=20000, type=_valid_number_min_1,
-                help="Limit of the input queue before 503 error",
-            ),
-            "delete-timeout": optconf.Option(
-                default=15, type=_valid_number_min_1,
-                help="Timeout for stop/delete operation",
-            ),
+            "backend_connections": optconf.Option(default=5, help="Maximum number of backend connections"),
+            "input_limit": optconf.Option(default=20000, help="Limit of the input queue before 503 error"),
+            "delete_timeout": optconf.Option(default=15, help="Timeout for stop/delete operation"),
 
             "run": {
-                "host": optconf.Option(
-                    default="localhost", type=(lambda arg: valid_ip_or_host(arg)[0]),
-                    help="The host for the internal server",
-                ),
-                "port": optconf.Option(
-                    default=7887, type=valid_port,
-                    help="The port for the internal server",
-                ),
-                "use-threads": optconf.Option(
-                    default=True, type=valid_bool,
-                    help="Process each request in a separate thread",
-                ),
-                "processes": optconf.Option(
-                    default=1, type=_valid_number_min_1,
-                    help="If greater than 1 then handle each request in a new process up "
-                         "to this maximum number of concurrent processes",
-                ),
-                "debug-console": optconf.Option(
-                    default=True, type=valid_bool,
-                    help="Open interactive console with exception context in browser",
-                ),
+                "host": optconf.Option(default="localhost", help="The host for the internal server"),
+                "port": optconf.Option(default=7887, help="The port for the internal server"),
+                "use_threads": optconf.Option(default=True, help="Process each request in a separate thread"),
+                "processes": optconf.Option(default=1, help="API worker count",
+                                            longhelp="If greater than 1 then handle each request in a new process up "
+                                                     "to this maximum number of concurrent processes"),
+                "debug_console": optconf.Option(default=True, help="Open interactive console with exception "
+                                                                   "context in browser"),
             },
         },
 
         "worker": {
-            "max-jobs-sleep": optconf.Option(
-                default=1, type=_valid_number_min_1,
-                help="If we have reached the maximum concurrent jobs - the process goes to sleep (seconds)",
-            ),
-            "max-jobs": optconf.Option(
-                default=100, type=_valid_number_min_1,
-                help="The maximum number of job processes",
-            ),
+            "max_jobs_sleep": optconf.Option(default=1, help="If we have reached the maximum concurrent jobs - "
+                                                             "the process goes to sleep (seconds)"),
+            "max_jobs": optconf.Option(default=100, help="The maximum number of job processes"),
         },
 
         "collector": {
-            "done-lifetime": optconf.Option(
-                default=60, type=_valid_number_min_1,
-                help="Completed jobs are not deleted the specified number of seconds",
-            ),
+            "done_lifetime": optconf.Option(default=60, help="Seconds to wait before deleting completed job"),
         },
     }
     for app in ("worker", "collector"):
         scheme[app].update({
-            "max-fails": optconf.Option(
-                default=None, type=_valid_empty_or_number_min_0,
-                help="Maximum number of failures after which the program terminates",
-            ),
-            "fail-sleep": optconf.Option(
-                default=5, type=_valid_number_min_1,
-                help="If processing fails, sleep for awhile and restart (seconds)",
-            ),
-            "empty-sleep": optconf.Option(
-                default=1, type=_valid_number_min_1,
-                help="If there are no jobs ready for removal the process goes to sleep (seconds)",
-            ),
+            "max_fails": optconf.Option(default=None, type=int, help="Number of failures after which the program "
+                                                                     "terminates"),
+            "fail_sleep": optconf.Option(default=5, help="If processing fails, sleep for awhile and restart (seconds)"),
+            "empty_sleep": optconf.Option(default=1, help="Interval after which process will sleep when "
+                                                          "there are no jobs (seconds)"),
         })
     return scheme

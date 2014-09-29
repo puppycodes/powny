@@ -1,8 +1,3 @@
-from .tree import Section
-from .tree import Option
-from .tree import SecretOption
-
-
 # =====
 def make_config(raw, scheme, keys=()):
     if not isinstance(raw, dict):
@@ -10,26 +5,72 @@ def make_config(raw, scheme, keys=()):
 
     config = Section()
     for (key, option) in scheme.items():
-        raw_key = key.replace("_", "-")  # For yaml-file
-        config_key = key.replace("-", "_")  # For result object
-        long_key = keys + (raw_key,)
-        long_name = ".".join(long_key)
+        fullkey = keys + (key,)
+        fullname = ".".join(fullkey)
 
         if isinstance(option, Option):
+            value = raw.get(key, option.default)
             try:
-                value = option.type(raw.get(raw_key, option.default))
-            except ValueError as err:
-                raise ValueError("Invalid value of key '{}'".format(long_name)) from err
-            config[config_key] = value
+                if value is not None:
+                    value = option.type(value)
+            except:
+                raise ValueError("Invalid value '{value}' for key '{key}'".format(key=fullname, value=value))
+            config[key] = value
             config._set_meta(  # pylint: disable=protected-access
-                name=config_key,
+                name=key,
                 secret=isinstance(option, SecretOption),
                 default=option.default,
                 help=option.help,
             )
         elif isinstance(option, dict):
-            config[config_key] = make_config(raw.get(raw_key, {}), option, long_key)
+            config[key] = make_config(raw.get(key, {}), option, fullkey)
         else:
             raise RuntimeError("Incorrect scheme definition for key '{}':"
-                               " the value is {}, not dict or [Secret]Option()".format(long_name, type(option)))
+                               " the value is {}, not dict or [Secret]Option()".format(fullname, type(option)))
     return config
+
+
+class Section(dict):
+    def __init__(self, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+        self._meta = {}
+
+    def _set_meta(self, name, secret, default, help):  # pylint: disable=redefined-builtin
+        self._meta[name] = {
+            "secret":  secret,
+            "default": default,
+            "help":    help,
+        }
+
+    def _is_secret(self, name):
+        return self._meta[name]["secret"]
+
+    def _get_default(self, name):
+        return self._meta[name]["default"]
+
+    def _get_help(self, name):
+        return self._meta[name]["help"]
+
+    def __getattribute__(self, name):
+        if name in self:
+            return self[name]
+        else:  # For pickling
+            return dict.__getattribute__(self, name)
+
+
+_type = type
+
+
+class Option:
+    def __init__(self, default, help, type=None, longhelp=None):  # pylint: disable=redefined-builtin
+        self.default = default
+        self.help = help
+        self.longhelp = longhelp or help
+        self.type = type or (_type(default) if default is not None else str)
+
+    def __repr__(self):
+        return "<Option(default={self.default}, type={self.type}, help={self.help})>".format(self=self)
+
+
+class SecretOption(Option):
+    pass

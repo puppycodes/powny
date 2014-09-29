@@ -34,7 +34,7 @@ def _make_client():
 @pytest.fixture
 def zclient_kwargs():
     return {
-        "nodes":           ("localhost",),
+        "nodes":           ("localhost:2181",),
         "timeout":         5,
         "start_timeout":   10,
         "start_retries":   5,
