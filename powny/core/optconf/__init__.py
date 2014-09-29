@@ -5,8 +5,8 @@ def make_config(raw, scheme, keys=()):
 
     config = Section()
     for (key, option) in scheme.items():
-        fullkey = keys + (key,)
-        fullname = ".".join(fullkey)
+        full_key = keys + (key,)
+        full_name = ".".join(full_key)
 
         if isinstance(option, Option):
             value = raw.get(key, option.default)
@@ -14,7 +14,7 @@ def make_config(raw, scheme, keys=()):
                 if value is not None:
                     value = option.type(value)
             except:
-                raise ValueError("Invalid value '{value}' for key '{key}'".format(key=fullname, value=value))
+                raise ValueError("Invalid value '{value}' for key '{key}'".format(key=full_name, value=value))
             config[key] = value
             config._set_meta(  # pylint: disable=protected-access
                 name=key,
@@ -23,10 +23,10 @@ def make_config(raw, scheme, keys=()):
                 help=option.help,
             )
         elif isinstance(option, dict):
-            config[key] = make_config(raw.get(key, {}), option, fullkey)
+            config[key] = make_config(raw.get(key, {}), option, full_key)
         else:
             raise RuntimeError("Incorrect scheme definition for key '{}':"
-                               " the value is {}, not dict or [Secret]Option()".format(fullname, type(option)))
+                               " the value is {}, not dict or [Secret]Option()".format(full_name, type(option)))
     return config
 
 
@@ -62,10 +62,9 @@ _type = type
 
 
 class Option:
-    def __init__(self, default, help, type=None, longhelp=None):  # pylint: disable=redefined-builtin
+    def __init__(self, default, help, type=None):  # pylint: disable=redefined-builtin
         self.default = default
         self.help = help
-        self.longhelp = longhelp or help
         self.type = type or (_type(default) if default is not None else str)
 
     def __repr__(self):

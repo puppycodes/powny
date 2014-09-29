@@ -180,9 +180,7 @@ def _get_config_scheme():
                 "host": optconf.Option(default="localhost", help="The host for the internal server"),
                 "port": optconf.Option(default=7887, help="The port for the internal server"),
                 "use_threads": optconf.Option(default=True, help="Process each request in a separate thread"),
-                "processes": optconf.Option(default=1, help="API worker count",
-                                            longhelp="If greater than 1 then handle each request in a new process up "
-                                                     "to this maximum number of concurrent processes"),
+                "processes": optconf.Option(default=1, help="API maximum worker count"),
                 "debug_console": optconf.Option(default=True, help="Open interactive console with exception "
                                                                    "context in browser"),
             },
