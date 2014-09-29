@@ -14,6 +14,8 @@ from powny.backends.zookeeper import zoo
 
 from .fixtures.zookeeper import zclient  # pylint: disable=unused-import
 from .fixtures.zookeeper import zbackend_kwargs  # pylint: disable=unused-import
+zclient  # flake8 suppression pylint: disable=pointless-statement
+zbackend_kwargs  # flake8 suppression pylint: disable=pointless-statement
 
 
 # =====

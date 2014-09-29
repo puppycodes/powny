@@ -1,22 +1,22 @@
-language: c
+language: python
+python:
+    - pypy3
 env:
-    - PYTHONPATH=/usr/lib/pypy3/site-packages
+  matrix:
+  - TOXENV=tests
+  - TOXENV=flake8
+  - TOXENV=pylint
 before_install:
-    - sudo apt-add-repository 'deb http://nikicat.github.io/pypy3-repo ./'
     - sudo apt-add-repository ppa:yandex-sysmon/zookeeper-3.4 -y
     - sudo apt-get update
-    - sudo apt-get install zookeeperd pypy3 -y --force-yes
-    - sudo ln -fs pypy3 /usr/bin/python
-    - sudo mkdir /usr/lib/pypy3/site-packages
-    - curl https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py | sudo PYTHONPATH=/usr/lib/pypy3/site-packages pypy3
-    - sudo ln -fs /usr/lib/pypy3/bin/easy_install /usr/local/bin/easy_install
+    - sudo apt-get install zookeeperd -y --force-yes
     - sudo /usr/share/zookeeper/bin/zkServer.sh start
 install:
-    - sudo PYTHONPATH=/usr/lib/pypy3/site-packages easy_install tox coveralls
+    - pip install tox coveralls
 script:
-    - /usr/lib/pypy3/bin/tox -v
+    - tox -v
 after_success:
-    - /usr/lib/pypy3/bin/coveralls
+    - coveralls
 notifications:
     hipchat:
         rooms:

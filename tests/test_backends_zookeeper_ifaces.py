@@ -10,6 +10,7 @@ from powny.core import backends
 from powny.backends.zookeeper import ifaces
 
 from .fixtures.zookeeper import zclient  # pylint: disable=unused-import
+zclient  # flake8 suppression pylint: disable=pointless-statement
 
 
 # =====

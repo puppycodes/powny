@@ -52,7 +52,7 @@ def make_loader(rules_base):
         module_base=rules_base,
         group_by=(
             ("handlers", rules.is_event_handler),
-            ("methods",  lambda _: True),
+            ("methods", lambda _: True),
         ),
     )
 

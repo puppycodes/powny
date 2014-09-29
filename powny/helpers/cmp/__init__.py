@@ -12,7 +12,7 @@ def get_from_path(event, path):
 
 
 def _make_cmp(name, method):
-    class comparator:  # pylint: disable=invalid-name
+    class Comparator:
         def __init__(self, path, *args):
             self._path = path
             self._args = args
@@ -27,11 +27,12 @@ def _make_cmp(name, method):
         def __call__(self, event):
             return method(get_from_path(event, self._path), *self._args)
 
-    comparator.__name__ = name
-    return comparator
+    Comparator.__name__ = name
+    return Comparator
 
 
 # pylint: disable=invalid-name
+# flake8: noqa
 eq = equal          = _make_cmp("equal",          lambda operand, value: value == operand)
 ne = not_equal      = _make_cmp("not_equal",      lambda operand, value: value != operand)
 ge = great_or_equal = _make_cmp("great_or_equal", lambda operand, value: value >= operand)

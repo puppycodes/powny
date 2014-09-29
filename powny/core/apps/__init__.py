@@ -98,7 +98,7 @@ def init(name, description, args=None):
 
     # Print config dump and exit
     if options.dump_config:
-        optconf.print_config_dump(_config, ((), ("helpers",)))
+        print(optconf.dumper.make_config_dump(_config, split_by=((), ("helpers",))))
         sys.exit(0)
 
     return _config
