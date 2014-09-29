@@ -1,22 +1,14 @@
-import sys
-
 import tabloid
 import colorama
 import pygments
 import pygments.lexers
 import pygments.formatters
 
-from ulib.ui.term import terminalSize
-
 from . import tree
 
 
 # =====
-def print_config_dump(config, split_by, output=sys.stdout):
-    print(make_config_dump(config, split_by, terminalSize(output=output)[0]), file=output)
-
-
-def make_config_dump(config, split_by, width):
+def make_config_dump(config, split_by, width=None):
     table = tabloid.FormattedTable(width=width, header_background=colorama.Back.BLUE)
     table.add_column("Option", _highlight_option)
     table.add_column("Value", _highlight_python)

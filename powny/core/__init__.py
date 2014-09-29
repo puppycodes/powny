@@ -1,3 +1,5 @@
+# flake8: noqa
+
 from .tools import (
     get_version,
     get_user_agent,

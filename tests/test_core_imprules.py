@@ -134,7 +134,7 @@ class TestLoader:
     def test_loader_group_by(self):
         group_by = (
             ("handlers", lambda method: method.__name__.endswith("handler")),
-            ("other",    lambda _: True),
+            ("other", lambda _: True),
         )
         with _loader("rules", group_by) as loader:
             with write_tree(_make_defines(1)) as root:

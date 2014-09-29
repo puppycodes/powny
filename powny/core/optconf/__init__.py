@@ -2,9 +2,6 @@ from .tree import Section
 from .tree import Option
 from .tree import SecretOption
 
-from .dumper import make_config_dump
-from .dumper import print_config_dump
-
 
 # =====
 def make_config(raw, scheme, keys=()):

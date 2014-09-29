@@ -6,6 +6,7 @@ import time
 from powny.core import tools
 
 from .fixtures.zookeeper import zbackend  # pylint: disable=unused-import
+zbackend  # flake8 suppression pylint: disable=pointless-statement
 
 
 # =====

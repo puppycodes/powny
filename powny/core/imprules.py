@@ -117,7 +117,7 @@ def _get_all_modules(base_path):
             continue
         for (checker, transformer, items) in (
             (_is_package, lambda path: path, dirs),
-            (_is_module,  lambda path: path[:-3], files),
+            (_is_module, lambda path: path[:-3], files),
         ):
             for item in items:
                 if _is_object_name(transformer(item)) and checker(os.path.join(root, item)):

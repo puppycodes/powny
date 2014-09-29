@@ -1,5 +1,3 @@
-import json
-
 import requests
 
 from contextlog import get_logger

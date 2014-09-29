@@ -7,6 +7,9 @@ from powny.backends import zookeeper
 from .fixtures.zookeeper import zclient  # pylint: disable=unused-import
 from .fixtures.zookeeper import zclient_kwargs  # pylint: disable=unused-import
 from .fixtures.zookeeper import zclient_chroot  # pylint: disable=unused-import
+zclient  # flake8 suppression pylint: disable=pointless-statement
+zclient_kwargs  # flake8 suppression pylint: disable=pointless-statement
+zclient_chroot  # flake8 suppression pylint: disable=pointless-statement
 
 
 # =====
