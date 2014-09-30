@@ -12,7 +12,7 @@ class TestService:
     def test_init_and_get_config(self):
         config = apps.init("test_init", "TestService", [])
         assert config.core.backend == "zookeeper"
-        assert config.backend.nodes == ["localhost"]
+        assert config.backend.nodes == ["localhost:2181"]
         assert apps.get_config() == config
 
     def test_init_helpers_failed(self):

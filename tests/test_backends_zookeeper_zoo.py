@@ -89,7 +89,7 @@ class TestClient:
     def test_connect_failed(self):
         with pytest.raises(kazoo.handlers.threading.TimeoutError):
             with zoo.Client(
-                nodes=("example.com",),
+                nodes=("unexistent.domain:2181",),
                 timeout=1,
                 start_timeout=3,
                 start_retries=1,

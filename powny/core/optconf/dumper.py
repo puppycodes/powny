@@ -4,7 +4,7 @@ import pygments
 import pygments.lexers
 import pygments.formatters
 
-from . import tree
+from . import Section
 
 
 # =====
@@ -44,7 +44,7 @@ def _highlight_python(code):
 def _make_plain_dump(config, split_by=(), path=()):
     plain = []
     for (key, value) in config.items():
-        if isinstance(value, tree.Section):
+        if isinstance(value, Section):
             if len(plain) != 0 and path in split_by:
                 plain.append(None)
             plain += _make_plain_dump(value, split_by, path + (key,))

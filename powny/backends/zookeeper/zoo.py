@@ -1,6 +1,9 @@
 import pickle
 import threading
 import contextlib
+import re
+
+from ...core import optconf
 
 import decorator
 import kazoo.client
@@ -60,6 +63,8 @@ class Client:
 
     def __init__(self, nodes, timeout, start_timeout, start_retries, randomize_hosts, chroot):
         assert isinstance(nodes, (list, tuple))
+        for node in nodes:
+            assert re.match(r"[^:]+:\d+", node) is not None, "zookeeper node should has format host:port"
         self._hosts = ",".join(nodes)
         self._timeout = timeout
         self._start_timeout = start_timeout
@@ -67,6 +72,18 @@ class Client:
         self._randomize_hosts = randomize_hosts
         self._chroot = chroot
         self.zk = None
+
+    @classmethod
+    def get_options(cls):
+        return {
+            "nodes": optconf.Option(default=["localhost:2181"], help="List of hosts to connect (in host:port format)"),
+            "timeout": optconf.Option(default=10, help="The longest to wait for a Zookeeper connection"),
+            "start_timeout": optconf.Option(default=10.0, help="Timeout of the initial connection"),
+            "start_retries": optconf.Option(default=None, type=int, help="The number of attempts the initial "
+                                                                         "connection to ZooKeeper (0=infinite)"),
+            "randomize_hosts": optconf.Option(default=True, help="Randomize host selection"),
+            "chroot": optconf.Option(default=None, help="Use specified node as root (it must be created manually)"),
+        }
 
     @contextlib.contextmanager
     def connected(self):

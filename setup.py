@@ -57,7 +57,7 @@ if __name__ == "__main__":
         ],
 
         install_requires=[
-            "kazoo.yandex",
+            "kazoo.yandex >=2.0",  # https://github.com/python-zk/kazoo/pull/252
             "Flask-API.yandex",
             "python-dateutil",
             "pyyaml",
