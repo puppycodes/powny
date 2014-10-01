@@ -20,7 +20,9 @@ def test_connect(zclient_kwargs, zclient_chroot):
 
 def test_get_info(zclient_kwargs, zclient_chroot):
     with zookeeper.Backend(chroot=zclient_chroot, **zclient_kwargs).connected() as backend:
-        assert "zookeeper.version" in backend.get_info()
+        info = backend.get_info()
+        assert "zookeeper.version" in info["envi"]
+        assert "zk_version" in info["mntr"]
 
 
 def test_ifaces(zclient_kwargs, zclient_chroot):

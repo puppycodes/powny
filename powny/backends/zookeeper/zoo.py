@@ -148,9 +148,31 @@ class Client:
     # ===
 
     def get_server_info(self):
+        # http://zookeeper.apache.org/doc/current/zookeeperAdmin.html#sc_zkCommands
+        return {
+            "envi": self._get_info_envi(),
+            "mntr": self._get_info_mntr(),
+        }
+
+    def _get_info_envi(self):
+        # $ echo envi | netcat 127.0.0.1 2181
+        # Environment:
+        # zookeeper.version=3.4.6-1569965, built on 02/20/2014 09:09 GMT
+        # host.name=localhost.localdomain
+        # ...
         return dict(
             item.split("=", 1)
-            for item in filter(None, self.zk.command(b"envi").split("\n")[1:])
+            for item in self.zk.command(b"envi").split("\n")[1:-1]
+        )
+
+    def _get_info_mntr(self):
+        # $ echo mntr | netcat 127.0.0.1 2181
+        # zk_version      3.4.6-1569965, built on 02/20/2014 09:09 GMT
+        # zk_avg_latency  0
+        # ...
+        return dict(
+            item.split("\t", 1)
+            for item in self.zk.command(b"mntr").split("\n")[:-1]
         )
 
     # ===

@@ -99,7 +99,9 @@ class TestClient:
                 pass
 
     def test_get_server_info(self, zclient):
-        assert "zookeeper.version" in zclient.get_server_info()
+        info = zclient.get_server_info()
+        assert "zookeeper.version" in info["envi"]
+        assert "zk_version" in info["mntr"]
 
     # ===
 
