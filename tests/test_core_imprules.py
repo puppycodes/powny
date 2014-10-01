@@ -51,10 +51,6 @@ class TestImpRules:
         "powny.core.optconf.loaders.yaml",
         "powny.core.rules",
         "powny.core.tools",
-        "powny.helpers",
-        "powny.helpers.cmp",
-        "powny.helpers.email",
-        "powny.helpers.hipchat",
         "powny.testing",
         "powny.testing.application",
         "powny.testing.context",
@@ -74,9 +70,6 @@ class TestImpRules:
         "tests.test_core_optconf",
         "tests.test_core_rules",
         "tests.test_core_tools",
-        "tests.test_helpers_cmp",
-        "tests.test_helpers_email",
-        "tests.test_helpers_hipchat",
         "tests.test_powny",
     ]
 

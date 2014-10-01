@@ -1,3 +1,4 @@
+import pprint
 import time
 
 from powny.core import __version__
@@ -144,32 +145,25 @@ def test_api_v1_jobs_method_delete():
     _test_api_v1_jobs_delete("/v1/jobs?method=rules.test.empty_method", {})
 
 
-def test_api_v1_jobs_handler_execution(smtpserver):
-    _test_api_v1_jobs_execution(smtpserver, None, "rules.test.send_email_by_event_handler", 5)
+def test_api_v1_jobs_handler_execution(httpserver):
+    _test_api_v1_jobs_execution(httpserver, None, "rules.test.urlopen_by_event")
 
 
-def test_api_v1_jobs_method_execution(smtpserver):
-    _test_api_v1_jobs_execution(smtpserver, "rules.test.send_email_by_event", "rules.test.send_email_by_event", 5)
+def test_api_v1_jobs_method_execution(httpserver):
+    _test_api_v1_jobs_execution(httpserver, "rules.test.do_urlopen", "rules.test.do_urlopen")
 
 
-def _test_api_v1_jobs_execution(smtpserver, method, find, repeat):
+def _test_api_v1_jobs_execution(httpserver, method, find):
+    httpserver.serve_content(content="test", code=200, headers=None)
     url = "/v1/jobs"
     if method is not None:
         url += "?method=" + method
-    with powny_api("""
-        helpers:
-            configure:
-                - powny.helpers.email
-            email:
-                server: {server}
-                port: {port}
-    """.format(server=smtpserver.addr[0], port=smtpserver.addr[1]), with_worker=True) as (test_client, config):
+    with powny_api(with_worker=True) as (test_client, config):
         with test_client() as api:
             assert as_dict(api.post("/v1/rules", **from_dict({"head": "0123456789abcdef"})))[0] == 200
             result = as_dict(api.post(url, **from_dict({
-                "test":   "send_email_by_event",
-                "repeat": repeat,
-                "sleep":  0,
+                "test": "urlopen_by_event",
+                "url":  httpserver.url,
             })))
             assert result[0] == 200
             for (job_id, job_info) in result[1]["result"].items():
@@ -186,4 +180,4 @@ def _test_api_v1_jobs_execution(smtpserver, method, find, repeat):
                     break
                 time.sleep(1)
             assert result[0] == 200
-            assert len(smtpserver.outbox) == repeat
+            assert result[1]["result"]["exc"] is None, pprint.pformat(result)

@@ -14,15 +14,14 @@ if __name__ == "__main__":
         platforms="any",
 
         packages=[
+            "powny",
             "powny.core",
             "powny.core.api",
             "powny.core.apps",
             "powny.core.optconf",  # TODO: Make a separate package
             "powny.core.optconf.loaders",
+            "powny.backends",
             "powny.backends.zookeeper",
-            "powny.helpers.cmp",
-            "powny.helpers.email",
-            "powny.helpers.hipchat",
             "powny.testing",
         ],
 
@@ -30,12 +29,6 @@ if __name__ == "__main__":
             "powny.core.api": ["templates/*.html"],
             "powny.core.apps": ["configs/*.yaml"],
         },
-
-        namespace_packages=[
-            "powny",
-            "powny.backends",
-            "powny.helpers",
-        ],
 
         entry_points={
             "console_scripts": [
@@ -71,8 +64,5 @@ if __name__ == "__main__":
             "tabloid",
             "colorama",
             "pygments",
-
-            # Helpers
-            "requests",
         ],
     )
