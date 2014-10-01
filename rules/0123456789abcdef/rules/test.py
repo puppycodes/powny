@@ -1,30 +1,35 @@
-import time
+import urllib.request
 
-import powny.core
-from powny.helpers import cmp
-from powny.helpers import email
+from powny.core import (
+    expose,
+    on_event,
+    match_event,
+    save_job_state,
+)
 
 
 # =====
-@powny.core.expose
+@expose
 def empty_method(**event):
     pass
 
-@powny.core.expose
-@powny.core.on_event
+
+@expose
+@on_event
 def empty_handler(**event):
     pass
 
 
 # =====
-@powny.core.expose
-def send_email_by_event(repeat, sleep, **_):
-    for count in range(repeat):
-        email.send_email("root@localhost", str(count), "Test")
-        time.sleep(sleep)
+@expose
+def do_urlopen(url, **_):
+    for _ in range(3):
+        urllib.request.build_opener().open(url)
+        save_job_state()
 
-@powny.core.expose
-@powny.core.on_event
-@powny.core.match_event(cmp.equal("test", "send_email_by_event"))
-def send_email_by_event_handler(**event):
-    send_email_by_event(**event)
+
+@expose
+@on_event
+@match_event(lambda event: event["test"] == "urlopen_by_event")
+def urlopen_by_event(**event):
+    do_urlopen(**event)
