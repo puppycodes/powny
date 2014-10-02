@@ -77,7 +77,7 @@ class Client:
     def get_options(cls):
         return {
             "nodes": optconf.Option(default=["localhost:2181"], help="List of hosts to connect (in host:port format)"),
-            "timeout": optconf.Option(default=10, help="The longest to wait for a Zookeeper connection"),
+            "timeout": optconf.Option(default=10.0, help="The longest to wait for a Zookeeper connection"),
             "start_timeout": optconf.Option(default=10.0, help="Timeout of the initial connection"),
             "start_retries": optconf.Option(default=None, type=int, help="The number of attempts the initial "
                                                                          "connection to ZooKeeper (0=infinite)"),
