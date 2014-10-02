@@ -77,7 +77,7 @@ class Client:
     def get_options(cls):
         return {
             "nodes": optconf.Option(default=["localhost:2181"], help="List of hosts to connect (in host:port format)"),
-            "timeout": optconf.Option(default=10, help="The longest to wait for a Zookeeper connection"),
+            "timeout": optconf.Option(default=10.0, help="The longest to wait for a Zookeeper connection"),
             "start_timeout": optconf.Option(default=10.0, help="Timeout of the initial connection"),
             "start_retries": optconf.Option(default=None, type=int, help="The number of attempts the initial "
                                                                          "connection to ZooKeeper (0=infinite)"),
@@ -148,9 +148,31 @@ class Client:
     # ===
 
     def get_server_info(self):
+        # http://zookeeper.apache.org/doc/current/zookeeperAdmin.html#sc_zkCommands
+        return {
+            "envi": self._get_info_envi(),
+            "mntr": self._get_info_mntr(),
+        }
+
+    def _get_info_envi(self):
+        # $ echo envi | netcat 127.0.0.1 2181
+        # Environment:
+        # zookeeper.version=3.4.6-1569965, built on 02/20/2014 09:09 GMT
+        # host.name=localhost.localdomain
+        # ...
         return dict(
             item.split("=", 1)
-            for item in filter(None, self.zk.command(b"envi").split("\n")[1:])
+            for item in self.zk.command(b"envi").split("\n")[1:-1]
+        )
+
+    def _get_info_mntr(self):
+        # $ echo mntr | netcat 127.0.0.1 2181
+        # zk_version      3.4.6-1569965, built on 02/20/2014 09:09 GMT
+        # zk_avg_latency  0
+        # ...
+        return dict(
+            item.split("\t", 1)
+            for item in self.zk.command(b"mntr").split("\n")[:-1]
         )
 
     # ===

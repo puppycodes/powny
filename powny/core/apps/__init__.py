@@ -174,7 +174,7 @@ def _get_config_scheme():
         "api": {
             "backend_connections": optconf.Option(default=5, help="Maximum number of backend connections"),
             "input_limit": optconf.Option(default=5000, help="Limit of the input queue before 503 error"),
-            "delete_timeout": optconf.Option(default=15, help="Timeout for stop/delete operation"),
+            "delete_timeout": optconf.Option(default=15.0, help="Timeout for stop/delete operation"),
 
             "run": {
                 "host": optconf.Option(default="localhost", help="The host for the internal server"),
