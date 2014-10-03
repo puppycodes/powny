@@ -10,9 +10,9 @@ from . import Section
 # =====
 def make_config_dump(config, split_by, width=None):
     table = tabloid.FormattedTable(width=width, header_background=colorama.Back.BLUE)
-    table.add_column("Option", _highlight_option)
-    table.add_column("Value", _highlight_python)
-    table.add_column("Default", _highlight_python)
+    table.add_column("Option", _format_option)
+    table.add_column("Value", _format_value)
+    table.add_column("Default", _format_default_value)
     table.add_column("Help")
 
     for row in _make_plain_dump(config, tuple(map(tuple, split_by))):
@@ -23,22 +23,25 @@ def make_config_dump(config, split_by, width=None):
     return "\n".join(table.get_table())
 
 
-def _highlight_option(name):
-    if "!" in name:  # FIXME: crutch for tabloid
-        name = name.replace("!", " ")
+def _format_option(name, row):
+    if row[1] != row[2]:
         return "{}{}{}".format(colorama.Fore.RED, name, colorama.Style.RESET_ALL)
     return name
 
 
-def _highlight_python(code):
-    if len(code) > 0:
-        return pygments.highlight(
-            code,
-            pygments.lexers.PythonLexer(),
-            pygments.formatters.TerminalFormatter(bg="dark"),
-        ).replace("\n", "")
+def _format_value(value, _):
+    return pygments.highlight(
+        value,
+        pygments.lexers.PythonLexer(),
+        pygments.formatters.TerminalFormatter(bg="dark"),
+    ).replace("\n", "")
+
+
+def _format_default_value(value, row):
+    if row[1] != row[2]:
+        return _format_value(value, None)
     else:
-        return code
+        return " " * len(value)
 
 
 def _make_plain_dump(config, split_by=(), path=()):
@@ -50,11 +53,10 @@ def _make_plain_dump(config, split_by=(), path=()):
             plain += _make_plain_dump(value, split_by, path + (key,))
         else:
             default = config._get_default(key)  # pylint: disable=protected-access
-            changed = (default != value)
             plain.append((
-                ".".join(path + (key,)).replace("_", "-") + ("!" if changed else ""),  # FIXME: crutch for tabloid
+                ".".join(path + (key,)),
                 repr(value),
-                (repr(default) if changed else ""),
+                repr(default),
                 config._get_help(key),  # pylint: disable=protected-access
             ))
     return plain

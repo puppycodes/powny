@@ -21,6 +21,7 @@ from .. import tools
 from .. import backends
 
 from .. import optconf
+from ..optconf.dumper import make_config_dump
 from ..optconf.loaders.yaml import load_file as load_yaml_file
 
 
@@ -84,7 +85,7 @@ def init(name, description, args=None):
 
     # Print config dump and exit
     if options.dump_config:
-        print(optconf.dumper.make_config_dump(_config, split_by=((), ("helpers",))))
+        print(make_config_dump(_config, split_by=((), ("helpers",))))
         sys.exit(0)
 
     return _config
