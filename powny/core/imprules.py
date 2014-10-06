@@ -57,10 +57,9 @@ class Loader:
                 if self._group_by is None:
                     self._cache[path] = (exposed_methods, errors)
                 else:
-                    methods = {}
+                    methods = {sub: {} for (sub, _) in self._group_by}
                     for (name, method) in exposed_methods.items():
                         for (sub, test) in self._group_by:
-                            methods.setdefault(sub, {})
                             if test(method):
                                 methods[sub][name] = method
                                 break
