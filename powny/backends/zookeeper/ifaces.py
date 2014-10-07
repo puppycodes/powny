@@ -382,15 +382,14 @@ class CasStorage:
                     stored=from_isotime(old["stored"]),
                 )
 
-            write_ok = None
             if value is not CasNoValue:
                 if version is not None and old.version is not None and version <= old.version:
                     write_ok = False
                     msg = "Can't rewrite '{}' with version {} (old version: {})".format(path, version, old.version)
-                    if not fatal_write:
-                        get_logger().debug(msg)
-                    else:
+                    if fatal_write:
                         raise CasVersionError(msg)
+                    else:
+                        get_logger().debug(msg)
                 else:
                     with self._client.get_write_request("cas_save()") as request:
                         request.set(path, {
@@ -399,5 +398,7 @@ class CasStorage:
                             "stored":  make_isotime(),
                         })
                         write_ok = True
+            else:
+                write_ok = None
 
         return (old, write_ok)
