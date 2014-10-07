@@ -25,6 +25,27 @@ def make_job_id():
 
 
 # =====
+class CasNoValueError(Exception):
+    pass
+
+
+class CasVersionError(Exception):
+    pass
+
+
+class CasNoValue:  # Empty value for CAS-storage
+    def __new__(cls):
+        raise RuntimeError("Use a class rather than an object of class")
+
+
+CasData = collections.namedtuple("CasData", (
+    "value",
+    "version",
+    "stored",
+))
+
+
+# =====
 def get_backend_class(name):
     module = importlib.import_module("powny.backends." + name)
     return getattr(module, "Backend")

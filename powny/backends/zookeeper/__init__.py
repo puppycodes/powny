@@ -19,6 +19,7 @@ class Backend:
         self.jobs_gc = ifaces.JobsGc(self._client)  # Interface for Collector
         self.rules = ifaces.Rules(self._client)  # API and internal interface to control the rules
         self.system_apps_state = ifaces.AppsState(self._client)  # API and internal interface to the system statistics
+        self.cas_storage = ifaces.CasStorage(self._client)  # Basic CAS storage for user scripts
 
     @classmethod
     def get_options(cls):

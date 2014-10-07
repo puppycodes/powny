@@ -220,3 +220,76 @@ class TestAppsState:
                 "baz": 3,
             },
         }
+
+
+class TestCasStorage:
+    def test_replace(self, zclient):
+        ifaces.init(zclient)
+        cas_storage = ifaces.CasStorage(zclient)
+
+        with pytest.raises(backends.CasNoValueError):
+            cas_storage.replace_value("/foo/bar")
+        (old, write_ok) = cas_storage.replace_value("/foo/bar", default="test")
+        assert old.value == "test"
+        assert old.version is None
+        assert write_ok is None
+
+        (old, write_ok) = cas_storage.replace_value("/foo/bar", value=1, default=0)
+        assert old.value == 0
+        assert old.version is None
+        assert write_ok is True
+
+        (old, write_ok) = cas_storage.replace_value("/foo/bar", value=2, default=0)
+        assert old.value == 1
+        assert old.version is None
+        assert write_ok is True
+
+    def test_replace_versioned(self, zclient):
+        ifaces.init(zclient)
+        cas_storage = ifaces.CasStorage(zclient)
+
+        (old, write_ok) = cas_storage.replace_value("/foo/bar", value=1, version=0, default=0)
+        assert old.value == 0
+        assert old.version is None
+        assert write_ok is True
+
+        (old, write_ok) = cas_storage.replace_value("/foo/bar", value=2, version=1, default=0)
+        assert old.value == 1
+        assert old.version == 0
+        assert write_ok is True
+
+        with pytest.raises(backends.CasVersionError):
+            cas_storage.replace_value("/foo/bar", value=3, version=0, default=0)
+
+        (old, write_ok) = cas_storage.replace_value("/foo/bar", value=3, version=0, default=0, fatal_write=False)
+        assert old.value == 2
+        assert old.version == 1
+        assert write_ok is False
+
+        (old, write_ok) = cas_storage.replace_value("/foo/bar", value=3, version=2, default=0)
+        assert old.value == 2
+        assert old.version == 1
+        assert write_ok is True
+
+    def test_get_set(self, zclient):
+        ifaces.init(zclient)
+        cas_storage = ifaces.CasStorage(zclient)
+
+        with pytest.raises(backends.CasNoValueError):
+            cas_storage.get_value("/foo/bar")
+
+        result = cas_storage.get_value("/foo/bar", default="test")
+        assert result.value == "test"
+        assert result.version is None
+
+        assert cas_storage.set_value("/foo/bar", value=1, version=0) is True
+        result = cas_storage.get_value("/foo/bar")
+        assert result.value == 1
+        assert result.version == 0
+
+        assert cas_storage.set_value("/foo/bar", value=2, version=0) is False
+
+        assert cas_storage.set_value("/foo/bar", value=2, version=1) is True
+        result = cas_storage.get_value("/foo/bar")
+        assert result.value == 2
+        assert result.version == 1

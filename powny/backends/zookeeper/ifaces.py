@@ -3,9 +3,15 @@ import time
 
 from contextlog import get_logger
 
-from ...core.backends import DeleteTimeoutError
-from ...core.backends import ReadyJob
-from ...core.backends import make_job_id
+from ...core.backends import (
+    DeleteTimeoutError,
+    ReadyJob,
+    make_job_id,
+    CasNoValueError,
+    CasVersionError,
+    CasNoValue,
+    CasData,
+)
 from ...core.tools import (
     make_isotime,
     from_isotime,
@@ -21,6 +27,8 @@ _PATH_JOBS_COUNTER = zoo.join(_PATH_SYSTEM, "jobs_counter")
 _PATH_RULES_HEAD = zoo.join(_PATH_SYSTEM, "rules_head")
 _PATH_APPS_STATE = zoo.join(_PATH_SYSTEM, "apps_state")
 _PATH_JOBS = "/jobs"
+_PATH_USER = "/user"
+_PATH_CAS_STORAGE = zoo.join(_PATH_USER, "cas_storage")
 
 
 def _get_path_job(job_id):
@@ -51,6 +59,14 @@ def _parse_app_state_node(node_name):
     return tuple(reversed(node_name.split("@")))
 
 
+def _get_path_cas_storage(path):
+    return zoo.join(_PATH_CAS_STORAGE, path)
+
+
+def _get_path_cas_storage_lock(path):
+    return zoo.join(_get_path_cas_storage(path), "lock")
+
+
 # =====
 def init(client):
     logger = get_logger()
@@ -61,6 +77,8 @@ def init(client):
         _PATH_RULES_HEAD,
         _PATH_APPS_STATE,
         _PATH_JOBS,
+        _PATH_USER,
+        _PATH_CAS_STORAGE,
     ):
         try:
             with client.get_write_request("backend::init()::create({})".format(path)) as request:
@@ -308,3 +326,78 @@ class AppsState:
             full_state.setdefault(node_name, {})
             full_state[node_name][app_name] = app_state
         return full_state
+
+
+class CasStorage:
+    """
+        Interface to abstract CAS storage for user scripts.
+    """
+
+    def __init__(self, client):
+        self._client = client
+
+    def set_value(self, path, value, version=None):
+        try:
+            self.replace_value(path, value=value, version=version, default=None)
+            return True
+        except CasVersionError:
+            get_logger().exception("Can't set '%s' value with version %s", path, version)
+            return False
+
+    def get_value(self, path, default=CasNoValue):
+        return self.replace_value(path, value=CasNoValue, default=default)[0]
+
+    def replace_value(self, path, value=CasNoValue, version=None, default=CasNoValue, fatal_write=True):
+        """
+            replace_value() - implementation of the CAS, stores the new value if it is superior to the
+                              existing version. Standard kazoo set() require strict comparison and
+                              incremented version of the data themselves.
+
+            If:
+                value == CasNoValue -- read operation
+                value == ... -- write the new value and return the old
+
+                version is None -- write
+                version is not None -- write if version >= old_version
+        """
+
+        path = _get_path_cas_storage(path)
+
+        try:
+            with self._client.get_write_request("cas_ensure_path()") as request:
+                request.create(path, recursive=True)
+        except zoo.NodeExistsError:
+            pass
+
+        with self._client.get_lock(_get_path_cas_storage_lock(path)):
+            old = self._client.get(path)
+            if old is zoo.EmptyValue:
+                if default is CasNoValue:
+                    raise CasNoValueError()
+                old = CasData(value=default, version=None, stored=None)
+            else:
+                old = CasData(
+                    value=old["value"],
+                    version=old["version"],
+                    stored=from_isotime(old["stored"]),
+                )
+
+            write_ok = None
+            if value is not CasNoValue:
+                if version is not None and old.version is not None and version <= old.version:
+                    write_ok = False
+                    msg = "Can't rewrite '{}' with version {} (old version: {})".format(path, version, old.version)
+                    if not fatal_write:
+                        get_logger().debug(msg)
+                    else:
+                        raise CasVersionError(msg)
+                else:
+                    with self._client.get_write_request("cas_save()") as request:
+                        request.set(path, {
+                            "value":   value,
+                            "version": version,
+                            "stored":  make_isotime(),
+                        })
+                        write_ok = True
+
+        return (old, write_ok)
