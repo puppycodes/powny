@@ -22,6 +22,10 @@ def get_extra():
     return get_context().get_extra()  # pylint: disable=maybe-no-member
 
 
+def get_cas_storage():
+    return get_context().get_cas_storage()  # pylint: disable=maybe-no-member
+
+
 def save_job_state():
     return get_context().save()  # pylint: disable=maybe-no-member
 
@@ -100,6 +104,9 @@ class JobThread(threading.Thread):
 
     def get_extra(self):
         return copy.deepcopy(self._extra)
+
+    def get_cas_storage(self):
+        return self._backend.cas_storage
 
     def save(self):
         stack = traceback.extract_stack(inspect.currentframe())

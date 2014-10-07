@@ -18,6 +18,7 @@ from .context import (
     get_context,
     get_job_id,
     get_extra,
+    get_cas_storage,
     save_job_state,
 )
 
