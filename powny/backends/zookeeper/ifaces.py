@@ -109,6 +109,9 @@ class JobsControl:
     def get_jobs_count(self):
         return self._client.get_children_count(_PATH_JOBS)
 
+    def get_counter_value(self):
+        return self._jobs_counter.get()
+
     def add_job(self, version, method_name, kwargs, state):
         job_id = make_job_id()
         number = self._jobs_counter.increment()

@@ -15,8 +15,9 @@ class StateResource(Resource):
                    "message": "<...>",
                    "result": {
                        "jobs": {
-                           "input": <number>,
-                           "all":   <number>,
+                           "input":   <number>,
+                           "all":     <number>,
+                           "counter": <number>,
                        },
                        "apps": {
                            "<node_name>": {
@@ -53,8 +54,9 @@ class StateResource(Resource):
         with self._pool.get_backend() as backend:
             result = {
                 "jobs": {
-                    "input": backend.jobs_control.get_input_size(),
-                    "all":   backend.jobs_control.get_jobs_count(),
+                    "input":   backend.jobs_control.get_input_size(),
+                    "all":     backend.jobs_control.get_jobs_count(),
+                    "counter": backend.jobs_control.get_counter_value(),
                 },
                 "apps": backend.system_apps_state.get_full_state(),
             }
