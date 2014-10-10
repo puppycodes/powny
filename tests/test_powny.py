@@ -80,6 +80,7 @@ def test_api_v1_system_state():
             assert result[1]["message"] == "The system statistics"
             assert result[1]["result"]["jobs"]["input"] == 0
             assert result[1]["result"]["jobs"]["all"] == 0
+            assert result[1]["result"]["jobs"]["all"] == 0
 
             assert as_dict(api.post("/v1/rules", **from_dict({"head": "0123456789abcdef"})))[0] == 200
             assert as_dict(api.post("/v1/jobs", **from_dict({})))[0]
@@ -89,6 +90,7 @@ def test_api_v1_system_state():
             result = as_dict(api.get("/v1/system/state"))
             assert result[0] == 200
             assert result[1]["result"]["jobs"]["input"] == 0
+            assert result[1]["result"]["jobs"]["all"] == 1
             assert result[1]["result"]["jobs"]["all"] == 1
 
 

@@ -60,6 +60,9 @@ if __name__ == "__main__":
             "colorlog",
             "pkginfo",
 
+            # Backdoor
+            "manhole",
+
             # Optconf
             "tabloid",
             "colorama",

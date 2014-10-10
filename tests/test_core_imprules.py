@@ -42,6 +42,7 @@ class TestImpRules:
         "powny.core.apps.api",
         "powny.core.apps.collector",
         "powny.core.apps.worker",
+        "powny.core.backdoor",
         "powny.core.backends",
         "powny.core.context",
         "powny.core.imprules",

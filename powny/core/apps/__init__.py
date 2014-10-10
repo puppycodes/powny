@@ -24,6 +24,8 @@ from .. import optconf
 from ..optconf.dumper import make_config_dump
 from ..optconf.loaders.yaml import load_file as load_yaml_file
 
+from .. import backdoor
+
 
 # =====
 _config = None
@@ -91,6 +93,14 @@ def init(name, description, args=None):
     return _config
 
 
+def init_backdoor(config):
+    if config.backdoor.enabled:
+        backdoor.start(
+            port=config.backdoor.port,
+            listen=config.backdoor.listen,
+        )
+
+
 class Application(metaclass=abc.ABCMeta):
     def __init__(self, app_name, config):
         self._app_name = app_name
@@ -124,6 +134,7 @@ class Application(metaclass=abc.ABCMeta):
 
     def run(self):
         logger = get_logger(app=self._app_name)  # App-level context
+        init_backdoor(self._config)
         self._respawns = 0
         while not self._stop_event.is_set():
             if self._app_config.max_fails is not None and self._respawns >= self._app_config.max_fails + 1:
@@ -166,6 +177,12 @@ def _get_config_scheme():
             "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
             "rules_module": optconf.Option(default="rules", help="Name of the rules module/package"),
             "rules_dir": optconf.Option(default="rules", help="Path to rules root"),
+        },
+
+        "backdoor": {
+            "enabled": optconf.Option(default=False, help="Enable telnet-based backdoor to Python process"),
+            "port": optconf.Option(default=2200, help="Backdoor port"),
+            "listen": optconf.Option(default=5, help="Listen N clients"),
         },
 
         "helpers": {
