@@ -64,7 +64,7 @@ def _get_path_cas_storage(path):
 
 
 def _get_path_cas_storage_lock(path):
-    return zoo.join(_get_path_cas_storage(path), "lock")
+    return zoo.join(_get_path_cas_storage(path), "__lock__")
 
 
 # =====
