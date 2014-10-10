@@ -116,6 +116,7 @@ class Client:
             hosts=self._hosts,
             timeout=self._timeout,
             randomize_hosts=self._randomize_hosts,
+            command_retry={"max_delay": 60},
         )
         if self._chroot is not None:
             self.zk.chroot = self._chroot

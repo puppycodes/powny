@@ -205,6 +205,10 @@ class JobsProcess:
             lock.release(request)
             lock.acquire(request)
 
+    def release_job(self, job_id):
+        with self._client.get_write_request("release_job()") as request:
+            self._client.get_lock(_get_path_job_lock(job_id)).release(request)
+
     def is_deleted_job(self, job_id):
         return self._client.exists(_get_path_job_delete(job_id))
 
@@ -247,7 +251,10 @@ class JobsGc:
             lock = self._client.get_lock(_get_path_job_lock(job_id))
 
             if (to_delete or taken) and not lock.is_locked():
-                finished = self._client.get(_get_path_job_state(job_id))["finished"]
+                try:
+                    finished = self._client.get(_get_path_job_state(job_id))["finished"]
+                except zoo.NoNodeError:
+                    continue
                 if to_delete or finished is None or from_isotime(finished) + done_lifetime <= time.time():
                     try:
                         with self._client.get_write_request("get_unfinished_jobs()") as request:
