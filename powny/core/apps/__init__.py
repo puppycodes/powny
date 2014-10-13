@@ -38,7 +38,7 @@ def get_config(check_helpers=()):
     return _config
 
 
-def init(name, description, args=None):
+def init(name, description, args=None, raw_config=None):
     global _config
     assert _config is None, "init() has already been called"
 
@@ -50,11 +50,11 @@ def init(name, description, args=None):
     options = args_parser.parse_args(args)
 
     # Load configs
-    raw = {}
+    raw_config = (raw_config or {})
     if options.config_file_path is not None:
-        raw = load_yaml_file(options.config_file_path)
+        raw_config = load_yaml_file(options.config_file_path)
     scheme = _get_config_scheme()
-    config = optconf.make_config(raw, scheme)
+    config = optconf.make_config(raw_config, scheme)
 
     # Configure info module
     instance.node_name = config.core.node_name
@@ -64,7 +64,7 @@ def init(name, description, args=None):
     contextlog.patch_logging()
     contextlog.patch_threading()
     logging.captureWarnings(True)
-    logging_config = raw.get("logging")
+    logging_config = raw_config.get("logging")
     if logging_config is None:
         logging_config = yaml.load(pkgutil.get_data(__name__, "configs/logging.yaml"))
     if options.log_level is not None:
@@ -75,7 +75,7 @@ def init(name, description, args=None):
     # Update scheme for backend opts
     backend_scheme = backends.get_backend_class(config.core.backend).get_options()
     typetools.merge_dicts(scheme, {"backend": backend_scheme})
-    config = optconf.make_config(raw, scheme)
+    config = optconf.make_config(raw_config, scheme)
 
     # Update scheme for selected helpers/modules
     for helper_name in config.helpers.configure:
@@ -86,7 +86,7 @@ def init(name, description, args=None):
         typetools.merge_dicts(scheme, {"helpers": get_options()})
 
     # Provide global configuration for helpers
-    _config = optconf.make_config(raw, scheme)
+    _config = optconf.make_config(raw_config, scheme)
 
     # Print config dump and exit
     if options.dump_config:
