@@ -112,7 +112,10 @@ class Application(metaclass=abc.ABCMeta):
         self._stop_event = threading.Event()
         self._respawns = 0
 
-    def make_write_app_state(self, app_state):
+    def stop(self):
+        self._stop_event.set()
+
+    def write_state(self, backend, app_state):
         instance_info = instance.get_info()
         state = {
             "when":     tools.make_isotime(),
@@ -122,10 +125,7 @@ class Application(metaclass=abc.ABCMeta):
             },
         }
         state["state"].update(app_state)
-        return (instance_info["node"], self._app_name, state)
-
-    def stop(self):
-        self._stop_event.set()
+        backend.system_apps_state.set_state(instance_info["node"], self._app_name, state)
 
     def get_backend_object(self):
         return backends.get_backend_class(self._config.core.backend)(**self._config.backend)

@@ -46,7 +46,7 @@ class _Worker(Application):
                 gen_jobs = backend.jobs_process.get_ready_jobs()
                 while not self._stop_event.is_set():
                     self._manager.manage(backend)
-                    self._write_app_state(backend)
+                    self._write_worker_state(backend)
 
                     if self._manager.get_current() >= self._app_config.max_jobs:
                         logger.debug("Have reached the maximum concurrent jobs (%d), sleeping %f seconds...",
@@ -69,12 +69,12 @@ class _Worker(Application):
                                 backend.jobs_process.release_job(job.job_id)
                                 self._not_started += 1
 
-    def _write_app_state(self, backend):
-        backend.system_apps_state.set_state(*self.make_write_app_state({
+    def _write_worker_state(self, backend):
+        self.write_state(backend, {
             "active":      self._manager.get_current(),
             "processed":   self._manager.get_finished(),
             "not_started": self._not_started,
-        }))
+        })
 
 
 class _JobsManager:
