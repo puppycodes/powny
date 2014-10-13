@@ -293,8 +293,8 @@ class _Lock:
     def is_locked(self):
         return (self._client.zk.exists(self._path) is not None)
 
-    def acquire(self, request):
-        request.create(self._path, ephemeral=True)
+    def acquire(self, request, value=EmptyValue):
+        request.create(self._path, value, ephemeral=True)
 
     def release(self, request):
         request.delete(self._path)

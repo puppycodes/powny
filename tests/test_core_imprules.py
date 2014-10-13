@@ -46,6 +46,7 @@ class TestImpRules:
         "powny.core.backends",
         "powny.core.context",
         "powny.core.imprules",
+        "powny.core.instance",
         "powny.core.optconf",
         "powny.core.optconf.dumper",
         "powny.core.optconf.loaders",

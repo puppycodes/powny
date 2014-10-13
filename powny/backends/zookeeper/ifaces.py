@@ -16,6 +16,7 @@ from ...core.tools import (
     make_isotime,
     from_isotime,
 )
+from ... core import instance
 
 from . import zoo
 
@@ -65,6 +66,14 @@ def _get_path_cas_storage(path):
 
 def _get_path_cas_storage_lock(path):
     return zoo.join(_get_path_cas_storage(path), "__lock__")
+
+
+def _make_lock_info(label):
+    return {
+        "from":     label,
+        "when":     make_isotime(),
+        "instance": instance.get_info(),
+    }
 
 
 # =====
@@ -161,7 +170,7 @@ class JobsControl:
             job_info = self._client.get(_get_path_job(job_id))  # init info
 
             job_info["deleted"] = self._client.exists(_get_path_job_delete(job_id))
-            job_info["locked"] = self._client.exists(_get_path_job_lock(job_id))
+            job_info["locked"] = self._client.get(_get_path_job_lock(job_id), None)
             job_info["taken"] = self._client.get(_get_path_job_taken(job_id), None)
 
             state_info = self._client.get(_get_path_job_state(job_id))
@@ -190,7 +199,8 @@ class JobsProcess:
             exec_info = self._client.get(_get_path_job_state(job_id))
 
             with self._client.get_write_request("get_ready_jobs()") as request:
-                self._client.get_lock(_get_path_job_lock(job_id)).acquire(request)
+                lock = self._client.get_lock(_get_path_job_lock(job_id))
+                lock.acquire(request, _make_lock_info("get_ready_jobs()"))
                 request.create(_get_path_job_taken(job_id), make_isotime())
                 self._input_queue.consume(request)
 
@@ -206,7 +216,7 @@ class JobsProcess:
             # Assign lock to current process
             lock = self._client.get_lock(_get_path_job_lock(job_id))
             lock.release(request)
-            lock.acquire(request)
+            lock.acquire(request, _make_lock_info("associate_job()"))
 
     def release_job(self, job_id):
         with self._client.get_write_request("release_job()") as request:
@@ -261,7 +271,7 @@ class JobsGc:
                 if to_delete or finished is None or from_isotime(finished) + done_lifetime <= time.time():
                     try:
                         with self._client.get_write_request("get_unfinished_jobs()") as request:
-                            lock.acquire(request)
+                            lock.acquire(request, _make_lock_info("get_unfinished_jobs()"))
                     except (zoo.NoNodeError, zoo.NodeExistsError):
                         continue
                     yield (job_id, to_delete or finished is not None)  # (id, done)

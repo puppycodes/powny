@@ -5,8 +5,6 @@ import pkgutil
 import threading
 import logging
 import logging.config
-import platform
-import socket
 import time
 import abc
 
@@ -19,6 +17,7 @@ from ulib import typetools
 
 from .. import tools
 from .. import backends
+from .. import instance
 
 from .. import optconf
 from ..optconf.dumper import make_config_dump
@@ -56,6 +55,10 @@ def init(name, description, args=None):
         raw = load_yaml_file(options.config_file_path)
     scheme = _get_config_scheme()
     config = optconf.make_config(raw, scheme)
+
+    # Configure info module
+    instance.node_name = config.core.node_name
+    instance.fqdn = config.core.fqdn
 
     # Configure logging
     contextlog.patch_logging()
@@ -110,19 +113,16 @@ class Application(metaclass=abc.ABCMeta):
         self._respawns = 0
 
     def make_write_app_state(self, app_state):
-        node_name = (self._config.core.node_name or platform.uname()[1])
+        instance_info = instance.get_info()
         state = {
-            "when": tools.make_isotime(),
-            "host": {
-                "node": node_name,
-                "fqdn": socket.getfqdn(),
-            },
+            "when":     tools.make_isotime(),
+            "instance": instance_info,
             "state": {
                 "respawns": self._respawns,
             },
         }
         state["state"].update(app_state)
-        return (node_name, self._app_name, state)
+        return (instance_info["node"], self._app_name, state)
 
     def stop(self):
         self._stop_event.set()
@@ -174,6 +174,7 @@ def _get_config_scheme():
     scheme = {
         "core": {
             "node_name": optconf.Option(default=None, type=str, help="Node name, must be a unique (uname by default)"),
+            "fqdn": optconf.Option(default=None, type=str, help="Machine FQDN (socket.getfqdn() by default)"),
             "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
             "rules_module": optconf.Option(default="rules", help="Name of the rules module/package"),
             "rules_dir": optconf.Option(default="rules", help="Path to rules root"),

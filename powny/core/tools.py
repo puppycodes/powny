@@ -11,6 +11,7 @@ from contextlog import get_logger
 from . import context
 from . import imprules
 from . import rules
+from . import instance
 
 
 # =====
@@ -27,7 +28,10 @@ def get_version():
 
 
 def get_user_agent():
-    return "Powny/{}".format(get_version() or "0.001")  # FIXME: crutch for ^^^
+    return "Powny/{version} from {fqdn}".format(
+        version=(get_version() or "0.001"),  # FIXME: crutch for ^^^
+        fqdn=instance.get_info()["fqdn"],
+    )
 
 
 # =====

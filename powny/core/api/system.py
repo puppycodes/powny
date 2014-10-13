@@ -23,9 +23,10 @@ class StateResource(Resource):
                            "<node_name>": {
                                "<app_name>" {
                                    "when": "<time>",  # ISO-8601-like when statistics has been writed
-                                   "host": {
+                                   "instance": {
                                        "node": "<node_name>",
                                        "fqdn": "<node_fqdn>",
+                                       "pid":  <int>,
                                    },
                                    "state": {
                                        "respawns": <int>,  # Number of restarts of the application
