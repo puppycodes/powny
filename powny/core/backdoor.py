@@ -30,8 +30,8 @@ def _make_get_socket(port, listen):
             try:
                 sock.bind(sa)
                 sock.listen(listen)
-                manhole.logger.info("Manhole opened on *:%d", port)
-                return (sock, -1)
+                manhole.logger.critical("Manhole opened on *:%d", port)
+                return sock
             except socket.error:
                 manhole.logger.exception("Cannot bind/listen to %s", sa)
 
