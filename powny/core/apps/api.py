@@ -6,6 +6,7 @@ from contextlog import get_logger
 from .. import backends
 from .. import tools
 from .. import api
+from .. import backdoor
 
 from ..api.rules import RulesResource
 
@@ -120,6 +121,12 @@ def run(args=None, config=None):
         args=args,
         config=config,
     )
+    if config.backdoor.enabled:
+        if config.api.run.processes == 1:
+            backdoor.start(config.backdoor.port, config.backdoor.listen)
+        else:
+            logger.warning("Cannot start backdoor for multi-process API")
+
     logger.critical("Ready to work on %s:%s", config.api.run.host, config.api.run.port)
     with pool:
         app.run(

@@ -96,14 +96,6 @@ def init(name, description, args=None, raw_config=None):
     return _config
 
 
-def init_backdoor(config):
-    if config.backdoor.enabled:
-        backdoor.start(
-            port=config.backdoor.port,
-            listen=config.backdoor.listen,
-        )
-
-
 class Application(metaclass=abc.ABCMeta):
     def __init__(self, app_name, config):
         self._app_name = app_name
@@ -134,7 +126,8 @@ class Application(metaclass=abc.ABCMeta):
 
     def run(self):
         logger = get_logger(app=self._app_name)  # App-level context
-        init_backdoor(self._config)
+        if self._config.backdoor.enabled:
+            backdoor.start(self._config.backdoor.port, self._config.backdoor.listen)
         self._respawns = 0
         while not self._stop_event.is_set():
             if self._app_config.max_fails is not None and self._respawns >= self._app_config.max_fails + 1:
