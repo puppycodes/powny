@@ -15,8 +15,8 @@ from ...core.backends import (
 from ...core.tools import (
     make_isotime,
     from_isotime,
+    get_instance_info,
 )
-from ... core import instance
 
 from . import zoo
 
@@ -72,7 +72,7 @@ def _make_lock_info(label):
     return {
         "from":     label,
         "when":     make_isotime(),
-        "instance": instance.get_info(),
+        "instance": get_instance_info(),
     }
 
 

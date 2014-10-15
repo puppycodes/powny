@@ -1,7 +1,9 @@
 import os
-import time
+import socket
+import platform
 import datetime
 import calendar
+import time
 
 import dateutil.parser
 import pkginfo
@@ -11,10 +13,21 @@ from contextlog import get_logger
 from . import context
 from . import imprules
 from . import rules
-from . import instance
 
 
 # =====
+node_name = None
+fqdn = None
+
+
+def get_instance_info():
+    return {
+        "node": (node_name or platform.uname()[1]),
+        "fqdn": (fqdn or socket.getfqdn()),
+        "pid":  os.getpid(),
+    }
+
+
 def get_version():
     try:
         pkg = pkginfo.get_metadata("powny")
@@ -30,7 +43,7 @@ def get_version():
 def get_user_agent():
     return "Powny/{version} from {fqdn}".format(
         version=(get_version() or "0.001"),  # FIXME: crutch for ^^^
-        fqdn=instance.get_info()["fqdn"],
+        fqdn=get_instance_info()["fqdn"],
     )
 
 

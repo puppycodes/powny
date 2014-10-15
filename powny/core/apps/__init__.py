@@ -17,7 +17,6 @@ from ulib import typetools
 
 from .. import tools
 from .. import backends
-from .. import instance
 
 from .. import optconf
 from ..optconf.dumper import make_config_dump
@@ -57,8 +56,8 @@ def init(name, description, args=None, raw_config=None):
     config = optconf.make_config(raw_config, scheme)
 
     # Configure info module
-    instance.node_name = config.core.node_name
-    instance.fqdn = config.core.fqdn
+    tools.node_name = config.core.node_name
+    tools.fqdn = config.core.fqdn
 
     # Configure logging
     contextlog.patch_logging()
@@ -108,7 +107,7 @@ class Application(metaclass=abc.ABCMeta):
         self._stop_event.set()
 
     def write_state(self, backend, app_state):
-        instance_info = instance.get_info()
+        instance_info = tools.get_instance_info()
         state = {
             "when":     tools.make_isotime(),
             "instance": instance_info,

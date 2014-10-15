@@ -4,6 +4,7 @@
 from .tools import (
     get_version,
     get_user_agent,
+    get_instance_info,
 )
 
 from .apps import get_config
@@ -22,7 +23,5 @@ from .context import (
     get_cas_storage,
     save_job_state,
 )
-
-from .instance import get_info as get_instance_info
 
 __version__ = get_version()
