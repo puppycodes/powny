@@ -29,20 +29,13 @@ def get_instance_info():
 
 
 def get_version():
-    try:
-        pkg = pkginfo.get_metadata("powny")
-    except AttributeError:
-        # FIXME: Crutch for namespace packages on Python 3.2
-        #  File "/opt/pypy3/site-packages/pkginfo/installed.py", line 29, in read
-        #    package = self.package.__package__
-        #  AttributeError: 'module' object has no attribute '__package__'
-        return None
-    return (pkg.version if pkg is not None else None)
+    pkg = pkginfo.get_metadata("powny")
+    return (pkg.version if pkg is not None else None)  # None if not installed
 
 
 def get_user_agent():
     return "Powny/{version} from {fqdn}".format(
-        version=(get_version() or "0.001"),  # FIXME: crutch for ^^^
+        version=(get_version() or "0.001"),  # FIXME: crutch for not installed package
         fqdn=get_instance_info()["fqdn"],
     )
 
