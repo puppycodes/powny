@@ -38,7 +38,7 @@ def get_config(check_helpers=()):
 
 
 def init(name, description, args=None, raw_config=None):
-    assert not (args is not None and raw_config is not None), "args and raw_config are mutually exclusive"
+    assert args is None or raw_config is None, "args and raw_config are mutually exclusive"
 
     global _config
     assert _config is None, "init() has already been called"
