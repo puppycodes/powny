@@ -117,7 +117,7 @@ class Application(metaclass=abc.ABCMeta):
     def run(self):
         logger = get_logger(app=self._app_name)  # App-level context
         if self._config.backdoor.enabled:
-            backdoor.start(self._config.backdoor.port, self._config.backdoor.listen)
+            backdoor.start(self._config.backdoor.port)
         self._respawns = 0
         while not self._stop_event.is_set():
             if self._app_config.max_fails is not None and self._respawns >= self._app_config.max_fails + 1:
@@ -164,7 +164,6 @@ def _get_config_scheme():
         "backdoor": {
             "enabled": optconf.Option(default=False, help="Enable telnet-based backdoor to Python process"),
             "port": optconf.Option(default=2200, help="Backdoor port"),
-            "listen": optconf.Option(default=5, help="Listen N clients"),
         },
 
         "helpers": {

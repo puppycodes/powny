@@ -123,7 +123,7 @@ def run(args=None, config=None):
     )
     if config.backdoor.enabled:
         if config.api.run.processes == 1:
-            backdoor.start(config.backdoor.port, config.backdoor.listen)
+            backdoor.start(config.backdoor.port)
         else:
             logger.warning("Cannot start backdoor for multi-process API")
 

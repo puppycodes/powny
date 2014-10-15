@@ -8,14 +8,14 @@ from contextlog import get_logger
 import manhole
 
 
-def start(port, listen, reinstall_on_fork=False):
+def start(port, reinstall_on_fork=False):
     manhole.logger = get_logger()
-    manhole.Manhole.get_socket = staticmethod(_make_get_socket(port, listen))
+    manhole.Manhole.get_socket = staticmethod(_make_get_socket(port))
     manhole.ManholeConnection.check_credentials = staticmethod(_check_credentials)
     manhole.install(patch_fork=reinstall_on_fork)
 
 
-def _make_get_socket(port, listen):
+def _make_get_socket(port):
     def get_socket():
         for res in socket.getaddrinfo(None, port, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
             (af, sock_type, proto, _, sa) = res
@@ -29,7 +29,7 @@ def _make_get_socket(port, listen):
 
             try:
                 sock.bind(sa)
-                sock.listen(listen)
+                sock.listen(0)
                 manhole.logger.critical("Manhole opened on *:%d", port)
                 return sock
             except socket.error:
