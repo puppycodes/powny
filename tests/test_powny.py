@@ -130,7 +130,7 @@ def _test_api_v1_jobs_delete(url, kwargs):
             result = as_dict(api.get("/v1/jobs/" + job_id))
             assert result[0] == 200
             assert result[1]["result"]["method"] == method_name
-            assert result[1]["result"]["deleted"] is False
+            assert result[1]["result"]["deleted"] is None
 
             result = as_dict(api.delete("/v1/jobs/" + job_id))
             time.sleep(config.collector.empty_sleep)

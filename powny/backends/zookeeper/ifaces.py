@@ -150,7 +150,7 @@ class JobsControl:
         logger.info("Deleting job")
         try:
             with self._client.get_write_request("delete_job()") as request:
-                request.create(_get_path_job_delete(job_id))
+                request.create(_get_path_job_delete(job_id), make_isotime())
         except zoo.NodeExistsError:
             pass  # Lock on existent delete-op
         except zoo.NoNodeError:
@@ -169,7 +169,7 @@ class JobsControl:
         try:
             job_info = self._client.get(_get_path_job(job_id))  # init info
 
-            job_info["deleted"] = self._client.exists(_get_path_job_delete(job_id))
+            job_info["deleted"] = self._client.get(_get_path_job_delete(job_id), None)
             job_info["locked"] = self._client.get(_get_path_job_lock(job_id), None)
             job_info["taken"] = self._client.get(_get_path_job_taken(job_id), None)
 

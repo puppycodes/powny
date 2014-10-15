@@ -136,8 +136,8 @@ class JobControlResource(Resource):
                           "kwargs":   {...},       # Function arguments
                           "number":   <int>,       # The serial number of the job
                           "created":  <str>,       # ISO-8601-like time when the job was created
-                          "locked":   {...},       # Job in progress (null if not locked, dict with info otherwise)
-                          "deleted":  <bool>,      # Job is waiting for a forced stop and delete
+                          "locked":   <dict|null>, # Job in progress (null if not locked, dict with info otherwise)
+                          "deleted":  <str|null>,  # ISO-8601-like time when job was marked to stop and delete
                           "taken":    <str|null>,  # ISO-8601-like time when job was started (taken from queue)
                           "finished": <str|null>,  # ISO-8601-like time when job was finished
                           "stack":    [...],       # Stack snapshot on last checkpoint
