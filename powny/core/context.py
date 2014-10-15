@@ -132,9 +132,9 @@ class JobThread(threading.Thread):
         logger.debug("Activation...")
         while self._cont.is_pending():
             try:
-                logger.debug("Entering to continulet...")
+                logger.debug("Entering continulet...")
                 stack_or_retval = self._cont.switch()
-                logger.debug("Left continulet")
+                logger.debug("Continulet was exited")
                 if self._cont.is_pending():  # In progress
                     self._backend.jobs_process.save_job_state(
                         job_id=self._job_id,
