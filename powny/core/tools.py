@@ -21,11 +21,11 @@ def get_node_name():
 
 def get_version():
     pkg = pkginfo.get_metadata("powny")
-    return (pkg.version if pkg is not None else None)  # None if not installed
+    return (pkg.version if pkg is not None else "<unknown>")
 
 
 def get_user_agent():
-    return "Powny/{}".format(get_version() or "0.001")  # FIXME: crutch for not installed package
+    return "Powny/{}".format(get_version())
 
 
 # =====

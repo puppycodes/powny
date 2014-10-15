@@ -72,7 +72,7 @@ class InfoResource(Resource):
                    "status":  "ok",
                    "message": "<...>",
                    "result":  {
-                       "version": "<digits.and.dots>",
+                       "version": "<...>",
                        "backend": {
                            "name": "<backend_name>",
                            "info": {...},  # Backen-specific data
