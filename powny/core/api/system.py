@@ -20,14 +20,10 @@ class StateResource(Resource):
                            "counter": <number>,
                        },
                        "apps": {
-                           "<node_name>": {
-                               "<app_name>" {
+                           "<app_name>": {
+                               "<node_name>" {
                                    "when": "<time>",  # ISO-8601-like when statistics has been writed
-                                   "instance": {
-                                       "node": "<node_name>",
-                                       "fqdn": "<node_fqdn>",
-                                       "pid":  <int>,
-                                   },
+                                   "pid":  <int>,
                                    "state": {
                                        "respawns": <int>,  # Number of restarts of the application
                                        ...  # Application-specific fields
@@ -53,13 +49,16 @@ class StateResource(Resource):
 
     def process_request(self):
         with self._pool.get_backend() as backend:
+            full_apps_state = backend.system_apps_state.get_full_state()
+            full_apps_state.setdefault("worker", {})
+            full_apps_state.setdefault("collector", {})
             result = {
                 "jobs": {
                     "input":   backend.jobs_control.get_input_size(),
                     "all":     backend.jobs_control.get_jobs_count(),
                     "counter": backend.jobs_control.get_counter_value(),
                 },
-                "apps": backend.system_apps_state.get_full_state(),
+                "apps": full_apps_state,
             }
             return (result, self.name)
 

@@ -4,7 +4,7 @@
 from .tools import (
     get_version,
     get_user_agent,
-    get_instance_info,
+    get_node_name,
 )
 
 from .apps import get_config

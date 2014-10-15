@@ -61,4 +61,4 @@ class _Collector(Application):
         return bool(processed)
 
     def _write_collector_state(self, backend):
-        self.write_state(backend, {"processed": self._processed})
+        self.set_app_state(backend, {"processed": self._processed})

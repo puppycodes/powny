@@ -1,3 +1,4 @@
+import os
 import threading
 import time
 
@@ -15,7 +16,7 @@ from ...core.backends import (
 from ...core.tools import (
     make_isotime,
     from_isotime,
-    get_instance_info,
+    get_node_name,
 )
 
 from . import zoo
@@ -52,12 +53,12 @@ def _get_path_job_delete(job_id):
     return zoo.join(_get_path_job(job_id), "delete")
 
 
-def _get_path_app_state(node_name, app_name):
+def _get_path_app_state(app_name, node_name):
     return zoo.join(_PATH_APPS_STATE, "{}@{}".format(app_name, node_name))
 
 
 def _parse_app_state_node(node_name):
-    return tuple(reversed(node_name.split("@")))
+    return tuple(node_name.split("@"))
 
 
 def _get_path_cas_storage(path):
@@ -72,7 +73,10 @@ def _make_lock_info(label):
     return {
         "from":     label,
         "when":     make_isotime(),
-        "instance": get_instance_info(),
+        "instance": {
+            "node": get_node_name(),
+            "pid": os.getpid(),
+        },
     }
 
 
@@ -325,26 +329,34 @@ class AppsState:
     def __init__(self, client):
         self._client = client
 
-    def set_state(self, node_name, app_name, state):
-        path = _get_path_app_state(node_name, app_name)
+    def set_state(self, app_name, app_state):
+        state = {
+            "when": make_isotime(),
+            "pid": os.getpid(),
+            "state": app_state,
+        }
+        self._set_raw_state(app_name, get_node_name(), state)
+
+    def _set_raw_state(self, app_name, node_name, state):
+        path = _get_path_app_state(app_name, node_name)
         try:
             with self._client.get_write_request("set_state()") as request:
                 request.set(path, state)
         except zoo.NoNodeError:
             with self._client.get_write_request("create_state_node()") as request:
                 request.create(path, ephemeral=True)
-            self.set_state(node_name, app_name, state)
+            self._set_raw_state(app_name, node_name, state)
 
     def get_full_state(self):
         full_state = {}
         for app_state_node in self._client.get_children(_PATH_APPS_STATE):
-            (node_name, app_name) = _parse_app_state_node(app_state_node)
+            (app_name, node_name) = _parse_app_state_node(app_state_node)
             try:
-                app_state = self._client.get(_get_path_app_state(node_name, app_name))
+                state = self._client.get(_get_path_app_state(app_name, node_name))
             except zoo.NoNodeError:
                 continue
-            full_state.setdefault(node_name, {})
-            full_state[node_name][app_name] = app_state
+            full_state.setdefault(app_name, {})
+            full_state[app_name][node_name] = state
         return full_state
 
 

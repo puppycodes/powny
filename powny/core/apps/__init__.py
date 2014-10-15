@@ -57,10 +57,6 @@ def init(name, description, args=None, raw_config=None):
     scheme = _get_config_scheme()
     config = optconf.make_config(raw_config, scheme)
 
-    # Configure info module
-    tools.node_name = config.core.node_name
-    tools.fqdn = config.core.fqdn
-
     # Configure logging
     contextlog.patch_logging()
     contextlog.patch_threading()
@@ -108,17 +104,10 @@ class Application(metaclass=abc.ABCMeta):
     def stop(self):
         self._stop_event.set()
 
-    def write_state(self, backend, app_state):
-        instance_info = tools.get_instance_info()
-        state = {
-            "when":     tools.make_isotime(),
-            "instance": instance_info,
-            "state": {
-                "respawns": self._respawns,
-            },
-        }
-        state["state"].update(app_state)
-        backend.system_apps_state.set_state(instance_info["node"], self._app_name, state)
+    def set_app_state(self, backend, app_state):
+        app_state = app_state.copy()
+        app_state["respawns"] = self._respawns
+        backend.system_apps_state.set_state(self._app_name, app_state)
 
     def get_backend_object(self):
         return backends.get_backend_class(self._config.core.backend)(**self._config.backend)
@@ -167,8 +156,6 @@ def _valid_log_level(arg):
 def _get_config_scheme():
     scheme = {
         "core": {
-            "node_name": optconf.Option(default=None, type=str, help="Node name, must be a unique (uname by default)"),
-            "fqdn": optconf.Option(default=None, type=str, help="Machine FQDN (socket.getfqdn() by default)"),
             "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
             "rules_module": optconf.Option(default="rules", help="Name of the rules module/package"),
             "rules_dir": optconf.Option(default="rules", help="Path to rules root"),

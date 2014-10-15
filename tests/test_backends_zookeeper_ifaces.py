@@ -6,7 +6,10 @@ import time
 
 import pytest
 
-from powny.core import backends
+from powny.core import (
+    backends,
+    tools,
+)
 from powny.backends.zookeeper import ifaces
 
 from .fixtures.zookeeper import zclient  # pylint: disable=unused-import
@@ -207,19 +210,17 @@ class TestAppsState:
     def test_state_cycle(self, zclient):
         ifaces.init(zclient)
         apps_state_iface = ifaces.AppsState(zclient)
+
         assert apps_state_iface.get_full_state() == {}
-        apps_state_iface.set_state("xxx", "foo", 1)
-        apps_state_iface.set_state("xxx", "bar", 2)
-        apps_state_iface.set_state("yyy", "baz", 3)
-        assert apps_state_iface.get_full_state() == {
-            "xxx": {
-                "foo": 1,
-                "bar": 2,
-            },
-            "yyy": {
-                "baz": 3,
-            },
-        }
+        apps_state_iface.set_state("foo", 1)
+        apps_state_iface.set_state("bar", 2)
+        apps_state_iface.set_state("baz", 3)
+
+        apps_state = apps_state_iface.get_full_state()
+        node_name = tools.get_node_name()
+        assert isinstance(apps_state["foo"][node_name], dict)
+        assert isinstance(apps_state["bar"][node_name], dict)
+        assert isinstance(apps_state["baz"][node_name], dict)
 
 
 class TestCasStorage:

@@ -70,7 +70,7 @@ class _Worker(Application):
                                 self._not_started += 1
 
     def _write_worker_state(self, backend):
-        self.write_state(backend, {
+        self.set_app_state(backend, {
             "active":      self._manager.get_current(),
             "processed":   self._manager.get_finished(),
             "not_started": self._not_started,

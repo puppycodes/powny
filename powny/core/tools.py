@@ -1,5 +1,4 @@
 import os
-import socket
 import platform
 import datetime
 import calendar
@@ -16,16 +15,8 @@ from . import rules
 
 
 # =====
-node_name = None
-fqdn = None
-
-
-def get_instance_info():
-    return {
-        "node": (node_name or platform.uname()[1]),
-        "fqdn": (fqdn or socket.getfqdn()),
-        "pid":  os.getpid(),
-    }
+def get_node_name():
+    return platform.uname()[1]
 
 
 def get_version():
@@ -34,10 +25,7 @@ def get_version():
 
 
 def get_user_agent():
-    return "Powny/{version} from {fqdn}".format(
-        version=(get_version() or "0.001"),  # FIXME: crutch for not installed package
-        fqdn=get_instance_info()["fqdn"],
-    )
+    return "Powny/{}".format(get_version() or "0.001")  # FIXME: crutch for not installed package
 
 
 # =====
