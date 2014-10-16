@@ -60,10 +60,9 @@ class RulesResource(Resource):
                     400 -- Invalid HEAD (not a hex string).
     """
 
-    def __init__(self, pool, loader, rules_root):
+    def __init__(self, pool, loader):
         self._pool = pool
         self._loader = loader
-        self._rules_root = rules_root
 
     def process_request(self):
         with self._pool.get_backend() as backend:
@@ -82,7 +81,7 @@ class RulesResource(Resource):
         return ({"head": head}, "The HEAD has been updated")
 
     def _request_get(self, backend):
-        (head, exposed, errors, exc) = tools.get_exposed(backend, self._loader, self._rules_root)
+        (head, exposed, errors, exc) = tools.get_exposed(backend, self._loader)
         if exc is None:  # No errors
             if exposed is not None:
                 exposed_names = {group: list(methods) for (group, methods) in exposed.items()}

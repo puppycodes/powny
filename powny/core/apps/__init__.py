@@ -157,7 +157,6 @@ def _get_config_scheme():
     scheme = {
         "core": {
             "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
-            "rules_module": optconf.Option(default="rules", help="Name of the rules module/package"),
             "rules_dir": optconf.Option(default="rules", help="Path to rules root"),
         },
 

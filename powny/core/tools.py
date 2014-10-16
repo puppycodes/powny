@@ -1,4 +1,3 @@
-import os
 import platform
 import datetime
 import calendar
@@ -41,13 +40,9 @@ def from_isotime(line):
 
 
 # =====
-def make_rules_path(rules_root, head):
-    return os.path.join(rules_root, head)
-
-
-def make_loader(rules_base):
+def make_loader(rules_root):
     return imprules.Loader(
-        module_base=rules_base,
+        prefix=rules_root,
         group_by=(
             ("handlers", rules.is_event_handler),
             ("methods", lambda _: True),
@@ -55,14 +50,14 @@ def make_loader(rules_base):
     )
 
 
-def get_exposed(backend, loader, rules_root):
+def get_exposed(backend, loader):
     head = backend.rules.get_head()
     exposed = None
     errors = None
     exc = None
     if head is not None:
         try:
-            (exposed, errors) = loader.get_exposed(make_rules_path(rules_root, head))
+            (exposed, errors) = loader.get_exposed(head)
         except Exception as err:
             exc = "{}: {}".format(type(err).__name__, err)
             get_logger().exception("Can't load HEAD '%s'", head)

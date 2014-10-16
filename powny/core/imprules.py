@@ -23,39 +23,39 @@ def expose(method):
 class Loader:
     """
         Loader() обеспечивает загрузку и перезагрузку пакета с правилами.
-        При вызове get_exposed(), он добавляет указанный путь в sys.path и пытается
-        загрузить пакет module_base, рекурсивно загружая все подмодули в нем.
+        При вызове get_exposed(), он удаляет все модули, __file__ которых начинается с prefix.
+        Затем, в sys.path добавлется prefix/version и происходит загрузка всех пакетов и модулей
+        из этого каталога, рекурсивно.
         Далее, все функции, находящиеся в этих модулях, анализируются с помощью набора фильтров
         в group_by (вида {"key": lambda func: True}), и группируются по указанным ключам.
-        При вызове get_exposed() с другим путем, все модули, относящиеся к module_base
-        будут выгружены из sys.modules и заменены новыми. Данная операция не является
-        атомарной и функции, которые во время модулей обратились к пакету module_base,
-        потерпят сбой. FIXME: исправить это.
+        Операция замены модулей не является атомарной и функции, которые во время обновления
+        модулей обратились к оным, потерпят сбой. FIXME: исправить это.
     """
 
     _lock = threading.Lock()
 
-    def __init__(self, module_base, group_by=None):
-        self.module_base = module_base
+    def __init__(self, prefix, group_by=None):
+        self._prefix = prefix
         self._group_by = group_by
         self._cache = {}
-        self.thread = None
+        self._thread = None
 
-    def get_exposed(self, path):
+    def get_exposed(self, version):
         while True:
-            if path in self._cache:
-                return self._cache[path]
+            if version in self._cache:
+                return self._cache[version]
 
             if not self._lock.acquire(blocking=False):
                 self._lock.acquire()
                 self._lock.release()
                 continue
 
-            self.thread = threading.current_thread()
+            self._thread = threading.current_thread()
             try:
-                (exposed_methods, errors) = _get_exposed_unsafe(self.module_base, path)
+                _remove_modules_unsafe(self._prefix)
+                (exposed_methods, errors) = _get_exposed_unsafe(os.path.join(self._prefix, version))
                 if self._group_by is None:
-                    self._cache[path] = (exposed_methods, errors)
+                    self._cache[version] = (exposed_methods, errors)
                 else:
                     methods = {sub: {} for (sub, _) in self._group_by}
                     for (name, method) in exposed_methods.items():
@@ -63,26 +63,36 @@ class Loader:
                             if test(method):
                                 methods[sub][name] = method
                                 break
-                    self._cache[path] = (methods, errors)
-                return self._cache[path]
+                    self._cache[version] = (methods, errors)
+                return self._cache[version]
             finally:
-                self.thread = None
+                self._thread = None
                 self._lock.release()
 
 
 # =====
-def _get_exposed_unsafe(module_base, path):
-    assert os.access(path, os.F_OK), "Can't find module path: {}".format(path)
+def _remove_modules_unsafe(path):
     logger = get_logger()
-    logger.debug("Loading rules from path: %s; root: %s", path, module_base)
+    logger.debug("Removed modules with path: %s", path)
+
+    for name in list(sys.modules):
+        module_path = getattr(sys.modules[name], "__file__", None)
+        if module_path is None:
+            # FIXME: We don't support the namespaces yet
+            logger.debug("Ignored module/package without __file__ attribute: %s", name)
+        elif module_path.startswith(os.path.normpath(path) + os.path.sep):
+            logger.debug("Removed old module: %s", name)
+            del sys.modules[name]
+
+
+def _get_exposed_unsafe(path):
+    assert os.access(path, os.F_OK), "Can't find module path: {}".format(path)
+
+    logger = get_logger()
+    logger.debug("Loading rules from path: %s", path)
 
     sys.path.insert(0, path)
     try:
-        for name in list(sys.modules):
-            if name == module_base or name.startswith(module_base + "."):
-                logger.debug("Removed old module: %s", name)
-                del sys.modules[name]
-
         modules = {}
         errors = {}
         for name in _get_all_modules(path):
@@ -115,8 +125,8 @@ def _get_all_modules(base_path):
         if not _is_package_root(base_path, root):
             continue
         for (checker, transformer, items) in (
-            (_is_package, lambda path: path, dirs),
-            (_is_module, lambda path: path[:-3], files),
+            (_is_package, (lambda path: path), dirs),
+            (_is_module, (lambda path: path[:-3]), files),
         ):
             for item in items:
                 if _is_object_name(transformer(item)) and checker(os.path.join(root, item)):
@@ -125,12 +135,18 @@ def _get_all_modules(base_path):
     return sorted(objects)
 
 
-def _is_package_root(base_path, root):
-    root = os.path.relpath(root, base_path)
-    if root == ".":
+def _is_package_root(base_path, package_path):
+    """
+        Проверяет, что переданный package_path на самом деле является пакетом,
+        откусывая от его пути base_path:
+            package_path = base_path + / + rel_package_path
+    """
+
+    rel_package_path = os.path.relpath(package_path, base_path)
+    if rel_package_path == ".":
         return True
     path = base_path
-    for part in root.split(os.path.sep):
+    for part in rel_package_path.split(os.path.sep):
         if not _is_object_name(part):
             return False
         path = os.path.join(path, part)

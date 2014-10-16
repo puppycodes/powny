@@ -61,10 +61,9 @@ class JobsResource(Resource):
                     503 -- No HEAD or exposed methods.
     """
 
-    def __init__(self, pool, loader, rules_root, input_limit):
+    def __init__(self, pool, loader, input_limit):
         self._pool = pool
         self._loader = loader
-        self._rules_root = rules_root
         self._input_limit = input_limit
 
     def process_request(self):
@@ -97,7 +96,7 @@ class JobsResource(Resource):
             return (result, ("No matching handler" if len(result) == 0 else "Handlers were launched"))
 
     def _get_exposed(self, backend):
-        (head, exposed, _, _) = tools.get_exposed(backend, self._loader, self._rules_root)
+        (head, exposed, _, _) = tools.get_exposed(backend, self._loader)
         if exposed is None:
             raise ApiError(503, "No HEAD or exposed methods")
         return (head, exposed)

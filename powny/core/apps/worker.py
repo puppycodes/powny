@@ -6,7 +6,6 @@ import time
 from contextlog import get_logger
 
 from .. import context
-from .. import tools
 
 from . import init
 from . import Application
@@ -130,7 +129,7 @@ class _JobsManager:
 
 def _exec_job(job, rules_dir, backend, associated):
     logger = get_logger(job_id=job.job_id)
-    rules_path = tools.make_rules_path(rules_dir, job.version)
+    rules_path = os.path.join(rules_dir, job.version)
     with backend.connected():
         logger.debug("Associating job with PID %d", os.getpid())
         backend.jobs_process.associate_job(job.job_id)

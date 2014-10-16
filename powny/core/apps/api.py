@@ -87,18 +87,16 @@ def make_app(only_return=True, args=None, config=None):
     if only_return:
         pool.__enter__()  # TODO: make 'with' if possible
 
-    loader = tools.make_loader(config.core.rules_module)
+    loader = tools.make_loader(config.core.rules_dir)
 
     app = _Api(__name__)
     app.add_url_resource("v1", "/v1/rules", RulesResource(
         pool=pool,
         loader=loader,
-        rules_root=config.core.rules_dir,
     ))
     app.add_url_resource("v1", "/v1/jobs", JobsResource(
         pool=pool,
         loader=loader,
-        rules_root=config.core.rules_dir,
         input_limit=config.api.input_limit,
     ))
     app.add_url_resource("v1", "/v1/jobs/<job_id>", JobControlResource(pool, config.api.delete_timeout))
