@@ -131,7 +131,7 @@ class JobControlResource(Resource):
                       "message": "<...>",
                       "result":  {
                           "method":   "<path.to.function>",  # Full method path in the rules
-                          "version":  "<HEAD>",    # HEAD of the rules for this job
+                          "head":     "<HEAD>",    # HEAD of the rules for this job
                           "kwargs":   {...},       # Function arguments
                           "number":   <int>,       # The serial number of the job
                           "created":  <str>,       # ISO-8601-like time when the job was created

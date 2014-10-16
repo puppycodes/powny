@@ -125,15 +125,15 @@ class JobsControl:
     def get_counter_value(self):
         return self._jobs_counter.get()
 
-    def add_job(self, version, method_name, kwargs, state):
+    def add_job(self, head, method_name, kwargs, state):
         job_id = make_job_id()
         number = self._jobs_counter.increment()
         logger = get_logger(job_id=job_id, number=number, method=method_name)
         logger.info("Registering job")
         with self._client.get_write_request("add_job()") as request:
             request.create(_get_path_job(job_id), {
-                "version": version,
-                "method":    method_name,
+                "head":    head,
+                "method":  method_name,
                 "kwargs":  kwargs,
                 "created": make_isotime(),
                 "number":  number,
@@ -211,7 +211,7 @@ class JobsProcess:
             yield ReadyJob(
                 job_id=job_id,
                 number=job_info["number"],
-                version=job_info["version"],
+                head=job_info["head"],
                 state=exec_info["state"],
             )
 

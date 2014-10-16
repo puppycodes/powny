@@ -24,7 +24,7 @@ class Loader:
     """
         Loader() обеспечивает загрузку и перезагрузку пакета с правилами.
         При вызове get_exposed(), он удаляет все модули, __file__ которых начинается с prefix.
-        Затем, в sys.path добавлется prefix/version и происходит загрузка всех пакетов и модулей
+        Затем, в sys.path добавлется prefix/head и происходит загрузка всех пакетов и модулей
         из этого каталога, рекурсивно.
         Далее, все функции, находящиеся в этих модулях, анализируются с помощью набора фильтров
         в group_by (вида {"key": lambda func: True}), и группируются по указанным ключам.
@@ -40,10 +40,10 @@ class Loader:
         self._cache = {}
         self._thread = None
 
-    def get_exposed(self, version):
+    def get_exposed(self, head):
         while True:
-            if version in self._cache:
-                return self._cache[version]
+            if head in self._cache:
+                return self._cache[head]
 
             if not self._lock.acquire(blocking=False):
                 self._lock.acquire()
@@ -53,9 +53,9 @@ class Loader:
             self._thread = threading.current_thread()
             try:
                 _remove_modules_unsafe(self._prefix)
-                (exposed_methods, errors) = _get_exposed_unsafe(os.path.join(self._prefix, version))
+                (exposed_methods, errors) = _get_exposed_unsafe(os.path.join(self._prefix, head))
                 if self._group_by is None:
-                    self._cache[version] = (exposed_methods, errors)
+                    self._cache[head] = (exposed_methods, errors)
                 else:
                     methods = {sub: {} for (sub, _) in self._group_by}
                     for (name, method) in exposed_methods.items():
@@ -63,8 +63,8 @@ class Loader:
                             if test(method):
                                 methods[sub][name] = method
                                 break
-                    self._cache[version] = (methods, errors)
-                return self._cache[version]
+                    self._cache[head] = (methods, errors)
+                return self._cache[head]
             finally:
                 self._thread = None
                 self._lock.release()

@@ -129,7 +129,7 @@ class _JobsManager:
 
 def _exec_job(job, rules_dir, backend, associated):
     logger = get_logger(job_id=job.job_id)
-    rules_path = os.path.join(rules_dir, job.version)
+    rules_path = os.path.join(rules_dir, job.head)
     with backend.connected():
         logger.debug("Associating job with PID %d", os.getpid())
         backend.jobs_process.associate_job(job.job_id)
@@ -140,7 +140,7 @@ def _exec_job(job, rules_dir, backend, associated):
             backend=backend,
             job_id=job.job_id,
             state=job.state,
-            extra={"number": job.number, "version": job.version},
+            extra={"number": job.number, "head": job.head, "version": job.head},  # FIXME: version == Compat for YaNS
         )
         thread.start()
         thread.join()

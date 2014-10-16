@@ -16,14 +16,14 @@ class RulesResource(Resource):
     name = "Operations with the rules HEAD"
     methods = ("GET", "POST")
     docstring = """
-        GET  -- Returns a current version of the rules in format:
+        GET  -- Returns a current version (head) of the rules in format:
 
                 # =====
                 {
                     "status":  "ok",
                     "message": "<...>",
                     "result":  {
-                        "head":    "<version>"
+                        "head":    "<HEAD>"
                         "errors":  {"<path.to.module>": "<Traceback>", ...}
                         "exposed": {
                             "methods":  ["<path.to.function>", ...],
@@ -45,14 +45,14 @@ class RulesResource(Resource):
                 Possible GET errors (with status=="error"):
                     503 -- Non-existant HEAD for rules.
 
-        POST -- Takes a version in the format: {"head": "<version>"} and applies it.
+        POST -- Takes a version (head) in the format: {"head": "<HEAD>"} and applies it.
 
                 Return value:
                 # =====
                 {
                     "status":  "ok",
                     "message": "<...>",
-                    "result":  {"head": "<version>"},
+                    "result":  {"head": "<HEAD>"},
                 }
                 # =====
 
