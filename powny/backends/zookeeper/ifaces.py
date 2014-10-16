@@ -94,7 +94,7 @@ def init(client):
         _PATH_CAS_STORAGE,
     ):
         try:
-            with client.get_write_request("backend::init()::create({})".format(path)) as request:
+            with client.make_write_request("backend::init()::create({})".format(path)) as request:
                 request.create(path)
             logger.debug("Backend init: path '%s' has been created", path)
         except zoo.NodeExistsError:
@@ -130,7 +130,7 @@ class JobsControl:
         number = self._jobs_counter.increment()
         logger = get_logger(job_id=job_id, number=number, method=method_name)
         logger.info("Registering job")
-        with self._client.get_write_request("add_job()") as request:
+        with self._client.make_write_request("add_job()") as request:
             request.create(_get_path_job(job_id), {
                 "head":    head,
                 "method":  method_name,
@@ -153,7 +153,7 @@ class JobsControl:
         logger = get_logger(job_id=job_id)
         logger.info("Deleting job")
         try:
-            with self._client.get_write_request("delete_job()") as request:
+            with self._client.make_write_request("delete_job()") as request:
                 request.create(_get_path_job_delete(job_id), make_isotime())
         except zoo.NodeExistsError:
             pass  # Lock on existent delete-op
@@ -202,7 +202,7 @@ class JobsProcess:
             job_info = self._client.get(_get_path_job(job_id))
             exec_info = self._client.get(_get_path_job_state(job_id))
 
-            with self._client.get_write_request("get_ready_jobs()") as request:
+            with self._client.make_write_request("get_ready_jobs()") as request:
                 lock = self._client.get_lock(_get_path_job_lock(job_id))
                 lock.acquire(request, _make_lock_info("get_ready_jobs()"))
                 request.create(_get_path_job_taken(job_id), make_isotime())
@@ -216,21 +216,21 @@ class JobsProcess:
             )
 
     def associate_job(self, job_id):
-        with self._client.get_write_request("associate_job()") as request:
+        with self._client.make_write_request("associate_job()") as request:
             # Assign lock to current process
             lock = self._client.get_lock(_get_path_job_lock(job_id))
             lock.release(request)
             lock.acquire(request, _make_lock_info("associate_job()"))
 
     def release_job(self, job_id):
-        with self._client.get_write_request("release_job()") as request:
+        with self._client.make_write_request("release_job()") as request:
             self._client.get_lock(_get_path_job_lock(job_id)).release(request)
 
     def is_deleted_job(self, job_id):
         return self._client.exists(_get_path_job_delete(job_id))
 
     def save_job_state(self, job_id, state, stack):
-        with self._client.get_write_request("save_job_state()") as request:
+        with self._client.make_write_request("save_job_state()") as request:
             request.set(_get_path_job_state(job_id), {
                 "state":    state,
                 "stack":    stack,
@@ -240,7 +240,7 @@ class JobsProcess:
             })
 
     def done_job(self, job_id, retval, exc):
-        with self._client.get_write_request("done_job()") as request:
+        with self._client.make_write_request("done_job()") as request:
             request.set(_get_path_job_state(job_id), {
                 "state":    None,
                 "stack":    None,
@@ -274,20 +274,20 @@ class JobsGc:
                     continue
                 if to_delete or finished is None or from_isotime(finished) + done_lifetime <= time.time():
                     try:
-                        with self._client.get_write_request("get_unfinished_jobs()") as request:
+                        with self._client.make_write_request("get_unfinished_jobs()") as request:
                             lock.acquire(request, _make_lock_info("get_unfinished_jobs()"))
                     except (zoo.NoNodeError, zoo.NodeExistsError):
                         continue
                     yield (job_id, to_delete or finished is not None)  # (id, done)
 
     def push_back_job(self, job_id):
-        with self._client.get_write_request("push_back_job()") as request:
+        with self._client.make_write_request("push_back_job()") as request:
             request.delete(_get_path_job_taken(job_id))
             request.delete(_get_path_job_lock(job_id))
             self._input_queue.put(request, job_id)
 
     def remove_job_data(self, job_id):
-        with self._client.get_write_request("remove_job_data()") as request:
+        with self._client.make_write_request("remove_job_data()") as request:
             for path_maker in (
                 _get_path_job_delete,
                 _get_path_job_taken,
@@ -309,7 +309,7 @@ class Rules:
         self._client = client
 
     def set_head(self, head):
-        with self._client.get_write_request("set_head()") as request:
+        with self._client.make_write_request("set_head()") as request:
             request.set(_PATH_RULES_HEAD, head)
 
     def get_head(self):
@@ -340,10 +340,10 @@ class AppsState:
     def _set_raw_state(self, app_name, node_name, state):
         path = _get_path_app_state(app_name, node_name)
         try:
-            with self._client.get_write_request("set_state()") as request:
+            with self._client.make_write_request("set_state()") as request:
                 request.set(path, state)
         except zoo.NoNodeError:
-            with self._client.get_write_request("create_state_node()") as request:
+            with self._client.make_write_request("create_state_node()") as request:
                 request.create(path, ephemeral=True)
             self._set_raw_state(app_name, node_name, state)
 
@@ -396,7 +396,7 @@ class CasStorage:
         path = _get_path_cas_storage(path)
 
         try:
-            with self._client.get_write_request("cas_ensure_path()") as request:
+            with self._client.make_write_request("cas_ensure_path()") as request:
                 request.create(path, recursive=True)
         except zoo.NodeExistsError:
             pass
@@ -423,7 +423,7 @@ class CasStorage:
                     else:
                         get_logger().debug(msg)
                 else:
-                    with self._client.get_write_request("cas_save()") as request:
+                    with self._client.make_write_request("cas_save()") as request:
                         request.set(path, {
                             "value":   value,
                             "version": version,

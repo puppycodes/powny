@@ -107,47 +107,47 @@ class TestClient:
 
     def test_write_exception(self, zclient):
         with pytest.raises(RuntimeError):
-            with zclient.get_write_request():
+            with zclient.make_write_request():
                 raise RuntimeError
 
     def test_empty_write_request(self, zclient):
         with pytest.raises(AssertionError):
-            with zclient.get_write_request():
+            with zclient.make_write_request():
                 pass
 
     def test_create(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/test-node", 12309)
         assert zclient.get("/test-node") == 12309
 
     def test_create_multi(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/test-node-1", 0)
             request.create("/test-node-2", 1)
         assert zclient.get("/test-node-1") == 0
         assert zclient.get("/test-node-2") == 1
 
     def test_create_empty(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/test-node")
         assert zclient.get("/test-node") == zoo.EmptyValue
 
     def test_create_node_exists_error(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/test-node")
         with pytest.raises(zoo.NodeExistsError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 request.create("/test-node")
 
     def test_create_multi_node_exists_error(self, zclient):
         with pytest.raises(zoo.NodeExistsError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 request.create("/test-node")
                 request.create("/test-node")
 
     def test_create_multi_middle_node_exists_error(self, zclient):
         with pytest.raises(zoo.NodeExistsError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 request.create("/test-node")
                 request.create("/test-node")
                 request.create("/foobar")
@@ -155,20 +155,20 @@ class TestClient:
     # ===
 
     def test_set(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/test-node")
         assert zclient.get("/test-node") == zoo.EmptyValue
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.set("/test-node", "foobar")
         assert zclient.get("/test-node") == "foobar"
 
     def test_set_no_node_error(self, zclient):
         with pytest.raises(zoo.NoNodeError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 request.set("/test-node", 0)
 
     def test_set_multi(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/test-node")
             request.set("/test-node", 0)
             request.set("/test-node", 1)
@@ -176,7 +176,7 @@ class TestClient:
 
     def test_set_multi_no_node_error(self, zclient):
         with pytest.raises(zoo.NoNodeError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 request.create("/test-node-2")
                 request.set("/test-node-1", 0)
                 request.set("/test-node-2", 0)
@@ -184,36 +184,36 @@ class TestClient:
     # ===
 
     def test_delete(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/test-node")
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.delete("/test-node")
 
     def test_delete_no_node_error(self, zclient):
         with pytest.raises(zoo.NoNodeError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 request.delete("/test-node")
 
     def test_delete_multi(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             for count in range(5):
                 request.create("/test-node-{}".format(count))
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             for count in range(5):
                 request.delete("/test-node-{}".format(count))
 
     def test_delete_multi_no_node_error(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/test-node-1")
         with pytest.raises(zoo.NoNodeError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 request.delete("/test-node-1")
                 request.delete("/test-node-2")
 
     # ===
 
     def test_get_children(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             nodes = sorted(["node-{}".format(count) for count in range(5)])
             for node in nodes:
                 request.create("/" + node)
@@ -227,7 +227,7 @@ class TestClient:
     # ===
 
     def test_exists_true(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/test-node")
         assert zclient.exists("/test-node")
 
@@ -240,25 +240,25 @@ class TestLock:
         lock1 = zclient.get_lock("/lock")
         lock2 = zclient.get_lock("/lock")
         assert not lock1.is_locked()
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             lock1.acquire(request)
         assert lock1.is_locked()
         with pytest.raises(zoo.NodeExistsError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 lock2.acquire(request)
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             lock1.release(request)
         with pytest.raises(zoo.NoNodeError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 lock2.release(request)
 
     def test_lock_context(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             zclient.get_lock("/lock").acquire(request)
 
         def release():
             time.sleep(3)
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 zclient.get_lock("/lock").release(request)
 
         unlocker = threading.Thread(target=release)
@@ -278,7 +278,7 @@ class TestQueue:
     def test_put_no_node_error(self, zclient):
         queue = zclient.get_queue("/queue")
         with pytest.raises(zoo.NoNodeError):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 queue.put(request, None)
 
     def test_get_no_node_error(self, zclient):
@@ -287,12 +287,12 @@ class TestQueue:
             next(iter(queue))
 
     def test_put_len_get_consume(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/queue")
         queue = zclient.get_queue("/queue")
 
         for count in range(5):
-            with zclient.get_write_request() as request:
+            with zclient.make_write_request() as request:
                 queue.put(request, count)
                 queue.put(request, count * 10)
 
@@ -302,7 +302,7 @@ class TestQueue:
         for count in range(5):
             for factor in (1, 10):
                 assert next(iterator) == count * factor
-                with zclient.get_write_request() as request:
+                with zclient.make_write_request() as request:
                     queue.consume(request)
         with pytest.raises(StopIteration):
             next(iterator)
@@ -315,13 +315,13 @@ class TestCounter:
             counter.get()
 
     def test_get_default(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/counter")
         counter = zclient.get_counter("/counter")
         assert counter.get() == 0
 
     def test_get_10(self, zclient):
-        with zclient.get_write_request() as request:
+        with zclient.make_write_request() as request:
             request.create("/counter", 10)
         counter = zclient.get_counter("/counter")
         assert counter.get() == 10
@@ -333,7 +333,7 @@ class TestCounter:
         self._test_increment(zclient, zbackend_kwargs, True)
 
     def _test_increment(self, client, client_kwargs, with_lock):
-        with client.get_write_request() as request:
+        with client.make_write_request() as request:
             request.create("/counter")
         counter = client.get_counter("/counter")
         for previous in range(5):

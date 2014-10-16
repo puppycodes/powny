@@ -9,7 +9,7 @@ from powny.backends.zookeeper import Backend
 # =====
 def _cleanup():
     with zoo.Client(chroot=None, **zclient_kwargs()).connected() as client:
-        with client.get_write_request("cleanup()") as request:
+        with client.make_write_request("cleanup()") as request:
             request.delete(zclient_chroot(), recursive=True)
 
 
@@ -17,7 +17,7 @@ def _cleanup():
 def _make_client():
     _cleanup()
     with zoo.Client(chroot=None, **zclient_kwargs()).connected() as client:
-        with client.get_write_request() as request:
+        with client.make_write_request() as request:
             request.create(zclient_chroot())
         client = zoo.Client(chroot=zclient_chroot(), **zclient_kwargs())
         client.open()

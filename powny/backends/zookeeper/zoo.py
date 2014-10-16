@@ -103,7 +103,7 @@ class Client:
             chroot=None,
         ).connected() as client:
             try:
-                with client.get_write_request("ensure_chroot()") as request:
+                with client.make_write_request("ensure_chroot()") as request:
                     request.create(self._chroot, recursive=True)
             except NodeExistsError:
                 pass
@@ -199,7 +199,7 @@ class Client:
                 raise NoNodeError
             return default
 
-    def get_write_request(self, comment="<unnamed>"):
+    def make_write_request(self, comment="<unnamed>"):
         return _WriteRequest(self, comment)
 
     # ===

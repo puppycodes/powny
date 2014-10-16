@@ -54,7 +54,7 @@ def powny_api(text=None, with_worker=False):
 #                zclient_kwargs = dict(config.backend)
 #                zclient_kwargs["chroot"] = None
 #                with zoo.Client(**zclient_kwargs) as client:
-#                    with client.get_write_request("remove_chroot()") as request:
+#                    with client.make_write_request("remove_chroot()") as request:
 #                        request.delete(chroot, recursive=True)
 #            else:
 #                raise NotImplementedError
