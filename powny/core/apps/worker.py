@@ -6,7 +6,6 @@ import time
 from contextlog import get_logger
 
 from .. import context
-from .. import tools
 
 from . import init
 from . import Application
@@ -36,6 +35,7 @@ class _Worker(Application):
     def __init__(self, config):
         Application.__init__(self, "worker", config)
         self._manager = _JobsManager(self._config.core.rules_dir)
+        self._not_started = 0
 
     def process(self):
         logger = get_logger()
@@ -45,7 +45,7 @@ class _Worker(Application):
                 gen_jobs = backend.jobs_process.get_ready_jobs()
                 while not self._stop_event.is_set():
                     self._manager.manage(backend)
-                    self._write_app_state(backend)
+                    self._write_worker_state(backend)
 
                     if self._manager.get_current() >= self._app_config.max_jobs:
                         logger.debug("Have reached the maximum concurrent jobs (%d), sleeping %f seconds...",
@@ -64,13 +64,16 @@ class _Worker(Application):
                             break
                         else:
                             sleep_mode = False
-                            self._manager.run_job(job, self.get_backend_object())
+                            if not self._manager.run_job(job, self.get_backend_object()):
+                                backend.jobs_process.release_job(job.job_id)
+                                self._not_started += 1
 
-    def _write_app_state(self, backend):
-        backend.system_apps_state.set_state(*self.make_write_app_state({
-            "active":    self._manager.get_current(),
-            "processed": self._manager.get_finished(),
-        }))
+    def _write_worker_state(self, backend):
+        self.set_app_state(backend, {
+            "active":      self._manager.get_current(),
+            "processed":   self._manager.get_finished(),
+            "not_started": self._not_started,
+        })
 
 
 class _JobsManager:
@@ -86,10 +89,17 @@ class _JobsManager:
         return len(self._procs)
 
     def run_job(self, job, backend):
-        get_logger(job_id=job.job_id).info("Starting the job process")
-        proc = multiprocessing.Process(target=_exec_job, args=(job, self._rules_dir, backend))
+        logger = get_logger(job_id=job.job_id)
+        logger.info("Starting the job process")
+        associated = multiprocessing.Event()
+        proc = multiprocessing.Process(target=_exec_job, args=(job, self._rules_dir, backend, associated))
         self._procs[job.job_id] = proc
         proc.start()
+        if not associated.wait(1):
+            logger.error("Cannot associate job after one second")
+            self._kill(proc)
+            return False
+        return True
 
     def manage(self, backend):
         for (job_id, proc) in self._procs.copy().items():
@@ -107,7 +117,7 @@ class _JobsManager:
 
     def _kill(self, proc):
         logger = get_logger()
-        logger.info("Request to kill (DELETE) job process %s...", proc)
+        logger.info("Killing job process %s...", proc)
         try:
             proc.terminate()
             proc.join()
@@ -117,19 +127,20 @@ class _JobsManager:
         logger.info("Killed job process %d with retcode %d", proc.pid, proc.exitcode)
 
 
-def _exec_job(job, rules_dir, backend):
+def _exec_job(job, rules_dir, backend, associated):
     logger = get_logger(job_id=job.job_id)
-    rules_path = tools.make_rules_path(rules_dir, job.version)
+    rules_path = os.path.join(rules_dir, job.head)
     with backend.connected():
         logger.debug("Associating job with PID %d", os.getpid())
         backend.jobs_process.associate_job(job.job_id)
+        associated.set()
 
         sys.path.insert(0, rules_path)
         thread = context.JobThread(
             backend=backend,
             job_id=job.job_id,
             state=job.state,
-            extra={"number": job.number, "version": job.version},
+            extra={"number": job.number, "head": job.head, "version": job.head},  # FIXME: version == Compat for YaNS
         )
         thread.start()
         thread.join()

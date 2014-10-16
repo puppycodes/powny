@@ -6,6 +6,7 @@ from contextlog import get_logger
 from .. import backends
 from .. import tools
 from .. import api
+from .. import backdoor
 
 from ..api.rules import RulesResource
 
@@ -86,18 +87,16 @@ def make_app(only_return=True, args=None, config=None):
     if only_return:
         pool.__enter__()  # TODO: make 'with' if possible
 
-    loader = tools.make_loader(config.core.rules_module)
+    loader = tools.make_loader(config.core.rules_dir)
 
     app = _Api(__name__)
     app.add_url_resource("v1", "/v1/rules", RulesResource(
         pool=pool,
         loader=loader,
-        rules_root=config.core.rules_dir,
     ))
     app.add_url_resource("v1", "/v1/jobs", JobsResource(
         pool=pool,
         loader=loader,
-        rules_root=config.core.rules_dir,
         input_limit=config.api.input_limit,
     ))
     app.add_url_resource("v1", "/v1/jobs/<job_id>", JobControlResource(pool, config.api.delete_timeout))
@@ -120,6 +119,12 @@ def run(args=None, config=None):
         args=args,
         config=config,
     )
+    if config.backdoor.enabled:
+        if config.api.run.processes == 1:
+            backdoor.start(config.backdoor.port)
+        else:
+            logger.warning("Cannot start backdoor for multi-process API")
+
     logger.critical("Ready to work on %s:%s", config.api.run.host, config.api.run.port)
     with pool:
         app.run(

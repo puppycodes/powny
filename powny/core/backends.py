@@ -15,7 +15,7 @@ class DeleteTimeoutError(Exception):
 ReadyJob = collections.namedtuple("ReadyJob", (
     "job_id",
     "number",
-    "version",
+    "head",
     "state",
 ))
 

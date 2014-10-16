@@ -103,7 +103,7 @@ class Client:
             chroot=None,
         ).connected() as client:
             try:
-                with client.get_write_request("ensure_chroot()") as request:
+                with client.make_write_request("ensure_chroot()") as request:
                     request.create(self._chroot, recursive=True)
             except NodeExistsError:
                 pass
@@ -116,6 +116,7 @@ class Client:
             hosts=self._hosts,
             timeout=self._timeout,
             randomize_hosts=self._randomize_hosts,
+            command_retry={"max_delay": 60},
         )
         if self._chroot is not None:
             self.zk.chroot = self._chroot
@@ -198,7 +199,7 @@ class Client:
                 raise NoNodeError
             return default
 
-    def get_write_request(self, comment="<unnamed>"):
+    def make_write_request(self, comment="<unnamed>"):
         return _WriteRequest(self, comment)
 
     # ===
@@ -292,8 +293,8 @@ class _Lock:
     def is_locked(self):
         return (self._client.zk.exists(self._path) is not None)
 
-    def acquire(self, request):
-        request.create(self._path, ephemeral=True)
+    def acquire(self, request, value=EmptyValue):
+        request.create(self._path, value, ephemeral=True)
 
     def release(self, request):
         request.delete(self._path)

@@ -5,8 +5,6 @@ import pkgutil
 import threading
 import logging
 import logging.config
-import platform
-import socket
 import time
 import abc
 
@@ -24,6 +22,8 @@ from .. import optconf
 from ..optconf.dumper import make_config_dump
 from ..optconf.loaders.yaml import load_file as load_yaml_file
 
+from .. import backdoor
+
 
 # =====
 _config = None
@@ -37,7 +37,9 @@ def get_config(check_helpers=()):
     return _config
 
 
-def init(name, description, args=None):
+def init(name, description, args=None, raw_config=None):
+    assert args is None or raw_config is None, "args and raw_config are mutually exclusive"
+
     global _config
     assert _config is None, "init() has already been called"
 
@@ -49,17 +51,17 @@ def init(name, description, args=None):
     options = args_parser.parse_args(args)
 
     # Load configs
-    raw = {}
+    raw_config = (raw_config or {})
     if options.config_file_path is not None:
-        raw = load_yaml_file(options.config_file_path)
+        raw_config = load_yaml_file(options.config_file_path)
     scheme = _get_config_scheme()
-    config = optconf.make_config(raw, scheme)
+    config = optconf.make_config(raw_config, scheme)
 
     # Configure logging
     contextlog.patch_logging()
     contextlog.patch_threading()
     logging.captureWarnings(True)
-    logging_config = raw.get("logging")
+    logging_config = raw_config.get("logging")
     if logging_config is None:
         logging_config = yaml.load(pkgutil.get_data(__name__, "configs/logging.yaml"))
     if options.log_level is not None:
@@ -70,7 +72,7 @@ def init(name, description, args=None):
     # Update scheme for backend opts
     backend_scheme = backends.get_backend_class(config.core.backend).get_options()
     typetools.merge_dicts(scheme, {"backend": backend_scheme})
-    config = optconf.make_config(raw, scheme)
+    config = optconf.make_config(raw_config, scheme)
 
     # Update scheme for selected helpers/modules
     for helper_name in config.helpers.configure:
@@ -81,7 +83,7 @@ def init(name, description, args=None):
         typetools.merge_dicts(scheme, {"helpers": get_options()})
 
     # Provide global configuration for helpers
-    _config = optconf.make_config(raw, scheme)
+    _config = optconf.make_config(raw_config, scheme)
 
     # Print config dump and exit
     if options.dump_config:
@@ -99,23 +101,13 @@ class Application(metaclass=abc.ABCMeta):
         self._stop_event = threading.Event()
         self._respawns = 0
 
-    def make_write_app_state(self, app_state):
-        node_name = (self._config.core.node_name or platform.uname()[1])
-        state = {
-            "when": tools.make_isotime(),
-            "host": {
-                "node": node_name,
-                "fqdn": socket.getfqdn(),
-            },
-            "state": {
-                "respawns": self._respawns,
-            },
-        }
-        state["state"].update(app_state)
-        return (node_name, self._app_name, state)
-
     def stop(self):
         self._stop_event.set()
+
+    def set_app_state(self, backend, app_state):
+        app_state = app_state.copy()
+        app_state["respawns"] = self._respawns
+        backend.system_apps_state.set_state(self._app_name, app_state)
 
     def get_backend_object(self):
         return backends.get_backend_class(self._config.core.backend)(**self._config.backend)
@@ -124,6 +116,8 @@ class Application(metaclass=abc.ABCMeta):
 
     def run(self):
         logger = get_logger(app=self._app_name)  # App-level context
+        if self._config.backdoor.enabled:
+            backdoor.start(self._config.backdoor.port)
         self._respawns = 0
         while not self._stop_event.is_set():
             if self._app_config.max_fails is not None and self._respawns >= self._app_config.max_fails + 1:
@@ -162,10 +156,13 @@ def _valid_log_level(arg):
 def _get_config_scheme():
     scheme = {
         "core": {
-            "node_name": optconf.Option(default=None, type=str, help="Node name, must be a unique (uname by default)"),
             "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
-            "rules_module": optconf.Option(default="rules", help="Name of the rules module/package"),
             "rules_dir": optconf.Option(default="rules", help="Path to rules root"),
+        },
+
+        "backdoor": {
+            "enabled": optconf.Option(default=False, help="Enable telnet-based backdoor to Python process"),
+            "port": optconf.Option(default=2200, help="Backdoor port"),
         },
 
         "helpers": {

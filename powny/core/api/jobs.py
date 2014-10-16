@@ -61,10 +61,9 @@ class JobsResource(Resource):
                     503 -- No HEAD or exposed methods.
     """
 
-    def __init__(self, pool, loader, rules_root, input_limit):
+    def __init__(self, pool, loader, input_limit):
         self._pool = pool
         self._loader = loader
-        self._rules_root = rules_root
         self._input_limit = input_limit
 
     def process_request(self):
@@ -97,7 +96,7 @@ class JobsResource(Resource):
             return (result, ("No matching handler" if len(result) == 0 else "Handlers were launched"))
 
     def _get_exposed(self, backend):
-        (head, exposed, _, _) = tools.get_exposed(backend, self._loader, self._rules_root)
+        (head, exposed, _, _) = tools.get_exposed(backend, self._loader)
         if exposed is None:
             raise ApiError(503, "No HEAD or exposed methods")
         return (head, exposed)
@@ -132,12 +131,12 @@ class JobControlResource(Resource):
                       "message": "<...>",
                       "result":  {
                           "method":   "<path.to.function>",  # Full method path in the rules
-                          "version":  "<HEAD>",    # HEAD of the rules for this job
+                          "head":     "<HEAD>",    # HEAD of the rules for this job
                           "kwargs":   {...},       # Function arguments
                           "number":   <int>,       # The serial number of the job
                           "created":  <str>,       # ISO-8601-like time when the job was created
-                          "locked":   <bool>,      # Job in progress
-                          "deleted":  <bool>,      # Job is waiting for a forced stop and delete
+                          "locked":   <dict|null>, # Job in progress (null if not locked, dict with info otherwise)
+                          "deleted":  <str|null>,  # ISO-8601-like time when job was marked to stop and delete
                           "taken":    <str|null>,  # ISO-8601-like time when job was started (taken from queue)
                           "finished": <str|null>,  # ISO-8601-like time when job was finished
                           "stack":    [...],       # Stack snapshot on last checkpoint

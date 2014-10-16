@@ -80,6 +80,7 @@ def test_api_v1_system_state():
             assert result[1]["message"] == "The system statistics"
             assert result[1]["result"]["jobs"]["input"] == 0
             assert result[1]["result"]["jobs"]["all"] == 0
+            assert result[1]["result"]["jobs"]["all"] == 0
 
             assert as_dict(api.post("/v1/rules", **from_dict({"head": "0123456789abcdef"})))[0] == 200
             assert as_dict(api.post("/v1/jobs", **from_dict({})))[0]
@@ -89,6 +90,7 @@ def test_api_v1_system_state():
             result = as_dict(api.get("/v1/system/state"))
             assert result[0] == 200
             assert result[1]["result"]["jobs"]["input"] == 0
+            assert result[1]["result"]["jobs"]["all"] == 1
             assert result[1]["result"]["jobs"]["all"] == 1
 
 
@@ -128,7 +130,7 @@ def _test_api_v1_jobs_delete(url, kwargs):
             result = as_dict(api.get("/v1/jobs/" + job_id))
             assert result[0] == 200
             assert result[1]["result"]["method"] == method_name
-            assert result[1]["result"]["deleted"] is False
+            assert result[1]["result"]["deleted"] is None
 
             result = as_dict(api.delete("/v1/jobs/" + job_id))
             time.sleep(config.collector.empty_sleep)
