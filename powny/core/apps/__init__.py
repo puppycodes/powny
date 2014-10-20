@@ -48,7 +48,7 @@ def init(name, description, args=None, raw_config=None):
     args_parser.add_argument("-c", "--config", dest="config_file_path", default=None, metavar="<file>")
     args_parser.add_argument("-l", "--level", dest="log_level", default=None)
     args_parser.add_argument("-m", "--dump-config", dest="dump_config", action="store_true")
-    options = args_parser.parse_args(args)
+    options = args_parser.parse_args(args or [])
 
     # Load configs
     raw_config = (raw_config or {})
