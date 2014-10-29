@@ -38,8 +38,6 @@ def get_config(check_helpers=()):
 
 
 def init(name, description, args=None, raw_config=None):
-    assert args is None or raw_config is None, "args and raw_config are mutually exclusive"
-
     global _config
     assert _config is None, "init() has already been called"
 
@@ -48,7 +46,7 @@ def init(name, description, args=None, raw_config=None):
     args_parser.add_argument("-c", "--config", dest="config_file_path", default=None, metavar="<file>")
     args_parser.add_argument("-l", "--level", dest="log_level", default=None)
     args_parser.add_argument("-m", "--dump-config", dest="dump_config", action="store_true")
-    options = args_parser.parse_args(args or [])
+    options = args_parser.parse_args(args)
 
     # Load configs
     raw_config = (raw_config or {})
@@ -173,15 +171,9 @@ def _get_config_scheme():
             "backend_connections": optconf.Option(default=5, help="Maximum number of backend connections"),
             "input_limit": optconf.Option(default=5000, help="Limit of the input queue before 503 error"),
             "delete_timeout": optconf.Option(default=15.0, help="Timeout for stop/delete operation"),
-
-            "run": {
-                "host": optconf.Option(default="localhost", help="The host for the internal server"),
-                "port": optconf.Option(default=80, help="The port for the internal server"),
-                "use_threads": optconf.Option(default=True, help="Process each request in a separate thread"),
-                "processes": optconf.Option(default=1, help="API maximum worker count"),
-                "debug_console": optconf.Option(default=True, help="Open interactive console with exception "
-                                                                   "context in browser"),
-            },
+            "gunicorn": optconf.Option(default={}, help="Gunicorn options (workers, max_requests, etc.) "
+                                                        " exclude entrypoint-specific (like errorlog, accesslog). "
+                                                        " See http://docs.gunicorn.org/en/latest/settings.html"),
         },
 
         "worker": {

@@ -53,6 +53,7 @@ if __name__ == "__main__":
             "kazoo.yandex >=2.0",  # https://github.com/python-zk/kazoo/pull/252
             "Flask-API.yandex",
             "python-dateutil",
+            "gunicorn",
             "pyyaml",
             "ulib",
             "decorator",
