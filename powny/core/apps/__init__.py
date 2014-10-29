@@ -38,8 +38,6 @@ def get_config(check_helpers=()):
 
 
 def init(name, description, args=None, raw_config=None):
-    assert args is None or raw_config is None, "args and raw_config are mutually exclusive"
-
     global _config
     assert _config is None, "init() has already been called"
 
@@ -48,7 +46,7 @@ def init(name, description, args=None, raw_config=None):
     args_parser.add_argument("-c", "--config", dest="config_file_path", default=None, metavar="<file>")
     args_parser.add_argument("-l", "--level", dest="log_level", default=None)
     args_parser.add_argument("-m", "--dump-config", dest="dump_config", action="store_true")
-    options = args_parser.parse_args(args or [])
+    options = args_parser.parse_args(args)
 
     # Load configs
     raw_config = (raw_config or {})
