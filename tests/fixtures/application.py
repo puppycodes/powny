@@ -27,10 +27,7 @@ def powny_api(text=None, with_worker=False):
             collector_thread.daemon = True
             collector_thread.start()
 
-            (_, api_pool, api_app) = api.make_app(  # pylint: disable=unpacking-non-sequence
-                only_return=False,
-                config=config,
-            )
+            (api_pool, api_app) = api.make_app(config)
             with api_pool:
                 api_app.debug = True
                 api_app.testing = True

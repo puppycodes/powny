@@ -171,15 +171,7 @@ def _get_config_scheme():
             "backend_connections": optconf.Option(default=5, help="Maximum number of backend connections"),
             "input_limit": optconf.Option(default=5000, help="Limit of the input queue before 503 error"),
             "delete_timeout": optconf.Option(default=15.0, help="Timeout for stop/delete operation"),
-
-            "run": {
-                "host": optconf.Option(default="localhost", help="The host for the internal server"),
-                "port": optconf.Option(default=80, help="The port for the internal server"),
-                "use_threads": optconf.Option(default=True, help="Process each request in a separate thread"),
-                "processes": optconf.Option(default=1, help="API maximum worker count"),
-                "debug_console": optconf.Option(default=True, help="Open interactive console with exception "
-                                                                   "context in browser"),
-            },
+            "gunicorn": optconf.Option(default={}, help="Gunicorn options"),
         },
 
         "worker": {

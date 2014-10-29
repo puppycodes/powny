@@ -1,5 +1,10 @@
+import logging
+
 import flask
 import flask_api.app
+
+import gunicorn.app.base
+import gunicorn.glogging
 
 from contextlog import get_logger
 
@@ -71,21 +76,19 @@ class _Api(flask_api.app.FlaskAPI):
 
 
 # =====
-def make_app(only_return=True, args=None, config=None):
+def make_app(config):
     """
         Use this functions without arguments to create UWSGI app.
     """
 
-    if config is None:
-        config = init(__name__, "Powny HTTP API WebApp/Daemon", args)
+    if config.backdoor.enabled:
+        backdoor.start(config.backdoor.port)
 
     pool = backends.Pool(
         size=config.api.backend_connections,
         name=config.core.backend,
         backend_opts=config.backend,
     )
-    if only_return:
-        pool.__enter__()  # TODO: make 'with' if possible
 
     loader = tools.make_loader(config.core.rules_dir)
 
@@ -104,34 +107,43 @@ def make_app(only_return=True, args=None, config=None):
     app.add_url_resource("v1", "/v1/system/info", InfoResource(pool))
     app.add_url_resource("v1", "/v1/system/config", ConfigResource(config))
 
-    if only_return:
-        return app
-    else:
-        return (config, pool, app)
+    return (pool, app)
 
 
 def run(args=None, config=None):
-    logger = get_logger(app="api")  # App-level context
-    # TODO: Add this for make_app()
+    get_logger(app="api")  # App-level context
+    if config is None:
+        config = init(__name__, "Powny HTTP API", args)
+    _Unicorn(config).run()
 
-    (config, pool, app) = make_app(  # pylint: disable=unpacking-non-sequence
-        only_return=False,
-        args=args,
-        config=config,
-    )
-    if config.backdoor.enabled:
-        if config.api.run.processes == 1:
-            backdoor.start(config.backdoor.port)
-        else:
-            logger.warning("Cannot start backdoor for multi-process API")
 
-    logger.critical("Ready to work on %s:%s", config.api.run.host, config.api.run.port)
-    with pool:
-        app.run(
-            host=config.api.run.host,
-            port=config.api.run.port,
-            threaded=config.api.run.use_threads,
-            processes=config.api.run.processes,
-            debug=config.api.run.debug_console,
-            use_reloader=False,
-        )
+# =====
+class _Unicorn(gunicorn.app.base.BaseApplication):
+    def __init__(self, config):
+        self._config = config
+        super().__init__()
+
+    def init(self, parser, opts, args):
+        pass  # Makes pylint happy
+
+    def load_config(self):
+        for (option, value) in self._config.api.gunicorn.items():
+            self.cfg.set(option, value)
+        self.cfg.set("logger_class", _UnicornLogger)
+        self.cfg.set("accesslog", "-")  # For working accesslog (see gunicorn/glogging.py:270)
+
+    def load(self):
+        (pool, app) = make_app(self._config)
+        get_logger().critical("Ready to work on %s", self.cfg.bind)
+        pool.__enter__()
+        return app
+
+
+class _UnicornLogger(gunicorn.glogging.Logger):
+    def __init__(self, cfg):  # pylint: disable=super-init-not-called
+        self.error_log = logging.getLogger("gunicorn.error")
+        self.access_log = logging.getLogger("gunicorn.access")
+        self.cfg = cfg
+
+    def setup(self, _):
+        pass  # Don't configure logging using the gunicorn options
