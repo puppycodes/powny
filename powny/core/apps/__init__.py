@@ -3,6 +3,9 @@ import argparse
 import importlib
 import pkgutil
 import threading
+import socket
+import platform
+import functools
 import logging
 import logging.config
 import time
@@ -58,6 +61,7 @@ def init(name, description, args=None, raw_config=None):
     # Configure logging
     contextlog.patch_logging()
     contextlog.patch_threading()
+    logging.setLogRecordFactory(_ClusterLogRecord)
     logging.captureWarnings(True)
     logging_config = raw_config.get("logging")
     if logging_config is None:
@@ -89,6 +93,18 @@ def init(name, description, args=None, raw_config=None):
         sys.exit(0)
 
     return _config
+
+
+class _ClusterLogRecord(logging.LogRecord):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fqdn = self._get_cached_fqdn(int(time.time()) // 60)  # Cached value FQDN, updated every minute
+        self.node = platform.uname()[1]  # Nodename from uname
+
+    @staticmethod
+    @functools.lru_cache(1)
+    def _get_cached_fqdn(_):
+        return socket.getfqdn()
 
 
 class Application(metaclass=abc.ABCMeta):
