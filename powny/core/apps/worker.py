@@ -89,11 +89,11 @@ class _JobsManager:
         return len(self._procs)
 
     def run_job(self, job, backend):
-        logger = get_logger(job_id=job.job_id)
+        logger = get_logger(job_id=job.job_id, method=job.method_name)
         logger.info("Starting the job process")
         associated = multiprocessing.Event()
         proc = multiprocessing.Process(target=_exec_job, args=(job, self._rules_dir, backend, associated))
-        self._procs[job.job_id] = proc
+        self._procs[job.job_id] = (job.method_name, proc)
         proc.start()
         if not associated.wait(1):
             logger.error("Cannot associate job after one second")
@@ -102,8 +102,8 @@ class _JobsManager:
         return True
 
     def manage(self, backend):
-        for (job_id, proc) in self._procs.copy().items():
-            logger = get_logger(job_id=job_id)
+        for (job_id, (method_name, proc)) in self._procs.copy().items():
+            logger = get_logger(job_id=job_id, method=method_name)
             if not proc.is_alive():
                 logger.info("Finished job process %d with retcode %d", proc.pid, proc.exitcode)
                 self._finish(job_id)
@@ -128,7 +128,7 @@ class _JobsManager:
 
 
 def _exec_job(job, rules_dir, backend, associated):
-    logger = get_logger(job_id=job.job_id)
+    logger = get_logger(job_id=job.job_id, method=job.method_name)
     rules_path = os.path.join(rules_dir, job.head)
     with backend.connected():
         logger.debug("Associating job with PID %d", os.getpid())

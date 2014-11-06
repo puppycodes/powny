@@ -128,7 +128,7 @@ class JobsControl:
     def add_job(self, head, method_name, kwargs, state):
         job_id = make_job_id()
         number = self._jobs_counter.increment()
-        logger = get_logger(job_id=job_id, number=number, method=method_name)
+        logger = get_logger(job_id=job_id, number=number, head=head, method=method_name, kwargs=kwargs)
         logger.info("Registering job")
         with self._client.make_write_request("add_job()") as request:
             request.create(_get_path_job(job_id), {
@@ -166,7 +166,7 @@ class JobsControl:
                 msg = "The job was not removed, try again"
                 logger.error(msg)
                 raise DeleteTimeoutError(msg)
-        get_logger(job_id=job_id).info("Deleted job")
+        logger.info("Deleted job")
         return True
 
     def get_job_info(self, job_id):
@@ -212,6 +212,7 @@ class JobsProcess:
                 job_id=job_id,
                 number=job_info["number"],
                 head=job_info["head"],
+                method_name=job_info["method"],
                 state=exec_info["state"],
             )
 

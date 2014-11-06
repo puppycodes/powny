@@ -65,7 +65,7 @@ class JobThread(threading.Thread):
         self._state = state
         self._extra = extra
         self._cont = None
-        self._log_context = get_logger(job_id=job_id).get_context()  # Proxy context into the continulet
+        self._log_context = get_logger().get_context()  # Proxy context into the continulet
 
     def __getstate__(self):
         # Шаг 1. Запикливаемся, как строка с айдишником задачи. Он нужен только для того, чтобы

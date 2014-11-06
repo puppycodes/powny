@@ -16,6 +16,7 @@ ReadyJob = collections.namedtuple("ReadyJob", (
     "job_id",
     "number",
     "head",
+    "method_name",
     "state",
 ))
 
