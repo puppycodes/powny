@@ -79,7 +79,7 @@ class Client:
             "nodes": optconf.Option(default=["localhost:2181"], help="List of hosts to connect (in host:port format)"),
             "timeout": optconf.Option(default=10.0, help="The longest to wait for a Zookeeper connection"),
             "start_timeout": optconf.Option(default=10.0, help="Timeout of the initial connection"),
-            "start_retries": optconf.Option(default=None, type=int, help="The number of attempts the initial "
+            "start_retries": optconf.Option(default=1, type=int, help="The number of attempts the initial "
                                                                          "connection to ZooKeeper (0=infinite)"),
             "randomize_hosts": optconf.Option(default=True, help="Randomize host selection"),
             "chroot": optconf.Option(default=None, help="Use specified node as root (it must be created manually)"),
