@@ -108,8 +108,9 @@ class Pool:
     def __exit__(self, exc_type, exc_value, traceback):
         assert self._queue is not None, "Is already free"
         self._queue = None
-        for backend in list(self._backends):
-            self._close_backend(backend)
+        for backend in self._backends:
+            if backend is not None:
+                self._close_backend(backend)
         self._backends = None
 
     def _open_backend(self):
