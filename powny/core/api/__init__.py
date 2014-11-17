@@ -33,6 +33,13 @@ class Resource(metaclass=abc.ABCMeta):
                 "result":  err.result,
             }
             return (result, err.code)
+        except Exception as err:
+            result = {
+                "status": "error",
+                "message": "{}.{}: {}".format(err.__module__, type(err).__name__, str(err)),
+                "result": None,
+            }
+            return (result, 500)
 
     @abc.abstractmethod
     def process_request(self, **kwargs):
