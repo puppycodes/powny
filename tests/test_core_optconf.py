@@ -54,7 +54,7 @@ class TestLoadFromYaml:
         assert config.backend.nodes == ["localhost:2181"]
         assert config.backend.timeout == 10.0
         assert config.backend.start_timeout == 10.0
-        assert config.backend.start_retries is None
+        assert config.backend.start_retries == 1
         assert config.backend.randomize_hosts is True
         assert config.backend.chroot is None
 
