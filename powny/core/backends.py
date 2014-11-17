@@ -2,7 +2,7 @@ import importlib
 import contextlib
 import collections
 import uuid
-import queue
+from queue import Queue
 
 from contextlog import get_logger
 
@@ -61,57 +61,65 @@ class Pool:
         replaced to the new object.
     """
 
-    def __init__(self, size, name, backend_opts):
+    def __init__(self, size, backend_name, backend_opts):
         self._size = size
-        self._name = name
+        self._backend_name = backend_name
         self._backend_opts = backend_opts
-        self._backend_class = get_backend_class(name)
-        self._queue = queue.Queue(self._size)
-        self._backends = []
-        self._filled = False
+        self._backends = None
+        self._queue = None
 
     def get_backend_name(self):
-        return self._name
+        return self._backend_name
 
     @contextlib.contextmanager
     def get_backend(self):
-        assert self._filled and len(self._backends) != 0, "Not filled"
-        backend = self._queue.get()
+        assert self._queue is not None, "Not filled"
+        index = self._queue.get()
+        backend = self._backends[index]
         self._queue.task_done()
         try:
+            if backend is None:
+                backend = self._open_backend()
             yield backend
         except Exception:
             get_logger().info("Exception in the backend context, need to reopen one")
-            self._close_backend(backend)
-            backend = self._open_backend()
+            if backend is not None:
+                self._close_backend(backend)
+            backend = None
             raise
         finally:
-            self._queue.put(backend)
-
-    def __enter__(self):
-        assert not self._filled, "Pool is disposable"
-        for _ in range(self._queue.qsize(), self._size):
-            self._queue.put(self._open_backend())
-        self._filled = True
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        assert len(self._backends) != 0, "Is already free"
-        for backend in list(self._backends):
-            self._close_backend(backend)
+            self._backends[index] = backend
+            self._queue.put(index)
 
     def __len__(self):
         return self._queue.qsize()  # Number of unused backends
 
+    def __enter__(self):
+        assert self._queue is None, "Pool is disposable"
+        backends = []
+        queue = Queue(self._size)
+        for index in range(self._size):
+            backends.append(None)
+            queue.put(index)
+        self._backends = backends
+        self._queue = queue
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        assert self._queue is not None, "Is already free"
+        self._queue = None
+        for backend in list(self._backends):
+            self._close_backend(backend)
+        self._backends = None
+
     def _open_backend(self):
-        get_logger().debug("Opening backend: %s(%s)", self._backend_class, self._backend_opts)
-        backend = self._backend_class(**self._backend_opts)
+        backend_class = get_backend_class(self._backend_name)
+        get_logger().debug("Opening backend: %s(%s)", backend_class, self._backend_opts)
+        backend = backend_class(**self._backend_opts)
         backend.open()
-        self._backends.append(backend)
         return backend
 
     def _close_backend(self, backend):
-        self._backends.remove(backend)
         try:
             backend.close()
         except Exception:

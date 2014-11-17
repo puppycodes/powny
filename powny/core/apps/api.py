@@ -86,7 +86,7 @@ def make_app(config):
 
     pool = backends.Pool(
         size=config.api.backend_connections,
-        name=config.core.backend,
+        backend_name=config.core.backend,
         backend_opts=config.backend,
     )
 

@@ -52,19 +52,13 @@ class TestZookeeperPool:
             assert len(pool) == 5
 
     def test_get_backend_with_exception(self, zbackend_kwargs):
-        with backends.Pool(5, "zookeeper", zbackend_kwargs) as pool:
-            old_backends = set(pool._backends)  # pylint: disable=protected-access
-            assert len(old_backends) == 5
-
+        with backends.Pool(1, "zookeeper", zbackend_kwargs) as pool:
             with pytest.raises(RuntimeError):
                 with pool.get_backend() as backend:
                     assert isinstance(backend, powny.backends.zookeeper.Backend)
                     raise RuntimeError
-
-            new_backends = set(pool._backends)  # pylint: disable=protected-access
-            assert len(new_backends) == 5
-            assert old_backends != new_backends
-            assert len(pool) == 5
+            assert pool._backends == [None]  # pylint: disable=protected-access
+            assert len(pool) == 1
 
     def test_get_backend_free_exception(self, zbackend_kwargs):
         with pytest.raises(RuntimeError):
