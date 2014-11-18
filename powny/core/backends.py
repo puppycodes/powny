@@ -74,7 +74,6 @@ class Pool:
     @contextlib.contextmanager
     def get_backend(self):
         backend = self._free_backends.get()
-        self._free_backends.task_done()
         if backend is None:
             try:
                 backend = self._open_backend()
@@ -82,7 +81,6 @@ class Pool:
                 get_logger().error("Exception on open_backend()")
                 self._free_backends.put(None)
                 raise
-
         try:
             yield backend
         except Exception:
