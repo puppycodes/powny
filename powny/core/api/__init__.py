@@ -34,7 +34,7 @@ class Resource(metaclass=abc.ABCMeta):
             }
             return (result, err.code)
         except Exception as err:
-            message = "{}: {}".format(type(err).__name__, str(err))
+            message = "{}: {}".format(type(err).__name__, err)
             if hasattr(err, "__module__"):
                 message = "{}.{}".format(err.__module__, message)
             result = {
