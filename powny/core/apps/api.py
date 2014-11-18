@@ -107,7 +107,7 @@ def make_app(config):
     app.add_url_resource("v1", "/v1/system/info", InfoResource(pool))
     app.add_url_resource("v1", "/v1/system/config", ConfigResource(config))
 
-    return (pool, app)
+    return app
 
 
 def run(args=None, config=None):
@@ -133,9 +133,8 @@ class _Unicorn(gunicorn.app.base.BaseApplication):
         self.cfg.set("accesslog", "-")  # For working accesslog (see gunicorn/glogging.py:270)
 
     def load(self):
-        (pool, app) = make_app(self._config)
+        app = make_app(self._config)
         get_logger().critical("Ready to work on %s", self.cfg.bind)
-        pool.__enter__()
         return app
 
 

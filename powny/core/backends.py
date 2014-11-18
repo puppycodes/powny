@@ -62,21 +62,19 @@ class Pool:
     """
 
     def __init__(self, size, backend_name, backend_opts):
-        self._size = size
         self._backend_name = backend_name
         self._backend_opts = backend_opts
-        self._backends = None
-        self._queue = None
+        self._free_backends = Queue(size)
+        for _ in range(size):
+            self._free_backends.put(None)
 
     def get_backend_name(self):
         return self._backend_name
 
     @contextlib.contextmanager
     def get_backend(self):
-        assert self._queue is not None, "Not filled"
-        index = self._queue.get()
-        backend = self._backends[index]
-        self._queue.task_done()
+        backend = self._free_backends.get()
+        self._free_backends.task_done()
         try:
             if backend is None:
                 backend = self._open_backend()
@@ -85,33 +83,13 @@ class Pool:
             get_logger().info("Exception in the backend context, need to reopen one")
             if backend is not None:
                 self._close_backend(backend)
-            backend = None
+                backend = None
             raise
         finally:
-            self._backends[index] = backend
-            self._queue.put(index)
+            self._free_backends.put(backend)
 
     def __len__(self):
-        return self._queue.qsize()  # Number of unused backends
-
-    def __enter__(self):
-        assert self._queue is None, "Pool is disposable"
-        backends = []
-        queue = Queue(self._size)
-        for index in range(self._size):
-            backends.append(None)
-            queue.put(index)
-        self._backends = backends
-        self._queue = queue
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        assert self._queue is not None, "Is already free"
-        self._queue = None
-        for backend in self._backends:
-            if backend is not None:
-                self._close_backend(backend)
-        self._backends = None
+        return self._free_backends.qsize()  # Number of free backends
 
     def _open_backend(self):
         backend_class = get_backend_class(self._backend_name)

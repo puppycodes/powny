@@ -27,11 +27,10 @@ def powny_api(text=None, with_worker=False):
             collector_thread.daemon = True
             collector_thread.start()
 
-            (api_pool, api_app) = api.make_app(config)
-            with api_pool:
-                api_app.debug = True
-                api_app.testing = True
-                yield (api_app.test_client, config)
+            api_app = api.make_app(config)
+            api_app.debug = True
+            api_app.testing = True
+            yield (api_app.test_client, config)
         finally:
             if with_worker:
                 worker._stop()  # pylint: disable=protected-access
