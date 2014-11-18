@@ -42,6 +42,9 @@ class Backend:
     def close(self):
         self._client.close()
 
+    def is_connected(self):
+        return self._client.is_connected()
+
     # ===
 
     def get_info(self):
