@@ -75,8 +75,6 @@ class Pool:
     def get_backend(self):
         backend = self._free_backends.get()
         if not backend.is_connected():
-            self._close_backend(backend)
-            backend = self._create_backend()
             try:
                 backend.open()
             except Exception:
@@ -96,9 +94,3 @@ class Pool:
         backend = backend_class(**self._backend_opts)
         get_logger().debug("Created backend: %s(%s) = %s", backend_class, self._backend_opts, backend)
         return backend
-
-    def _close_backend(self, backend):
-        try:
-            backend.close()
-        except Exception:
-            get_logger().exception("Error while closing backend: %s", backend)
