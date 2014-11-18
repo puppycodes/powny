@@ -141,10 +141,14 @@ class Client:
         logger.debug("Started ZK client", hosts=self._hosts)
 
     def close(self):
-        self.zk.stop()
-        self.zk.close()
+        if self.zk is not None:
+            self.zk.stop()
+            self.zk.close()
         self.zk = None
         get_logger().debug("ZK client has been closed", hosts=self._hosts)
+
+    def is_connected(self):
+        return (False if self.zk is None else self.zk.connected)
 
     # ===
 
