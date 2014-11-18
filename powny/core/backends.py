@@ -75,15 +75,20 @@ class Pool:
     def get_backend(self):
         backend = self._free_backends.get()
         self._free_backends.task_done()
-        try:
-            if backend is None:
+        if backend is None:
+            try:
                 backend = self._open_backend()
+            except Exception:
+                get_logger().error("Exception on open_backend()")
+                self._free_backends.put(None)
+                raise
+
+        try:
             yield backend
         except Exception:
-            get_logger().info("Exception in the backend context, need to reopen one")
-            if backend is not None:
-                self._close_backend(backend)
-                backend = None
+            get_logger().error("Exception in the backend context, need to reopen one")
+            self._close_backend(backend)
+            backend = None
             raise
         finally:
             self._free_backends.put(backend)
