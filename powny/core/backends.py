@@ -66,7 +66,7 @@ class Pool:
         self._backend_opts = backend_opts
         self._free_backends = Queue(size)
         for _ in range(size):
-            self._free_backends.put(None)
+            self._free_backends.put(self._create_backend())
 
     def get_backend_name(self):
         return self._backend_name
@@ -74,31 +74,27 @@ class Pool:
     @contextlib.contextmanager
     def get_backend(self):
         backend = self._free_backends.get()
-        if backend is None:
+        if not backend.is_connected():
+            self._close_backend(backend)
+            backend = self._create_backend()
             try:
-                backend = self._open_backend()
+                backend.open()
             except Exception:
-                get_logger().error("Exception on open_backend()")
-                self._free_backends.put(None)
+                get_logger().error("Can't open backend %s", backend)
+                self._free_backends.put(backend)
                 raise
         try:
             yield backend
-        except Exception:
-            get_logger().error("Exception in the backend context, need to reopen one")
-            self._close_backend(backend)
-            backend = None
-            raise
         finally:
             self._free_backends.put(backend)
 
     def __len__(self):
         return self._free_backends.qsize()  # Number of free backends
 
-    def _open_backend(self):
+    def _create_backend(self):
         backend_class = get_backend_class(self._backend_name)
-        get_logger().debug("Opening backend: %s(%s)", backend_class, self._backend_opts)
         backend = backend_class(**self._backend_opts)
-        backend.open()
+        get_logger().debug("Created backend: %s(%s) = %s", backend_class, self._backend_opts, backend)
         return backend
 
     def _close_backend(self, backend):
