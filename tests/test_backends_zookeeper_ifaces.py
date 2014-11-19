@@ -28,13 +28,21 @@ class TestJobs:
     func_name = "method"
     func_state = b"pickled_function"
     func_kwargs = {"a": 1, "b": 2}
+    fresh_job = backends.JobState(
+        head=func_head,
+        method_name=func_name,
+        kwargs=func_kwargs,
+        state=func_state,
+        job_id=None,
+        request=None,
+    )
 
     def test_get_input_size(self, zclient):
         ifaces.init(zclient)
         control_iface = ifaces.JobsControl(zclient)
         assert control_iface.get_input_size() == 0
         for count in range(5):
-            control_iface.add_job(self.func_head, self.func_name, self.func_kwargs, self.func_state)
+            control_iface.add_jobs(self.func_head, [self.fresh_job])
             assert control_iface.get_input_size() == count + 1
 
     def test_delete_wait(self, zclient):
@@ -43,7 +51,7 @@ class TestJobs:
         process_iface = ifaces.JobsProcess(zclient)
         gc_iface = ifaces.JobsGc(zclient)
 
-        job_id = control_iface.add_job(self.func_head, self.func_name, self.func_kwargs, self.func_state)
+        job_id = control_iface.add_jobs(self.func_head, [self.fresh_job])[0]
         assert len(control_iface.get_job_info(job_id)) > 0
         assert not process_iface.is_deleted_job(job_id)
 
@@ -72,7 +80,7 @@ class TestJobs:
         process_iface = ifaces.JobsProcess(zclient)
         gc_iface = ifaces.JobsGc(zclient)
 
-        job_id = control_iface.add_job(self.func_head, self.func_name, self.func_kwargs, self.func_state)
+        job_id = control_iface.add_jobs(self.func_head, [self.fresh_job])[0]
         assert len(control_iface.get_job_info(job_id)) > 0
         assert not process_iface.is_deleted_job(job_id)
 
@@ -105,7 +113,7 @@ class TestJobs:
         process_iface = ifaces.JobsProcess(client)
         gc_iface = ifaces.JobsGc(client)
 
-        job_id = control_iface.add_job(self.func_head, self.func_name, self.func_kwargs, self.func_state)
+        job_id = control_iface.add_jobs(self.func_head, [self.fresh_job])[0]
         assert isinstance(job_id, str)
         assert len(job_id) > 0
         assert control_iface.get_jobs_list() == [job_id]
@@ -155,7 +163,7 @@ class TestJobs:
         assert job_info["method"] == self.func_name
         assert job_info["kwargs"] == self.func_kwargs
         assert isinstance(job_info["created"], str)
-        assert isinstance(job_info["number"], int)
+        assert isinstance(job_info["request"], int)
 
     def _assert_job_info_new(self, job_info):
         self._assert_job_info(job_info)

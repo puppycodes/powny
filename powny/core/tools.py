@@ -12,6 +12,8 @@ from . import context
 from . import imprules
 from . import rules
 
+from .backends import JobState
+
 
 # =====
 def get_node_name():
@@ -64,17 +66,28 @@ def get_exposed(backend, loader):
     return (head, exposed, errors, exc)
 
 
-def get_dumped_method(name, kwargs, exposed):
+def make_job(head, name, kwargs, exposed):
     method = exposed.get("methods", {}).get(name)
     if method is None:
         return None
     else:
-        return context.dump_call(method, kwargs)
+        return _make_job_state(head, name, method, kwargs)
 
 
-def get_dumped_handlers(kwargs, exposed):
-    return {
-        name: context.dump_call(handler, kwargs)
-        for (name, handler) in exposed.get("handlers", {}).items()
-        if rules.check_match(handler, kwargs)
-    }
+def make_jobs_by_matchers(head, kwargs, exposed):
+    return [
+        _make_job_state(head, name, method, kwargs)
+        for (name, method) in exposed.get("handlers", {}).items()
+        if rules.check_match(method, kwargs)
+    ]
+
+
+def _make_job_state(head, name, method, kwargs):
+    return JobState(
+        head=head,
+        method_name=name,
+        kwargs=kwargs,
+        state=context.dump_call(method, kwargs),
+        job_id=None,
+        request=None,
+    )
