@@ -102,18 +102,21 @@ class JobsResource(Resource):
         return (head, exposed)
 
     def _run_method(self, backend, method_name, kwargs, head, exposed):
-        state = tools.get_dumped_method(method_name, kwargs, exposed)  # Validation is not required
-        if state is None:
+        job = tools.make_job(head, method_name, kwargs, exposed)  # Validation is not required
+        if job is None:
             raise ApiError(404, "Method not found")
-        job_id = backend.jobs_control.add_job(head, method_name, kwargs, state)
+        job_id = backend.jobs_control.add_jobs(head, [job])[0]
         return {job_id: {"method": method_name, "url": self._get_job_url(job_id)}}
 
     def _run_handlers(self, backend, kwargs, head, exposed):
-        jobs = {}
-        for (handler_name, state) in tools.get_dumped_handlers(kwargs, exposed).items():
-            job_id = backend.jobs_control.add_job(head, handler_name, kwargs, state)
-            jobs[job_id] = {"method": handler_name, "url": self._get_job_url(job_id)}
-        return jobs
+        jobs = tools.make_jobs_by_matchers(head, kwargs, exposed)
+        if len(jobs) == 0:
+            return {}
+        else:
+            return {
+                job_id: {"method": job.method_name, "url": self._get_job_url(job_id)}
+                for (job_id, job) in zip(backend.jobs_control.add_jobs(head, jobs), jobs)
+            }
 
     def _get_job_url(self, job_id):
         return get_url_for(JobControlResource, job_id=job_id)
@@ -133,7 +136,7 @@ class JobControlResource(Resource):
                           "method":   "<path.to.function>",  # Full method path in the rules
                           "head":     "<HEAD>",    # HEAD of the rules for this job
                           "kwargs":   {...},       # Function arguments
-                          "number":   <int>,       # The serial number of the job
+                          "request":  <int>,       # The serial number of the set with jobs
                           "created":  <str>,       # ISO-8601-like time when the job was created
                           "locked":   <dict|null>, # Job in progress (null if not locked, dict with info otherwise)
                           "deleted":  <str|null>,  # ISO-8601-like time when job was marked to stop and delete

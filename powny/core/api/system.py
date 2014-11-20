@@ -15,15 +15,15 @@ class StateResource(Resource):
                    "message": "<...>",
                    "result": {
                        "jobs": {
-                           "input":   <number>,
-                           "all":     <number>,
-                           "counter": <number>,
+                           "input":    <number>,
+                           "all":      <number>,
+                           "requests": <number>,
                        },
                        "apps": {
                            "<app_name>": {
                                "<node_name>" {
-                                   "when": "<time>",  # ISO-8601-like when statistics has been writed
-                                   "pid":  <int>,
+                                   "when":  "<time>",  # ISO-8601-like when statistics has been writed
+                                   "pid":   <int>,
                                    "state": {
                                        "respawns": <int>,  # Number of restarts of the application
                                        ...  # Application-specific fields
@@ -54,9 +54,9 @@ class StateResource(Resource):
             full_apps_state.setdefault("collector", {})
             result = {
                 "jobs": {
-                    "input":   backend.jobs_control.get_input_size(),
-                    "all":     backend.jobs_control.get_jobs_count(),
-                    "counter": backend.jobs_control.get_counter_value(),
+                    "input": backend.jobs_control.get_input_size(),
+                    "all": backend.jobs_control.get_jobs_count(),
+                    "requests": backend.jobs_control.get_request_count(),
                 },
                 "apps": full_apps_state,
             }

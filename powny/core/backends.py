@@ -12,12 +12,13 @@ class DeleteTimeoutError(Exception):
     pass
 
 
-ReadyJob = collections.namedtuple("ReadyJob", (
-    "job_id",
-    "number",
+JobState = collections.namedtuple("JobState", (
     "head",
     "method_name",
+    "kwargs",
     "state",
+    "job_id",
+    "request",
 ))
 
 

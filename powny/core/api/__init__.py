@@ -1,5 +1,7 @@
 import abc
 
+from contextlog import get_logger
+
 import flask
 
 
@@ -34,6 +36,7 @@ class Resource(metaclass=abc.ABCMeta):
             }
             return (result, err.code)
         except Exception as err:
+            get_logger().exception("Unhandled API exception")
             message = "{}: {}".format(type(err).__name__, err)
             if hasattr(err, "__module__"):
                 message = "{}.{}".format(err.__module__, message)
