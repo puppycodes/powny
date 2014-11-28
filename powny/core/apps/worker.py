@@ -48,8 +48,9 @@ class _Worker(Application):
                     self._write_worker_state(backend)
 
                     if self._manager.get_current() >= self._app_config.max_jobs:
-                        logger.debug("Have reached the maximum concurrent jobs (%d), sleeping %f seconds...",
-                                     self._app_config.max_jobs, self._app_config.max_jobs_sleep)
+                        logger.debug("Have reached the maximum concurrent jobs %(maxjobs)d,"
+                                     " sleeping %(delay)f seconds...",
+                                     {"maxjobs": self._app_config.max_jobs, "delay": self._app_config.max_jobs_sleep})
                         time.sleep(self._app_config.max_jobs_sleep)
 
                     else:
@@ -57,8 +58,8 @@ class _Worker(Application):
                             job = next(gen_jobs)
                         except StopIteration:
                             if not sleep_mode:
-                                logger.debug("No jobs in queue, entering to sleep mode with interval %f seconds...",
-                                             self._app_config.empty_sleep)
+                                logger.debug("No jobs in queue, sleeping for %(delay)f seconds...",
+                                             {"delay": self._app_config.empty_sleep})
                             sleep_mode = True
                             time.sleep(self._app_config.empty_sleep)
                             break
@@ -105,7 +106,8 @@ class _JobsManager:
         for (job_id, (method_name, proc)) in self._procs.copy().items():
             logger = get_logger(job_id=job_id, method=method_name)
             if not proc.is_alive():
-                logger.info("Finished job process %d with retcode %d", proc.pid, proc.exitcode)
+                logger.info("Finished job process %(pid)d with retcode %(retcode)d",
+                            {"pid": proc.pid, "retcode": proc.exitcode})
                 self._finish(job_id)
             elif backend.jobs_process.is_deleted_job(job_id):
                 self._kill(proc)
@@ -117,21 +119,22 @@ class _JobsManager:
 
     def _kill(self, proc):
         logger = get_logger()
-        logger.info("Killing job process %s...", proc)
+        logger.info("Killing job process %(pid)d...", {"pid": proc.pid})
         try:
             proc.terminate()
             proc.join()
         except Exception:
-            logger.exception("Can't kill process %s; ignored", proc)
+            logger.exception("Can't kill process %(pid)d; ignored", {"pid": proc.pid})
             return
-        logger.info("Killed job process %d with retcode %d", proc.pid, proc.exitcode)
+        logger.info("Killed job process %(pid)d with retcode %(exitcode)d",
+                    {"pid": proc.pid, "exitcode": proc.exitcode})
 
 
 def _exec_job(job, rules_dir, backend, associated):
     logger = get_logger(job_id=job.job_id, method=job.method_name)
     rules_path = os.path.join(rules_dir, job.head)
     with backend.connected():
-        logger.debug("Associating job with PID %d", os.getpid())
+        logger.debug("Associating job with PID %(pid)d", {"pid": os.getpid()})
         backend.jobs_process.associate_job(job.job_id)
         associated.set()
 
