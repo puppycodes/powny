@@ -55,9 +55,9 @@ class GolemResource(Resource):
     def _get_event_data(self):
         data = dict(request.args)
         if request.method == "POST":
-            for (key, value) in dict(request.data or {}).items():
-                # XXX: Понять, почему тут могут быть списки
-                data[key] = (value[0] if isinstance(value, (list, tuple)) else value)
+            data.update(dict(request.data or {}))
+        for (key, value) in list(data.items()):
+            data[key] = (value[-1] if isinstance(value, (list, tuple)) else value)
         return data
 
     def _get_exposed(self, backend):
