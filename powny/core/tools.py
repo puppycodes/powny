@@ -10,7 +10,7 @@ from contextlog import get_logger
 
 from . import context
 from . import imprules
-from . import rules
+from . import golem
 
 from .backends import JobState
 
@@ -46,7 +46,7 @@ def make_loader(rules_root):
     return imprules.Loader(
         prefix=rules_root,
         group_by=(
-            ("handlers", rules.is_event_handler),
+            ("handlers", golem.is_event_handler),
             ("methods", lambda _: True),
         ),
     )
@@ -66,23 +66,7 @@ def get_exposed(backend, loader):
     return (head, exposed, errors, exc)
 
 
-def make_job(head, name, kwargs, exposed):
-    method = exposed.get("methods", {}).get(name)
-    if method is None:
-        return None
-    else:
-        return _make_job_state(head, name, method, kwargs)
-
-
-def make_jobs_by_matchers(head, kwargs, exposed):
-    return [
-        _make_job_state(head, name, method, kwargs)
-        for (name, method) in exposed.get("handlers", {}).items()
-        if rules.check_match(method, kwargs)
-    ]
-
-
-def _make_job_state(head, name, method, kwargs):
+def make_job_state(head, name, method, kwargs):
     return JobState(
         head=head,
         method_name=name,
