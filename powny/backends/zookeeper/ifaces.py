@@ -349,8 +349,7 @@ class AppsState:
                 request.set(path, state)
         except zoo.NoNodeError:
             with self._client.make_write_request("create_state_node()") as request:
-                request.create(path, ephemeral=True)
-            self._set_raw_state(app_name, node_name, state)
+                request.create(path, state, ephemeral=True)
 
     def get_full_state(self):
         full_state = {}
