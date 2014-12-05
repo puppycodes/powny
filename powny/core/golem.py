@@ -70,7 +70,6 @@ class IncorrectEventError(Exception):
 
 # =====
 class Event:
-    # https://wiki.yandex-team.ru/SM/Protocols/JsonDescription
     # TODO: Make objects for children
 
     def __init__(self, raw_event):
@@ -108,18 +107,27 @@ def convert_status(golem_status):
     status = golem_status.upper()
     status = {"WARNING": WARN, "CRITICAL": CRIT}.get(status, status)
     if status not in (OK, WARN, CRIT):
-        raise IncorrectEventError(400, "Invalid status: {}".format(golem_status))
+        raise IncorrectEventError("Invalid status: {}".format(golem_status))
     return status
 
 
 def convert_golem_event(data):
+    # See ya-wiki: sm/obsolete/protocols/JsonDescription
+    _check_required_fields(data, ("object", "eventtype"))
     raw_event = {
         "host": data["object"],
         "service": data["eventtype"],
     }
     if valid_bool(data.get("json", False)):
         raw_event.update(json.loads(data.get("info", "{}")))
+        _check_required_fields(raw_event, ("status", "description"))
     else:
         raw_event["status"] = convert_status(data.get("status", "critical"))
-        raw_event["description"] = data.get("info")
+        raw_event["description"] = data.get("info", "")
     return raw_event
+
+
+def _check_required_fields(data, fields):
+    missing = set(fields).difference(set(data))
+    if len(missing) != 0:
+        raise IncorrectEventError("Missing required fields: {}".format(", ".join(missing)))
