@@ -125,7 +125,6 @@ class JobControlResource(Resource):
                           "method":   "<path.to.function>",  # Full method path in the rules
                           "head":     "<HEAD>",    # HEAD of the rules for this job
                           "kwargs":   {...},       # Function arguments
-                          "request":  <int>,       # The serial number of the set with jobs
                           "created":  <str>,       # ISO-8601-like time when the job was created
                           "locked":   <dict|null>, # Job in progress (null if not locked, dict with info otherwise)
                           "deleted":  <str|null>,  # ISO-8601-like time when job was marked to stop and delete

@@ -34,7 +34,6 @@ class TestJobs:
         kwargs=func_kwargs,
         state=func_state,
         job_id=None,
-        request=None,
     )
 
     def test_get_input_size(self, zclient):
@@ -163,7 +162,6 @@ class TestJobs:
         assert job_info["method"] == self.func_name
         assert job_info["kwargs"] == self.func_kwargs
         assert isinstance(job_info["created"], str)
-        assert isinstance(job_info["request"], int)
 
     def _assert_job_info_new(self, job_info):
         self._assert_job_info(job_info)

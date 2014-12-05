@@ -73,5 +73,4 @@ def make_job_state(head, name, method, kwargs):
         kwargs=kwargs,
         state=context.dump_call(method, kwargs),
         job_id=None,
-        request=None,
     )

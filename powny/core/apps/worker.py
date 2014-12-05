@@ -140,7 +140,7 @@ def _exec_job(job, rules_dir, backend, associated):
             backend=backend,
             job_id=job.job_id,
             state=job.state,
-            extra={"request": job.request, "head": job.head},
+            extra={"head": job.head},
         )
         thread.start()
         thread.join()

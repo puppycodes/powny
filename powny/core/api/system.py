@@ -17,7 +17,6 @@ class StateResource(Resource):
                        "jobs": {
                            "input":    <number>,
                            "all":      <number>,
-                           "requests": <number>,
                        },
                        "apps": {
                            "<app_name>": {
@@ -56,7 +55,6 @@ class StateResource(Resource):
                 "jobs": {
                     "input": backend.jobs_control.get_input_size(),
                     "all": backend.jobs_control.get_jobs_count(),
-                    "requests": backend.jobs_control.get_request_count(),
                 },
                 "apps": full_apps_state,
             }
