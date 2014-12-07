@@ -56,7 +56,7 @@ class GolemResource(Resource):
         data = dict(request.args)
         if request.method == "POST":
             data.update(dict(request.data or {}))
-        for (key, value) in list(data.items()):
+        for (key, value) in data.items():
             data[key] = (value[-1] if isinstance(value, (list, tuple)) else value)
         return data
 
