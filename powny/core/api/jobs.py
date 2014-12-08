@@ -4,13 +4,13 @@ from ulib.validatorlib import ValidatorError
 from ulib.validators.extra import valid_uuid
 
 from ..backends import DeleteTimeoutError
-from .. import tools
+
+from ..tools import get_exposed
+from ..tools import make_job_state
 
 from . import get_url_for
-from . import (
-    Resource,
-    ApiError,
-)
+from . import Resource
+from . import ApiError
 
 
 # =====
@@ -31,11 +31,9 @@ class JobsResource(Resource):
                 }
                 # =====
 
-        POST -- Run method or handler. If the argument "method" is specified, will
+        POST -- Run the specified method. If the argument "method" is specified, will
                 be running the specified method (requires the full path from the rules).
-                If this argument is not specified, it will be found and run the
-                appropriate handlers. The arguments passed to method/handler via request
-                body (in dict format).
+                The arguments passed to method via request body (in dict format).
 
                 Return value:
                 # =====
@@ -47,13 +45,9 @@ class JobsResource(Resource):
                             "method": "<path.to.function>",
                             "url": "<http://api/url/to/control/the/job>"},
                         },
-                        ...
                     },
                 }
                 # =====
-
-                For explicit method call will be returnet only one job_id, for handlers
-                will be returned several identifiers for the appropriate handlers.
 
                 Possible POST errors (with status=="error"):
                     404 -- Method not found (for method call).
@@ -86,37 +80,32 @@ class JobsResource(Resource):
 
         (head, exposed) = self._get_exposed(backend)
         method_name = request.args.get("method", None)
+        if method_name is None:
+            raise ApiError(400, "Requires method_name")
         kwargs = dict(request.data or {})
 
-        if method_name is not None:
-            result = self._run_method(backend, method_name, kwargs, head, exposed)
-            return (result, "Method was launched")
-        else:
-            result = self._run_handlers(backend, kwargs, head, exposed)
-            return (result, ("No matching handler" if len(result) == 0 else "Handlers were launched"))
+        result = self._run_method(backend, method_name, kwargs, head, exposed)
+        return (result, "Method was launched")
 
     def _get_exposed(self, backend):
-        (head, exposed, _, _) = tools.get_exposed(backend, self._loader)
+        (head, exposed, _, _) = get_exposed(backend, self._loader)
         if exposed is None:
             raise ApiError(503, "No HEAD or exposed methods")
         return (head, exposed)
 
     def _run_method(self, backend, method_name, kwargs, head, exposed):
-        job = tools.make_job(head, method_name, kwargs, exposed)  # Validation is not required
+        job = self._make_job(head, method_name, kwargs, exposed)  # Validation is not required
         if job is None:
             raise ApiError(404, "Method not found")
         job_id = backend.jobs_control.add_jobs(head, [job])[0]
         return {job_id: {"method": method_name, "url": self._get_job_url(job_id)}}
 
-    def _run_handlers(self, backend, kwargs, head, exposed):
-        jobs = tools.make_jobs_by_matchers(head, kwargs, exposed)
-        if len(jobs) == 0:
-            return {}
+    def _make_job(self, head, name, kwargs, exposed):
+        method = exposed.get("methods", {}).get(name)
+        if method is None:
+            return None
         else:
-            return {
-                job_id: {"method": job.method_name, "url": self._get_job_url(job_id)}
-                for (job_id, job) in zip(backend.jobs_control.add_jobs(head, jobs), jobs)
-            }
+            return make_job_state(head, name, method, kwargs)
 
     def _get_job_url(self, job_id):
         return get_url_for(JobControlResource, job_id=job_id)
@@ -136,7 +125,6 @@ class JobControlResource(Resource):
                           "method":   "<path.to.function>",  # Full method path in the rules
                           "head":     "<HEAD>",    # HEAD of the rules for this job
                           "kwargs":   {...},       # Function arguments
-                          "request":  <int>,       # The serial number of the set with jobs
                           "created":  <str>,       # ISO-8601-like time when the job was created
                           "locked":   <dict|null>, # Job in progress (null if not locked, dict with info otherwise)
                           "deleted":  <str|null>,  # ISO-8601-like time when job was marked to stop and delete

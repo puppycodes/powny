@@ -214,9 +214,6 @@ class Client:
     def get_queue(self, path):
         return _Queue(self, path)
 
-    def get_counter(self, path):
-        return _Counter(self, path)
-
 
 class _WriteRequest:
     """
@@ -382,31 +379,3 @@ class _Queue:
 
     def __len__(self):
         return self._client.get_children_count(self._path)
-
-
-class _Counter:
-    """
-        Incremental integer counter.
-    """
-
-    def __init__(self, client, path):
-        self._client = client
-        self._path = path
-
-    def get(self):
-        try:
-            value = _decode_value(self._client.zk.get(self._path)[0])
-            if value is EmptyValue:
-                return 0
-            else:
-                return value
-        except kazoo.exceptions.NoNodeError:
-            raise NoNodeError
-
-    def increment(self):
-        with self._client.zk.Lock(join(self._path, "__lock__")):
-            old = self.get()
-            new = old + 1
-            self._client.zk.set(self._path, _encode_value(new))
-            get_logger().debug("Value changed: %d -> %d", old, new, comment=self._path)
-        return old

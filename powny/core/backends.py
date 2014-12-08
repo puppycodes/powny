@@ -18,7 +18,6 @@ JobState = collections.namedtuple("JobState", (
     "kwargs",
     "state",
     "job_id",
-    "request",
 ))
 
 

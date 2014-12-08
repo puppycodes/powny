@@ -25,7 +25,6 @@ from . import zoo
 # =====
 _PATH_INPUT_QUEUE = "/input_queue"
 _PATH_SYSTEM = "/system"
-_PATH_REQUEST_COUNTER = zoo.join(_PATH_SYSTEM, "request_counter")
 _PATH_RULES_HEAD = zoo.join(_PATH_SYSTEM, "rules_head")
 _PATH_APPS_STATE = zoo.join(_PATH_SYSTEM, "apps_state")
 _PATH_JOBS = "/jobs"
@@ -86,7 +85,6 @@ def init(client):
     for path in (
         _PATH_INPUT_QUEUE,
         _PATH_SYSTEM,
-        _PATH_REQUEST_COUNTER,
         _PATH_RULES_HEAD,
         _PATH_APPS_STATE,
         _PATH_JOBS,
@@ -111,7 +109,6 @@ class JobsControl:
     def __init__(self, client):
         self._client = client
         self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
-        self._request_counter = self._client.get_counter(_PATH_REQUEST_COUNTER)
 
     def get_jobs_list(self):
         return self._client.get_children(_PATH_JOBS)
@@ -122,24 +119,19 @@ class JobsControl:
     def get_jobs_count(self):
         return self._client.get_children_count(_PATH_JOBS)
 
-    def get_request_count(self):
-        return self._request_counter.get()
-
     def add_jobs(self, head, jobs):
-        request_number = self._request_counter.increment()
         now = make_isotime()
         added_ids = []
         with self._client.make_write_request("add_jobs()") as request:
             for job in jobs:
                 job_id = make_job_id()
-                get_logger().info("Registering job", job_id=job_id, request_number=request_number,
-                                  head=head, method=job.method_name, kwargs=job.kwargs)
+                get_logger().info("Registering job", job_id=job_id, head=head,
+                                  method=job.method_name, kwargs=job.kwargs)
                 request.create(_get_path_job(job_id), {
                     "head": head,
                     "method": job.method_name,
                     "kwargs": job.kwargs,
                     "created": now,
-                    "request": request_number,
                 })
                 request.create(_get_path_job_state(job_id), {
                     "state": job.state,
@@ -217,7 +209,6 @@ class JobsProcess:
                 kwargs=job_info["kwargs"],
                 state=exec_info["state"],
                 job_id=job_id,
-                request=job_info["request"],
             )
 
     def associate_job(self, job_id):
@@ -349,8 +340,7 @@ class AppsState:
                 request.set(path, state)
         except zoo.NoNodeError:
             with self._client.make_write_request("create_state_node()") as request:
-                request.create(path, ephemeral=True)
-            self._set_raw_state(app_name, node_name, state)
+                request.create(path, state, ephemeral=True)
 
     def get_full_state(self):
         full_state = {}
