@@ -42,8 +42,11 @@ class Backend:
     def close(self):
         self._client.close()
 
-    def is_connected(self):
-        return self._client.is_connected()
+    def is_opened(self):
+        return self._client.is_opened()
+
+    def is_alive(self):
+        return self._client.is_alive()
 
     # ===
 

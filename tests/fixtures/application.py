@@ -39,21 +39,16 @@ def powny_api(text=None, with_worker=False):
             collector._stop()  # pylint: disable=protected-access
             collector_thread.join()
 
-# TODO FIXME XXX: WHAT THE FUCK?!
-# [zk: localhost:2181(CONNECTED) 40] ls /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state
-# []
-# [zk: localhost:2181(CONNECTED) 41] delete /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state
-# Node not empty: /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state
-#
-#            if config.core.backend == "zookeeper":
-#                from powny.backends.zookeeper import zoo
-#                zclient_kwargs = dict(config.backend)
-#                zclient_kwargs["chroot"] = None
-#                with zoo.Client(**zclient_kwargs) as client:
-#                    with client.make_write_request("remove_chroot()") as request:
-#                        request.delete(chroot, recursive=True)
-#            else:
-#                raise NotImplementedError
+            # Cleanup ZooKeeper
+            if config.core.backend == "zookeeper":
+                from powny.backends.zookeeper import zoo
+                zclient_kwargs = dict(config.backend)
+                zclient_kwargs["chroot"] = None
+                with zoo.Client(**zclient_kwargs).connected() as client:
+                    with client.make_write_request("remove_chroot()") as request:
+                        request.delete(chroot, recursive=True)
+            else:
+                raise NotImplementedError
 
 
 def as_dict(response):
