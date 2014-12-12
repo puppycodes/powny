@@ -6,7 +6,7 @@
 
 
 ###Что это?###
-Powny - это распределенная система обработки событий и исполнения функций по требованию. Функции пишутся на обычном Python и могут запрашивать создание контрольных точек во время работы. Таким образом, если исполнение было прервано в результате сбоя на одной из нод, другая нода продолжит выполнять функцию с последней контрольной точки.
+Powny - это распределенная система исполнения функций по требованию. Функции пишутся на обычном Python и могут запрашивать создание контрольных точек во время работы. Таким образом, если исполнение было прервано в результате сбоя на одной из нод, другая нода продолжит выполнять функцию с последней контрольной точки.
 В основе принципа работы Powny лежит использование [континулетов](http://pypy.readthedocs.org/en/latest/stackless.html#continulet) - части stackless-возможностей PyPy. Каждая задача представляется в виде континулета, который, при запросе создания контрольной точки, сериализуется и сохраняется в распределенное хранилище (сейчас это - [Apache ZooKeeper](http://zookeeper.apache.org/)). Восстановление заключается в десериализации и запуске процесса, исполняющего функцию.
 
 
@@ -19,21 +19,11 @@ pypy3 -m pip install --user -e
 ```
 Powny будет установлен в отладочном режиме. Для запуска системы используйте такие команды (находясь в каталоге `powny`):
 ```
-~/.local/bin/powny-api -l DEBUG
-~/.local/bin/powny-worker -l DEBUG
-~/.local/bin/powny-collector -l DEBUG
+~/.local/bin/powny-api -l debug
+~/.local/bin/powny-worker -l debug
+~/.local/bin/powny-collector -l debug
 ```
 По-умолчанию, вам будут доступны правила из каталога `rules`.
-
-
-###Использование с Docker/Dominator###
-Для локального запуска в изолированной среде, вам потребуется [Docker](https://www.docker.com/) и [Dominator](https://github.com/yandex-sysmon/dominator). Для их настройки обратитесь в соответствующую документацию.
-Чтобы запустить Powny внутри Dominator, установите питоновый пакет [obedient.powny](https://pypi.python.org/pypi/obedient.powny/2.1.4), соберите образа и запустите их:
-```
-dominator -l DEBUG shipment generate obedient.powny local > powny.local.yaml
-dominator -l DEBUG -c powny.local.yaml image build
-dominator -l DEBUG -c powny.local.yaml container start
-```
 
 
 ###TODO & FIXME###
