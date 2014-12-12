@@ -39,10 +39,3 @@ ImportError: No module named powny.helpers.core
   * Тест для push-back в процессе коллектора
   * Тест для секретных конфигов.
   * Обрезать значения опций в `-m`.
-  * Баг в зукипере (см. `tests/fixtures/application.py`)?
-```
-[zk: localhost:2181(CONNECTED) 40] ls /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state
-[]
-[zk: localhost:2181(CONNECTED) 41] delete /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state
-Node not empty: /07ba652f-2b95-4d28-a741-431a11b3001f/system/apps_state
-```
