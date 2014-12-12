@@ -34,8 +34,6 @@ File "/home/mdevaev/projects/yandex/powny/powny/helpers/email/__init__.py", line
     from ...core.optconf import Option
 ImportError: No module named powny.helpers.core
 ```
-  * Индивидуальные `sys.path` и `sys.modules` для отдельных потоков не работают из-за кеширования загруженных правил. Если не кешировать - то будет медленно. Закостылял локом и общими объектами.
-  * Тест для воркера: DELETE
-  * Тест для push-back в процессе коллектора
+  * Тест для воркера: DELETE.
+  * Тест для push-back в процессе коллектора.
   * Тест для секретных конфигов.
-  * Обрезать значения опций в `-m`.
