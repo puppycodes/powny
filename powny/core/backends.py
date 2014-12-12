@@ -74,7 +74,12 @@ class Pool:
     @contextlib.contextmanager
     def get_backend(self):
         backend = self._free_backends.get()
-        if not backend.is_connected():
+        if not backend.is_alive():
+            if backend.is_opened():
+                try:
+                    backend.close()
+                except Exception:
+                    get_logger().error("Can't close backend %s", backend)
             try:
                 backend.open()
             except Exception:
