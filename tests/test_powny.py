@@ -13,39 +13,39 @@ from .fixtures.application import from_dict
 def test_api_v1_rules():
     with powny_api() as (test_client, _):
         with test_client() as api:
-            result = as_dict(api.get("/v1/rules"))
+            result = as_dict(api.get("/v1/rules/exposed"))
             assert result[0] == 200
             assert result[1] == {
                 "status":  "ok",
-                "message": "Current HEAD",
+                "message": "The rules of current HEAD",
                 "result": {"head": None, "errors": None, "exposed": None},
             }
 
             # ---
-            result = as_dict(api.post("/v1/rules", **from_dict({"head": "foobar"})))
+            result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "foobar"})))
             assert result[0] == 400
             assert result[1] == {
                 "status":  "error",
                 "message": "The argument \"foobar\" is not a valid hex string",
                 "result":  {"head": "foobar"},
             }
-            result = as_dict(api.get("/v1/rules"))
+            result = as_dict(api.get("/v1/rules/exposed"))
             assert result[0] == 200
             assert result[1] == {
                 "status":  "ok",
-                "message": "Current HEAD",
+                "message": "The rules of current HEAD",
                 "result": {"head": None, "errors": None, "exposed": None},
             }
 
             # ---
-            result = as_dict(api.post("/v1/rules", **from_dict({"head": "0"})))
+            result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "0"})))
             assert result[0] == 200
             assert result[1] == {
                 "status":  "ok",
                 "message": "The HEAD has been updated",
                 "result": {"head": "0"},
             }
-            result = as_dict(api.get("/v1/rules"))
+            result = as_dict(api.get("/v1/rules/exposed"))
             assert result[0] == 503
             assert result[1] == {
                 "status":  "error",
@@ -54,7 +54,7 @@ def test_api_v1_rules():
             }
 
             # ---
-            result = as_dict(api.post("/v1/rules", **from_dict({"head": "0123456789abcdef"})))
+            result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "0123456789abcdef"})))
             assert result[0] == 200
             assert result[1] == {
                 "status":  "ok",
@@ -62,10 +62,10 @@ def test_api_v1_rules():
                 "result": {"head": "0123456789abcdef"},
             }
 
-            result = as_dict(api.get("/v1/rules"))
+            result = as_dict(api.get("/v1/rules/exposed"))
             assert result[0] == 200
             assert result[1]["status"] == "ok"
-            assert result[1]["message"] == "Current HEAD"
+            assert result[1]["message"] == "The rules of current HEAD"
             assert result[1]["result"]["head"] == "0123456789abcdef"
             assert isinstance(result[1]["result"]["errors"], dict)
             assert isinstance(result[1]["result"]["exposed"]["methods"], list)
@@ -184,7 +184,7 @@ def test_compat_golem_execution(httpserver):
 
 
 def _init_head(api):
-    assert as_dict(api.post("/v1/rules", **from_dict({"head": "0123456789abcdef"})))[0] == 200
+    assert as_dict(api.post("/v1/rules/head", **from_dict({"head": "0123456789abcdef"})))[0] == 200
 
 
 def _check_result(job_id, api, wait):
