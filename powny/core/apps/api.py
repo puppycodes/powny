@@ -13,7 +13,8 @@ from .. import tools
 from .. import api
 from .. import backdoor
 
-from ..api.rules import RulesResource
+from ..api.rules import ExposedRulesResource
+from ..api.rules import RulesHeadResource
 
 from ..api.jobs import JobsResource
 from ..api.jobs import JobControlResource
@@ -95,10 +96,11 @@ def make_app(config):
     loader = tools.make_loader(config.core.rules_dir)
 
     app = _Api(__name__)
-    app.add_url_resource("v1", "/v1/rules", RulesResource(
+    app.add_url_resource("v1", "/v1/rules/exposed", ExposedRulesResource(
         pool=pool,
         loader=loader,
     ))
+    app.add_url_resource("v1", "/v1/rules/head", RulesHeadResource(pool))
     app.add_url_resource("v1", "/v1/jobs", JobsResource(
         pool=pool,
         loader=loader,

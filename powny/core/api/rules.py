@@ -12,9 +12,8 @@ from . import (
 
 
 # =====
-class RulesResource(Resource):
-    name = "Operations with the rules HEAD"
-    methods = ("GET", "POST")
+class ExposedRulesResource(Resource):
+    name = "Information about rules"
     docstring = """
         GET  -- Returns a current version (head) of the rules in format:
 
@@ -42,8 +41,43 @@ class RulesResource(Resource):
                 @exposed.handlers -- List of event handlers that are selected based on filters.
                                      They may also be called manually as methods.
 
-                Possible GET errors (with status=="error"):
+                Possible errors (with status=="error"):
                     503 -- Non-existant HEAD for rules.
+    """
+
+    def __init__(self, pool, loader):
+        self._pool = pool
+        self._loader = loader
+
+    def process_request(self):
+        with self._pool.get_backend() as backend:
+            if request.method == "GET":
+                (head, exposed, errors, exc) = tools.get_exposed(backend, self._loader)
+                if exc is None:  # No errors
+                    if exposed is not None:
+                        exposed_names = {group: list(methods) for (group, methods) in exposed.items()}
+                    else:
+                        exposed_names = None  # Not configured HEAD
+                    return ({"head": head, "exposed": exposed_names, "errors": errors}, "The rules of current HEAD")
+                else:
+                    raise ApiError(503, exc, {"head": head, "exposed": None, "errors": None})
+
+
+class RulesHeadResource(Resource):
+    name = "Operations with rules HEAD"
+    methods = ("GET", "POST")
+    docstring = """
+        GET  -- Returns a current version (head) of the rules in format:
+
+                # =====
+                {
+                    "status":  "ok",
+                    "message": "<...>",
+                    "result":  {"head": "<HEAD>"|null},
+                }
+                # =====
+
+                @head -- Current version of the rules. Null if the version has not yet been set.
 
         POST -- Takes a version (head) in the format: {"head": "<HEAD>"} and applies it.
 
@@ -60,9 +94,8 @@ class RulesResource(Resource):
                     400 -- Invalid HEAD (not a hex string).
     """
 
-    def __init__(self, pool, loader):
+    def __init__(self, pool):
         self._pool = pool
-        self._loader = loader
 
     def process_request(self):
         with self._pool.get_backend() as backend:
@@ -81,12 +114,4 @@ class RulesResource(Resource):
         return ({"head": head}, "The HEAD has been updated")
 
     def _request_get(self, backend):
-        (head, exposed, errors, exc) = tools.get_exposed(backend, self._loader)
-        if exc is None:  # No errors
-            if exposed is not None:
-                exposed_names = {group: list(methods) for (group, methods) in exposed.items()}
-            else:
-                exposed_names = None  # Not configured HEAD
-            return ({"head": head, "exposed": exposed_names, "errors": errors}, "Current HEAD")
-        else:
-            raise ApiError(503, exc, {"head": head, "exposed": None, "errors": None})
+        return ({"head": backend.rules.get_head()}, "Current HEAD")
