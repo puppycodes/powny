@@ -1,3 +1,5 @@
+import operator
+
 import tabloid
 import colorama
 import pygments
@@ -46,7 +48,7 @@ def _format_default_value(value, row):
 
 def _make_plain_dump(config, split_by=(), path=()):
     plain = []
-    for (key, value) in config.items():
+    for (key, value) in sorted(config.items(), key=operator.itemgetter(0)):
         if isinstance(value, Section):
             if len(plain) != 0 and path in split_by:
                 plain.append(None)
