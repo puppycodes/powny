@@ -17,7 +17,9 @@ from .backends import JobState
 
 # =====
 def get_node_name():
-    return platform.uname()[1]
+    from .apps import get_config
+    node_name = (get_config() or {}).get("core", {}).get("node_name")
+    return (node_name or platform.uname()[1])
 
 
 def get_version():
