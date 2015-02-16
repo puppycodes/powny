@@ -4,7 +4,6 @@ import importlib
 import pkgutil
 import threading
 import socket
-import platform
 import functools
 import logging
 import logging.config
@@ -99,7 +98,7 @@ class _ClusterLogRecord(logging.LogRecord):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fqdn = self._get_cached_fqdn(int(time.time()) // 60)  # Cached value FQDN, updated every minute
-        self.node = platform.uname()[1]  # Nodename from uname
+        self.node = tools.get_node_name()  # Nodename from uname
 
     @staticmethod
     @functools.lru_cache(1)
@@ -170,6 +169,7 @@ def _valid_log_level(arg):
 def _get_config_scheme():
     scheme = {
         "core": {
+            "node_name": optconf.Option(default=None, type=str, help="Short node name (like uname -n)"),
             "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
             "rules_dir": optconf.Option(default="rules", help="Path to rules root"),
         },
