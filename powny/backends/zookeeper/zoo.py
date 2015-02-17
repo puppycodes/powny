@@ -231,10 +231,10 @@ class _WriteRequest:
 
     def create(self, path, value=EmptyValue, ephemeral=False, sequence=False, recursive=False):
         kwargs = {
-            "path":      path,
-            "value":     _encode_value(value),
+            "path": path,
+            "value": _encode_value(value),
             "ephemeral": ephemeral,
-            "sequence":  sequence,
+            "sequence": sequence,
         }
         if recursive:
             kwargs["makepath"] = True  # XXX: Only for a single operation!
@@ -242,7 +242,7 @@ class _WriteRequest:
 
     def set(self, path, value=EmptyValue):
         self._ops.append(("set", {
-            "path":  path,
+            "path": path,
             "value": _encode_value(value),
         }))
 

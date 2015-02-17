@@ -16,7 +16,7 @@ def test_api_v1_rules():
             result = as_dict(api.get("/v1/rules/exposed"))
             assert result[0] == 200
             assert result[1] == {
-                "status":  "ok",
+                "status": "ok",
                 "message": "The rules of current HEAD",
                 "result": {"head": None, "errors": None, "exposed": None},
             }
@@ -25,14 +25,14 @@ def test_api_v1_rules():
             result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "foobar"})))
             assert result[0] == 400
             assert result[1] == {
-                "status":  "error",
+                "status": "error",
                 "message": "The argument \"foobar\" is not a valid hex string",
-                "result":  {"head": "foobar"},
+                "result": {"head": "foobar"},
             }
             result = as_dict(api.get("/v1/rules/exposed"))
             assert result[0] == 200
             assert result[1] == {
-                "status":  "ok",
+                "status": "ok",
                 "message": "The rules of current HEAD",
                 "result": {"head": None, "errors": None, "exposed": None},
             }
@@ -41,23 +41,23 @@ def test_api_v1_rules():
             result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "0"})))
             assert result[0] == 200
             assert result[1] == {
-                "status":  "ok",
+                "status": "ok",
                 "message": "The HEAD has been updated",
                 "result": {"head": "0"},
             }
             result = as_dict(api.get("/v1/rules/exposed"))
             assert result[0] == 503
             assert result[1] == {
-                "status":  "error",
+                "status": "error",
                 "message": "AssertionError: Can't find module path: rules/0",
-                "result":  {"head": "0", "errors": None, "exposed": None},
+                "result": {"head": "0", "errors": None, "exposed": None},
             }
 
             # ---
             result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "0123456789abcdef"})))
             assert result[0] == 200
             assert result[1] == {
-                "status":  "ok",
+                "status": "ok",
                 "message": "The HEAD has been updated",
                 "result": {"head": "0123456789abcdef"},
             }
@@ -111,9 +111,9 @@ def test_api_v1_system_config():
             result = as_dict(api.get("/v1/system/config"))
             assert result[0] == 200
             assert result[1] == {
-                "status":  "ok",
+                "status": "ok",
                 "message": "The system configuration",
-                "result":  config,
+                "result": config,
             }
 
 
@@ -150,7 +150,7 @@ def test_api_v1_jobs_method_execution(httpserver):
             _init_head(api)
             result = as_dict(api.post("/v1/jobs?method=rules.test.do_urlopen", **from_dict({
                 "test": "urlopen_by_event",
-                "url":  httpserver.url,
+                "url": httpserver.url,
             })))
             assert result[0] == 200
             job_id = tuple(result[1]["result"])[0]

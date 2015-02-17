@@ -58,5 +58,5 @@ def as_dict(response):
 def from_dict(attrs):
     return {
         "headers": {"Content-Type": "application/json"},
-        "data":    json.dumps(attrs).encode(),
+        "data": json.dumps(attrs).encode(),
     }

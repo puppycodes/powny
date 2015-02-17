@@ -1,3 +1,48 @@
+import json
+
+
+# =====
+def build_raw_from_options(options):
+    raw = {}
+    for option in options:
+        # Каждая опция имеет вид "key=value" или "key=" (тогда значение - пустая строка)
+        (key, value) = (option.split("=", 1) + [None])[:2]
+        if len(key.strip()) == 0:
+            raise ValueError("Empty option key (required 'key=value' instead of '{}')".format(option))
+        if value is None:
+            raise ValueError("No value for key '{}'".format(key))
+
+        section = raw
+        subs = list(map(str.strip, key.split(".")))
+        # Имя ключа разделяется точкой. Сплитим по точке и перемещаемся на нужную глубину в словарь:
+        # a.b.c=1 -> {"a": {"b": {}})
+        for sub in subs[:-1]:
+            section.setdefault(sub, {})
+            section = section[sub]
+        # Последнему элементу присваивается значение параметра:
+        # {"a": {"b": {"c": 1}})
+        section[subs[-1]] = _parse_value(value)
+    return raw
+
+
+def _parse_value(value):
+    # true -> True
+    # null -> None
+    # foo  -> "foo"
+    # "bar" -> "bar"
+    # [] and {} - as is
+    value = value.strip()
+    if (
+        not value.isdigit()
+        and value not in ("true", "false", "null")
+        and not value.startswith("{")
+        and not value.startswith("[")
+        and not value.startswith("\"")
+    ):
+        value = "\"{}\"".format(value)
+    return json.loads(value)
+
+
 # =====
 def make_config(raw, scheme, keys=()):
     if not isinstance(raw, dict):
@@ -37,9 +82,9 @@ class Section(dict):
 
     def _set_meta(self, name, secret, default, help):  # pylint: disable=redefined-builtin
         self._meta[name] = {
-            "secret":  secret,
+            "secret": secret,
             "default": default,
-            "help":    help,
+            "help": help,
         }
 
     def _is_secret(self, name):
