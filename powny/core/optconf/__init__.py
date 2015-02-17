@@ -5,6 +5,7 @@ import json
 def build_raw_from_options(options):
     raw = {}
     for option in options:
+        # Каждая опция имеет вид "key=value" или "key=" (тогда значение - пустая строка)
         (key, value) = (option.split("=", 1) + [None])[:2]
         if len(key.strip()) == 0:
             raise ValueError("Empty option key (required 'key=value' instead of '{}')".format(option))
@@ -13,22 +14,33 @@ def build_raw_from_options(options):
 
         section = raw
         subs = list(map(str.strip, key.split(".")))
-
+        # Имя ключа разделяется точкой. Сплитим по точке и перемещаемся на нужную глубину в словарь:
+        # a.b.c=1 -> {"a": {"b": {}})
         for sub in subs[:-1]:
             section.setdefault(sub, {})
             section = section[sub]
-
-        value = value.strip()
-        if (
-            not value.isdigit()
-            and value not in ("true", "false", "null")
-            and not value.startswith("{")
-            and not value.endswith("[")
-        ):
-            value = "\"{}\"".format(value)
-        section[subs[-1]] = json.loads(value)
-
+        # Последнему элементу присваивается значение параметра:
+        # {"a": {"b": {"c": 1}})
+        section[subs[-1]] = _parse_value(value)
     return raw
+
+
+def _parse_value(value):
+    # true -> True
+    # null -> None
+    # foo  -> "foo"
+    # "bar" -> "bar"
+    # [] and {} - as is
+    value = value.strip()
+    if (
+        not value.isdigit()
+        and value not in ("true", "false", "null")
+        and not value.startswith("{")
+        and not value.startswith("[")
+        and not value.startswith("\"")
+    ):
+        value = "\"{}\"".format(value)
+    return json.loads(value)
 
 
 # =====
