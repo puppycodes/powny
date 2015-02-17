@@ -70,8 +70,8 @@ def _get_path_cas_storage_lock(path):
 
 def _make_lock_info(label):
     return {
-        "from":     label,
-        "when":     make_isotime(),
+        "from": label,
+        "when": make_isotime(),
         "instance": {
             "node": get_node_name(),
             "pid": os.getpid(),
@@ -228,21 +228,21 @@ class JobsProcess:
     def save_job_state(self, job_id, state, stack):
         with self._client.make_write_request("save_job_state()") as request:
             request.set(_get_path_job_state(job_id), {
-                "state":    state,
-                "stack":    stack,
+                "state": state,
+                "stack": stack,
                 "finished": None,
-                "retval":   None,
-                "exc":      None,
+                "retval": None,
+                "exc": None,
             })
 
     def done_job(self, job_id, retval, exc):
         with self._client.make_write_request("done_job()") as request:
             request.set(_get_path_job_state(job_id), {
-                "state":    None,
-                "stack":    None,
+                "state": None,
+                "stack": None,
                 "finished": make_isotime(),
-                "retval":   retval,
-                "exc":      exc,
+                "retval": retval,
+                "exc": exc,
             })
             self._client.get_lock(_get_path_job_lock(job_id)).release(request)
 
@@ -420,9 +420,9 @@ class CasStorage:
                 else:
                     with self._client.make_write_request("cas_save()") as request:
                         request.set(path, {
-                            "value":   value,
+                            "value": value,
                             "version": version,
-                            "stored":  make_isotime(),
+                            "stored": make_isotime(),
                         })
                         write_ok = True
             else:

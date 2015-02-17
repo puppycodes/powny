@@ -70,9 +70,9 @@ class Section(dict):
 
     def _set_meta(self, name, secret, default, help):  # pylint: disable=redefined-builtin
         self._meta[name] = {
-            "secret":  secret,
+            "secret": secret,
             "default": default,
-            "help":    help,
+            "help": help,
         }
 
     def _is_secret(self, name):

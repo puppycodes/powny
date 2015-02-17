@@ -24,15 +24,15 @@ class Resource(metaclass=abc.ABCMeta):
         try:
             (result, message) = self.process_request(**kwargs)
             return {
-                "status":  "ok",
+                "status": "ok",
                 "message": message,
-                "result":  result
+                "result": result
             }
         except ApiError as err:
             result = {
-                "status":  "error",
+                "status": "error",
                 "message": err.message,
-                "result":  err.result,
+                "result": err.result,
             }
             return (result, err.code)
         except Exception as err:
