@@ -1,3 +1,36 @@
+import json
+
+
+# =====
+def build_raw_from_options(options):
+    raw = {}
+    for option in options:
+        (key, value) = (option.split("=", 1) + [None])[:2]
+        if len(key.strip()) == 0:
+            raise ValueError("Empty option key (required 'key=value' instead of '{}')".format(option))
+        if value is None:
+            raise ValueError("No value for key '{}'".format(key))
+
+        section = raw
+        subs = list(map(str.strip, key.split(".")))
+
+        for sub in subs[:-1]:
+            section.setdefault(sub, {})
+            section = section[sub]
+
+        value = value.strip()
+        if (
+            not value.isdigit()
+            and value not in ("true", "false", "null")
+            and not value.startswith("{")
+            and not value.endswith("[")
+        ):
+            value = "\"{}\"".format(value)
+        section[subs[-1]] = json.loads(value)
+
+    return raw
+
+
 # =====
 def make_config(raw, scheme, keys=()):
     if not isinstance(raw, dict):

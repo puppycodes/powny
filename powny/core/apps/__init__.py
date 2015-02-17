@@ -48,12 +48,14 @@ def init(name, description, args=None, raw_config=None):
     args_parser.add_argument("-c", "--config", dest="config_file_path", default=None, metavar="<file>")
     args_parser.add_argument("-l", "--level", dest="log_level", default=None)
     args_parser.add_argument("-m", "--dump-config", dest="dump_config", action="store_true")
+    args_parser.add_argument("-o", "--set-options", dest="set_options", default=[], nargs="+")
     options = args_parser.parse_args(args)
 
     # Load configs
     raw_config = (raw_config or {})
     if options.config_file_path is not None:
         raw_config = load_yaml_file(options.config_file_path)
+    typetools.merge_dicts(raw_config, optconf.build_raw_from_options(options.set_options))
     scheme = _get_config_scheme()
     config = optconf.make_config(raw_config, scheme)
 
