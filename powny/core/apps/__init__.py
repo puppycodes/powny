@@ -115,14 +115,17 @@ class Application(metaclass=abc.ABCMeta):
         self._config = config
         self._stop_event = threading.Event()
         self._respawns = 0
+        self._next_write_state_at = 0
 
     def stop(self):
         self._stop_event.set()
 
-    def set_app_state(self, backend, app_state):
-        app_state = app_state.copy()
-        app_state["respawns"] = self._respawns
-        backend.system_apps_state.set_state(self._app_name, app_state)
+    def dump_app_state(self, backend, app_state):
+        if self._next_write_state_at <= time.time():
+            app_state = app_state.copy()
+            app_state["respawns"] = self._respawns
+            backend.system_apps_state.set_state(self._app_name, app_state)
+            self._next_write_state_at = time.time() + self._app_config.state_every
 
     def get_backend_object(self):
         return backends.get_backend_class(self._config.core.backend)(**self._config.backend)
@@ -211,5 +214,6 @@ def _get_config_scheme():
             "fail_sleep": optconf.Option(default=5, help="If processing fails, sleep for awhile and restart (seconds)"),
             "empty_sleep": optconf.Option(default=1, help="Interval after which process will sleep when "
                                                           "there are no jobs (seconds)"),
+            "state_every": optconf.Option(default=5, help="Dump appstate to backend every this time (seconds)"),
         })
     return scheme

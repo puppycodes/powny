@@ -45,7 +45,7 @@ class _Collector(Application):
 
     def _gc_jobs(self, backend):
         processed = 0
-        self._write_collector_state(backend)
+        self._dump_collector_state(backend)
         for (job_id, done) in backend.jobs_gc.get_jobs(self._app_config.done_lifetime):
             logger = get_logger(job_id=job_id)
             logger.debug("Processing: done=%s", done)
@@ -57,8 +57,8 @@ class _Collector(Application):
                 logger.info("Pushed-back unfinished job")
             processed += 1
             self._processed += 1
-            self._write_collector_state(backend)
+            self._dump_collector_state(backend)
         return bool(processed)
 
-    def _write_collector_state(self, backend):
-        self.set_app_state(backend, {"processed": self._processed})
+    def _dump_collector_state(self, backend):
+        self.dump_app_state(backend, {"processed": self._processed})
