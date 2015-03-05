@@ -56,7 +56,7 @@ class TestJobs:
 
         ready_job = next(process_iface.get_ready_jobs())
         assert job_id == ready_job.job_id
-        process_iface.associate_job(job_id)
+        process_iface.associate_job(job_id, process_iface.get_my_id())
 
         def remove_job():
             time.sleep(3)
@@ -85,7 +85,7 @@ class TestJobs:
 
         ready_job = next(process_iface.get_ready_jobs())
         assert job_id == ready_job.job_id
-        process_iface.associate_job(job_id)
+        process_iface.associate_job(job_id, process_iface.get_my_id())
 
         gc_iface.remove_job_data(job_id)
         assert control_iface.get_job_info(job_id) is None
@@ -129,7 +129,7 @@ class TestJobs:
             job_info = control_iface.get_job_info(job_id)
             self._assert_job_info_taken(job_info)
 
-            process_iface.associate_job(job_id)
+            process_iface.associate_job(job_id, process_iface.get_my_id())
 
             if with_save:
                 process_iface.save_job_state(job_id, b"fictive state", ["fictive", "stack"])

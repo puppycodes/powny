@@ -211,10 +211,25 @@ class JobsProcess:
                 job_id=job_id,
             )
 
-    def associate_job(self, job_id):
+    def is_my_job(self, job_id):
+        try:
+            path = _get_path_job_lock(job_id)
+            return self.get_my_id() == self._client.get_ephemeral_session_id(path)
+        except zoo.NoNodeError:
+            return False
+
+    def get_my_id(self):
+        return self._client.get_session_id()
+
+    def associate_job(self, job_id, owner_id):
+        path = _get_path_job_lock(job_id)
+        if self._client.get_ephemeral_session_id(path) != owner_id:
+            raise RuntimeError("Can't re-lock someone else's job")
+        # TODO: если в этом месте зафризить процесс, то можно нечаянно перехватить чужую блокировку.
+        # Вероятность ничтожно мала, но стоит подумать, что с этим можно сделать.
         with self._client.make_write_request("associate_job()") as request:
             # Assign lock to current process
-            lock = self._client.get_lock(_get_path_job_lock(job_id))
+            lock = self._client.get_lock(path)
             lock.release(request)
             lock.acquire(request, _make_lock_info("associate_job()"))
 

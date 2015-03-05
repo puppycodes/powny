@@ -36,7 +36,7 @@ class _Worker(Application):
 
     def __init__(self, config):
         Application.__init__(self, "worker", config)
-        self._manager = _JobsManager(self._config.core.rules_dir)
+        self._manager = _JobsManager(self._config.core.rules_dir, self._app_config.wait_slowpokes)
 
     def process(self):
         logger = get_logger()
@@ -66,10 +66,10 @@ class _Worker(Application):
                             break
                         else:
                             sleep_mode = False
-                            self._manager.run_job(job, self.get_backend_object())
+                            self._manager.run_job(job, backend, self.get_backend_object())
                             # FIXME: По неизвестной пока причине, очередь медленно рассасывается без небольшого слипа.
                             # Скорее всего, имеет место гонка между воркерами.
-                            time.sleep(0.1)
+                            time.sleep(self._app_config.job_delay)
 
     def _dump_worker_state(self, backend):
         self.dump_app_state(backend, {
@@ -80,8 +80,9 @@ class _Worker(Application):
 
 
 class _JobsManager:
-    def __init__(self, rules_dir):
+    def __init__(self, rules_dir, wait_slowpokes):
         self._rules_dir = rules_dir
+        self._wait_slowpokes = wait_slowpokes
         self._procs = {}
         self._finished = 0
         self._not_started = 0
@@ -95,11 +96,20 @@ class _JobsManager:
     def get_not_started(self):
         return self._not_started
 
-    def run_job(self, job, backend):
+    def run_job(self, job, backend, backend_for_proc):
         logger = get_logger(job_id=job.job_id, method=job.method_name)
         logger.info("Starting the job process")
         associated = multiprocessing.Event()
-        proc = multiprocessing.Process(target=_exec_job, args=(job, self._rules_dir, backend, associated))
+        proc = multiprocessing.Process(
+            target=_exec_job,
+            kwargs={
+                "job": job,
+                "rules_dir": self._rules_dir,
+                "backend": backend_for_proc,
+                "associated": associated,
+                "job_owner_id": backend.jobs_process.get_my_id(),
+            },
+        )
         self._procs[job.job_id] = (job.method_name, proc, associated, time.time())
         proc.start()
 
@@ -115,7 +125,7 @@ class _JobsManager:
                 self._terminate(proc)
                 self._finish(job_id)
 
-            elif time.time() - start_time > 30 and not associated.is_set():
+            elif time.time() - start_time > self._wait_slowpokes and not associated.is_set():
                 # Проверяем процессы, которые за долгое время не успели перехватить блокировку
                 self._process_slowpoke(job_id, proc, associated, backend)
 
@@ -139,45 +149,64 @@ class _JobsManager:
         logger = get_logger()
         logger.warning("Detected slowpoke job process %(pid)d", {"pid": proc.pid})
         try:
-            try:
-                # Останавливаем процесс и смотрим, перехватил ли он блокировку между первой проверкой
-                # и вызовом этой функции.
-                os.kill(proc.pid, signal.SIGSTOP)
-            except OSError as err:
-                if err.errno == errno.ESRCH:
-                    return  # Процесс перехватил лок и успел завершить исполнение.
-                raise
+            # Останавливаем процесс и смотрим, перехватил ли он блокировку между первой проверкой
+            # и вызовом этой функции.
+            if not self._send_signal(proc, signal.SIGSTOP):
+                # Процесс перехватил лок и успел завершить исполнение.
+                if backend.jobs_process.is_my_job(job_id):
+                    # Так же, процесс мог умереть, ничего не захватив и блокировка осталась у нас.
+                    # Освобождаем ее для других воркеров.
+                    backend.jobs_process.release_job(job_id)
+                self._finish(job_id)
 
-            if associated.is_set():
+            elif associated.is_set():
                 # Процесс тормозил, но блокировка перехвачена. Отпускаем с миром.
                 logger.info("OK, slowpoke job process %(pid)d is alive and lock associated",
                             {"pid": proc.pid})
-                os.kill(proc.pid, signal.SIGCONT)
+                if not self._send_signal(proc, signal.SIGCONT):
+                    # Умер во время проверки - и пес с ним, коллектор подберет.
+                    self._finish(job_id)
+
             else:
-                # Процесс до сих пор не перехватил блокировку или не успел об этом сообщить.
-                # Так или иначе, это тормоза. Отбираем лок и убиваем процесс, пока он в стопе.
-                logger.error("Cannot associate lock in job process %(pid)d after 30 seconds",
+                # Процесс до сих пор не перехватил блокировку, или не успел об этом сообщить.
+                # Так или иначе, это тормоза. Отбираем лок, если надо, и убиваем процесс, пока он в стопе.
+                logger.error("Can't associate lock in job process %(pid)d",
                              {"pid": proc.pid})
-                backend.jobs_process.associate_job(job_id)
-                backend.jobs_process.release_job(job_id)
+                if backend.jobs_process.is_my_job(job_id):
+                    # Если блокировка до сих пор у нас, то просто снимаем ее. Если нет - то процесс или не успел
+                    # сообщить об этом, либо задачей уже занялся другой коллектор или воркер. Тогда забирать
+                    # ее нельзя.
+                    backend.jobs_process.release_job(job_id)
 
-                os.kill(proc.pid, signal.SIGKILL)
+                killed = self._send_signal(proc, signal.SIGKILL)
                 proc.join()
-                logger.info("Killed slowpoke job process %(pid)d with retcode %(exitcode)d",
-                            {"pid": proc.pid, "exitcode": proc.exitcode})
-
+                if killed:
+                    logger.info("Killed slowpoke job process %(pid)d with retcode %(exitcode)d",
+                                {"pid": proc.pid, "exitcode": proc.exitcode})
+                else:
+                    logger.info("Found dead slowpoke job process %(pid)d with retcode %(exitcode)d",
+                                {"pid": proc.pid, "exitcode": proc.exitcode})
                 self._procs.pop(job_id)
                 self._not_started += 1
         except Exception:
             logger.exception("Can't process slowpoke job process %(pid)d...", {"pid": proc.pid})
 
+    def _send_signal(self, proc, signum):
+        try:
+            os.kill(proc.pid, signum)
+            return True
+        except OSError as err:
+            if err.errno == errno.ESRCH:
+                return False
+            raise
 
-def _exec_job(job, rules_dir, backend, associated):
+
+def _exec_job(job, rules_dir, backend, associated, job_owner_id):
     logger = get_logger(job_id=job.job_id, method=job.method_name)
     rules_path = os.path.join(rules_dir, job.head)
     with backend.connected():
         logger.debug("Associating job with PID %(pid)d", {"pid": os.getpid()})
-        backend.jobs_process.associate_job(job.job_id)
+        backend.jobs_process.associate_job(job.job_id, job_owner_id)
         associated.set()
 
         sys.path.insert(0, rules_path)

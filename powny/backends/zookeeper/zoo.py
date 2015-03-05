@@ -206,6 +206,16 @@ class Client:
                 raise NoNodeError
             return default
 
+    def get_session_id(self):
+        return self.zk.client_id[0]
+
+    def get_ephemeral_session_id(self, path):
+        stat = self.zk.retry(self.zk.exists, path)
+        if stat is None:
+            raise NoNodeError
+        assert stat.ephemeralOwner > 0, "Not ephemeral: {}".format(path)
+        return stat.ephemeralOwner
+
     def make_write_request(self, comment="<unnamed>"):
         return _WriteRequest(self, comment)
 

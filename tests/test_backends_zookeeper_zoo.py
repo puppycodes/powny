@@ -234,6 +234,24 @@ class TestClient:
     def test_exists_false(self, zclient):
         assert not zclient.exists("/test-node")
 
+    # ===
+
+    def test_is_my_ephemeral_true(self, zclient):
+        session_id = zclient.get_session_id()
+        with zclient.make_write_request() as request:
+            request.create("/test-node", ephemeral=True)
+        assert session_id == zclient.get_ephemeral_session_id("/test-node")
+
+    def test_is_my_ephemeral_not_ephemeral(self, zclient):
+        with zclient.make_write_request() as request:
+            request.create("/test-node")
+        with pytest.raises(AssertionError):
+            zclient.get_ephemeral_session_id("/test-node")
+
+    def test_is_my_ephemeral_no_node_error(self, zclient):
+        with pytest.raises(zoo.NoNodeError):
+            zclient.get_ephemeral_session_id("/test-node")
+
 
 class TestLock:
     def test_transaction(self, zclient):
