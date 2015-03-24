@@ -43,7 +43,7 @@ class _Worker(Application):
         sleep_mode = False
         with self.get_backend_object().connected() as backend:
             while not self._stop_event.is_set():
-                gen_jobs = backend.jobs_process.get_ready_jobs()
+                gen_jobs = backend.jobs_process.get_jobs()
                 while not self._stop_event.is_set():
                     self._manager.manage(backend)
                     self._dump_worker_state(backend)

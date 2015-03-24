@@ -188,7 +188,7 @@ def _init_head(api):
 
 
 def _check_result(job_id, api, wait):
-    for _ in range(wait):
+    for _ in range(int(wait)):
         result = as_dict(api.get("/v1/jobs/" + job_id))
         assert result[0] == 200
         if result[1]["result"]["finished"] is not None:

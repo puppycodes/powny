@@ -13,7 +13,7 @@ from powny.testing.application import configured
 
 # =====
 @contextlib.contextmanager
-def powny_api(text=None, with_worker=False):
+def powny_api(text=None, with_worker=False, with_collector=True):
     with configured(text) as config:
         chroot = "/" + str(uuid.uuid4())
         config["backend"]["chroot"] = chroot
@@ -23,9 +23,10 @@ def powny_api(text=None, with_worker=False):
                 worker_thread.daemon = True
                 worker_thread.start()
 
-            collector_thread = threading.Thread(target=collector.run, kwargs={"config": config})
-            collector_thread.daemon = True
-            collector_thread.start()
+            if with_collector:
+                collector_thread = threading.Thread(target=collector.run, kwargs={"config": config})
+                collector_thread.daemon = True
+                collector_thread.start()
 
             api_app = api.make_app(config)
             api_app.debug = True
@@ -36,8 +37,9 @@ def powny_api(text=None, with_worker=False):
                 worker._stop()  # pylint: disable=protected-access
                 worker_thread.join()
 
-            collector._stop()  # pylint: disable=protected-access
-            collector_thread.join()
+            if with_collector:
+                collector._stop()  # pylint: disable=protected-access
+                collector_thread.join()
 
             # Cleanup ZooKeeper
             if config.core.backend == "zookeeper":

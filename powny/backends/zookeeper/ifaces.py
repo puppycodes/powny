@@ -1,5 +1,6 @@
 import os
 import threading
+import random
 import time
 
 from contextlog import get_logger
@@ -91,12 +92,13 @@ def init(client):
         _PATH_USER,
         _PATH_CAS_STORAGE,
     ):
-        try:
-            with client.make_write_request("backend::init()::create({})".format(path)) as request:
-                request.create(path)
-            logger.debug("Backend init: path '%s' has been created", path)
-        except zoo.NodeExistsError:
-            logger.debug("Backend init: path '%s' is already exists", path)
+        if not client.exists(path):
+            try:
+                with client.make_write_request("backend::init()::create({})".format(path)) as request:
+                    request.create(path)
+                logger.debug("Backend init: path '%s' has been created", path)
+            except zoo.NodeExistsError:
+                logger.debug("Backend init: path '%s' is already exists", path)
 
 
 # =====
@@ -122,9 +124,11 @@ class JobsControl:
     def add_jobs(self, head, jobs):
         now = make_isotime()
         added_ids = []
+
         with self._client.make_write_request("add_jobs()") as request:
             for job in jobs:
                 job_id = make_job_id()
+
                 get_logger().info("Registering job", job_id=job_id, head=head,
                                   method=job.method_name, kwargs=job.kwargs)
                 request.create(_get_path_job(job_id), {
@@ -140,8 +144,10 @@ class JobsControl:
                     "retval": None,
                     "exc": None,
                 })
+
                 self._input_queue.put(request, job_id)
                 added_ids.append(job_id)
+
         return added_ids
 
     def delete_job(self, job_id, timeout=None):
@@ -192,16 +198,20 @@ class JobsProcess:
         self._client = client
         self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
 
-    def get_ready_jobs(self):
-        for job_id in self._input_queue:
+    def get_jobs(self):
+        for entry in self._input_queue.get_entries():
+            try:
+                job_id = self._input_queue.get_entry_value(entry)
+                with self._client.make_write_request("get_jobs()") as request:
+                    self._input_queue.consume_entry(request, entry)
+                    lock = self._client.get_lock(_get_path_job_lock(job_id))
+                    lock.acquire(request, _make_lock_info("get_jobs()"))
+                    request.create(_get_path_job_taken(job_id), make_isotime())
+            except (zoo.NoNodeError, zoo.NodeExistsError):
+                continue
+
             job_info = self._client.get(_get_path_job(job_id))
             exec_info = self._client.get(_get_path_job_state(job_id))
-
-            with self._client.make_write_request("get_ready_jobs()") as request:
-                lock = self._client.get_lock(_get_path_job_lock(job_id))
-                lock.acquire(request, _make_lock_info("get_ready_jobs()"))
-                request.create(_get_path_job_taken(job_id), make_isotime())
-                self._input_queue.consume(request)
 
             yield JobState(
                 head=job_info["head"],
@@ -273,7 +283,9 @@ class JobsGc:
         self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
 
     def get_jobs(self, done_lifetime):
-        for job_id in self._client.get_children(_PATH_JOBS):
+        ids = self._client.get_children(_PATH_JOBS)
+        random.shuffle(ids)  # Избавляемся от гонки на большом количестве задач
+        for job_id in ids:
             to_delete = self._client.exists(_get_path_job_delete(job_id))
             taken = self._client.exists(_get_path_job_taken(job_id))
             lock = self._client.get_lock(_get_path_job_lock(job_id))

@@ -7,6 +7,8 @@ from ..golem import check_match
 from ..golem import convert_golem_event
 from ..golem import IncorrectEventError
 
+from ..backends import retry
+
 from . import get_url_for
 from . import Resource
 from . import ApiError
@@ -31,13 +33,16 @@ class GolemResource(Resource):
         except IncorrectEventError as err:
             raise ApiError(400, str(err))
 
-        with self._pool.get_backend() as backend:
-            if backend.jobs_control.get_input_size() >= self._input_limit:
-                raise ApiError(503, "In the queue is more then {} jobs".format(self._input_limit))
-            previous = self._get_previous_and_replace(backend, current)
-            (head, exposed) = self._get_exposed(backend)
-            result = self._run_handlers(backend, previous, current, head, exposed)
-            return (result, ("No matching handler" if len(result) == 0 else "Handlers were launched"))
+        retry(self._pool, self._check_limit)
+
+        previous = retry(self._pool, self._get_previous_and_replace, args=(current,))
+        (head, exposed) = retry(self._pool, self._get_exposed)
+        result = retry(self._pool, self._run_handlers, args=(previous, current, head, exposed))
+        return (result, ("No matching handler" if len(result) == 0 else "Handlers were launched"))
+
+    def _check_limit(self, backend):
+        if backend.jobs_control.get_input_size() >= self._input_limit:
+            raise ApiError(503, "In the queue is more then {} jobs".format(self._input_limit))
 
     def _run_handlers(self, backend, previous, current, head, exposed):
         jobs = self._make_jobs_by_matchers(head, previous, current, exposed)

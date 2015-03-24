@@ -47,7 +47,8 @@ class StateResource(Resource):
         self._pool = pool
 
     def process_request(self):
-        with self._pool.get_backend() as backend:
+        backend = self._pool.get_backend()
+        try:
             full_apps_state = backend.system_apps_state.get_full_state()
             full_apps_state.setdefault("worker", {})
             full_apps_state.setdefault("collector", {})
@@ -59,6 +60,8 @@ class StateResource(Resource):
                 "apps": full_apps_state,
             }
             return (result, self.name)
+        finally:
+            self._pool.retrieve_backend(backend)
 
 
 class InfoResource(Resource):
@@ -73,7 +76,7 @@ class InfoResource(Resource):
                        "version": "<...>",
                        "backend": {
                            "name": "<backend_name>",
-                           "info": {...},  # Backen-specific data
+                           "info": {...},  # Backend-specific data
                        },
                    },
                }
@@ -84,7 +87,8 @@ class InfoResource(Resource):
         self._pool = pool
 
     def process_request(self):
-        with self._pool.get_backend() as backend:
+        backend = self._pool.get_backend()
+        try:
             result = {
                 "version": tools.get_version(),
                 "backend": {
@@ -93,6 +97,8 @@ class InfoResource(Resource):
                 },
             }
             return (result, self.name)
+        finally:
+            self._pool.retrieve_backend(backend)
 
 
 class ConfigResource(Resource):

@@ -54,7 +54,7 @@ class TestJobs:
         assert len(control_iface.get_job_info(job_id)) > 0
         assert not process_iface.is_deleted_job(job_id)
 
-        ready_job = next(process_iface.get_ready_jobs())
+        ready_job = next(process_iface.get_jobs())
         assert job_id == ready_job.job_id
         process_iface.associate_job(job_id, process_iface.get_my_id())
 
@@ -83,7 +83,7 @@ class TestJobs:
         assert len(control_iface.get_job_info(job_id)) > 0
         assert not process_iface.is_deleted_job(job_id)
 
-        ready_job = next(process_iface.get_ready_jobs())
+        ready_job = next(process_iface.get_jobs())
         assert job_id == ready_job.job_id
         process_iface.associate_job(job_id, process_iface.get_my_id())
 
@@ -121,7 +121,7 @@ class TestJobs:
         self._assert_job_info_new(job_info)
 
         count = 0
-        for ready_job in process_iface.get_ready_jobs():
+        for ready_job in process_iface.get_jobs():
             assert ready_job.job_id == job_id
             assert ready_job.head == self.func_head
             assert ready_job.state == self.func_state

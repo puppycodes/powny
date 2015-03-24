@@ -1,8 +1,8 @@
 import importlib
-import contextlib
 import collections
 import uuid
 from queue import Queue
+import time
 
 from contextlog import get_logger
 
@@ -26,6 +26,10 @@ def make_job_id():
 
 
 # =====
+class ConnectionError(Exception):
+    pass
+
+
 class CasNoValueError(Exception):
     pass
 
@@ -71,7 +75,6 @@ class Pool:
     def get_backend_name(self):
         return self._backend_name
 
-    @contextlib.contextmanager
     def get_backend(self):
         backend = self._free_backends.get()
         if not backend.is_alive():
@@ -86,10 +89,10 @@ class Pool:
                 get_logger().error("Can't open backend %s", backend)
                 self._free_backends.put(backend)
                 raise
-        try:
-            yield backend
-        finally:
-            self._free_backends.put(backend)
+        return backend
+
+    def retrieve_backend(self, backend):
+        self._free_backends.put(backend)
 
     def __len__(self):
         return self._free_backends.qsize()  # Number of free backends
@@ -99,3 +102,19 @@ class Pool:
         backend = backend_class(**self._backend_opts)
         get_logger().debug("Created backend: %s(%s) = %s", backend_class, self._backend_opts, backend)
         return backend
+
+
+def retry(pool, method, args=(), kwargs=None, retries=5, sleep=1, stopper=None):
+    kwargs = (kwargs or {})
+    while retries and (stopper is None or not stopper()):
+        retries -= 1
+        try:
+            backend = pool.get_backend()
+            try:
+                return method(backend, *args, **kwargs)
+            finally:
+                pool.retrieve_backend(backend)
+        except ConnectionError:
+            if retries == 0:
+                raise
+            time.sleep(sleep)

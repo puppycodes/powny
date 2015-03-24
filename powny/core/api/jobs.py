@@ -61,11 +61,14 @@ class JobsResource(Resource):
         self._input_limit = input_limit
 
     def process_request(self):
-        with self._pool.get_backend() as backend:
+        backend = self._pool.get_backend()
+        try:
             if request.method == "GET":
                 return self._request_get(backend)
             elif request.method == "POST":
                 return self._request_post(backend)
+        finally:
+            self._pool.retrieve_backend(backend)
 
     def _request_get(self, backend):
         result = {
@@ -162,11 +165,14 @@ class JobControlResource(Resource):
         self._delete_timeout = delete_timeout
 
     def process_request(self, job_id):  # pylint: disable=arguments-differ
-        with self._pool.get_backend() as backend:
+        backend = self._pool.get_backend()
+        try:
             if request.method == "GET":
                 return self._request_get(backend, job_id)
             elif request.method == "DELETE":
                 return self._request_delete(backend, job_id)
+        finally:
+            self._pool.retrieve_backend(backend)
 
     def _request_get(self, backend, job_id):
         try:

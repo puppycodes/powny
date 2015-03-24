@@ -5,6 +5,8 @@ import re
 
 from ...core import optconf
 
+from ...core.backends import ConnectionError
+
 import decorator
 import kazoo.client
 import kazoo.exceptions
@@ -51,6 +53,15 @@ def _catch_zk(method):
             raise NoNodeError
         except kazoo.exceptions.NodeExistsError:
             raise NodeExistsError
+    return decorator.decorator(wrap, method)
+
+
+def _catch_zk_conn(method):
+    def wrap(method, *args, **kwargs):
+        try:
+            return method(*args, **kwargs)
+        except kazoo.exceptions.ConnectionLoss:
+            raise ConnectionError
     return decorator.decorator(wrap, method)
 
 
@@ -108,6 +119,7 @@ class Client:
             except NodeExistsError:
                 pass
 
+    @_catch_zk_conn
     def open(self):
         if self._chroot is not None:
             self._ensure_chroot()
@@ -162,6 +174,7 @@ class Client:
             "mntr": self._get_info_mntr(),
         }
 
+    @_catch_zk_conn
     def _get_info_envi(self):
         # $ echo envi | netcat 127.0.0.1 2181
         # Environment:
@@ -173,6 +186,7 @@ class Client:
             for item in self.zk.command(b"envi").split("\n")[1:-1]
         )
 
+    @_catch_zk_conn
     def _get_info_mntr(self):
         # $ echo mntr | netcat 127.0.0.1 2181
         # zk_version      3.4.6-1569965, built on 02/20/2014 09:09 GMT
@@ -186,18 +200,22 @@ class Client:
     # ===
 
     @_catch_zk
+    @_catch_zk_conn
     def get_children(self, path):
         return self.zk.get_children(path)
 
     @_catch_zk
+    @_catch_zk_conn
     def get_children_count(self, path):
         stat = self.zk.retry(self.zk.get, path)[1]
         return stat.children_count
 
     @_catch_zk
+    @_catch_zk_conn
     def exists(self, path, watch=None):
         return (self.zk.exists(path, watch=watch) is not None)
 
+    @_catch_zk_conn
     def get(self, path, default=EmptyValue):
         try:
             return _decode_value(self.zk.get(path)[0])
@@ -206,9 +224,11 @@ class Client:
                 raise NoNodeError
             return default
 
+    @_catch_zk_conn
     def get_session_id(self):
         return self.zk.client_id[0]
 
+    @_catch_zk_conn
     def get_ephemeral_session_id(self, path):
         stat = self.zk.retry(self.zk.exists, path)
         if stat is None:
@@ -267,6 +287,7 @@ class _WriteRequest:
         return self
 
     @_catch_zk  # for "len(self._ops) == 1"
+    @_catch_zk_conn
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_value is not None:
             raise exc_value
@@ -295,7 +316,7 @@ class _WriteRequest:
 # =====
 class _Lock:
     """
-        Easy lock primitive with no queue of those who try to acqurie it.
+        Easy lock primitive with no queue of those who try to acquire it.
         It can be acquired and released in the transaction.
     """
 
@@ -304,6 +325,7 @@ class _Lock:
         self._path = path
         self._comment = comment
 
+    @_catch_zk_conn
     def is_locked(self):
         return (self._client.zk.exists(self._path) is not None)
 
@@ -313,6 +335,7 @@ class _Lock:
     def release(self, request):
         request.delete(self._path)
 
+    @_catch_zk_conn
     def __enter__(self):
         get_logger().debug("Acquiring lock", comment=self._comment)
         while not self._try_acquire():
@@ -320,6 +343,7 @@ class _Lock:
             if self._client.zk.exists(self._path, watch=lambda _: wait.set()) is not None:
                 wait.wait()
 
+    @_catch_zk_conn
     def __exit__(self, exc_type, exc_value, traceback):
         try:
             self._client.zk.delete(self._path)
@@ -327,6 +351,7 @@ class _Lock:
             pass
         get_logger().debug("Released lock", comment=self._comment)
 
+    @_catch_zk_conn
     def _try_acquire(self):
         try:
             self._client.zk.create(self._path, ephemeral=True)
@@ -340,15 +365,11 @@ class _Queue:
         The queue primitive.
         This class based on the official queue recipe:
             https://zookeeper.apache.org/doc/r3.1.2/recipes.html#sc_recipes_Queues
-        Our implementation does not save items order on failure (when consume() has not been called).
-        This behaviour is acceptable for Powny.
     """
 
     def __init__(self, client, path):
         self._client = client
         self._path = path
-        self._children = []
-        self._last = None
 
     def put(self, request, value):
         assert isinstance(request, _WriteRequest), "Required _WriteRequest() object or None"
@@ -356,39 +377,19 @@ class _Queue:
         path = join(self._path, "entry-")
         request.create(path, value, sequence=True)
 
-    def __iter__(self):
-        return self
+    @_catch_zk_conn
+    def get_entries(self):
+        return list(sorted(self._client.get_children(self._path)))
 
-    def __next__(self):
-        # FIXME: need children watcher
-        if self._last is not None:
-            self._children.pop(0)
-            self._last = None
+    @_catch_zk_conn
+    def get_entry_value(self, entry):
+        path = join(self._path, entry)
+        return self._client.get(path)
 
-        while True:
-            if len(self._children) == 0:
-                try:
-                    self._children = self._client.zk.retry(self._client.zk.get_children, self._path)  # FIXME: retry?
-                except kazoo.exceptions.NoNodeError:
-                    raise NoNodeError
-                self._children = list(sorted(self._children))
-            if len(self._children) == 0:
-                raise StopIteration
+    def consume_entry(self, request, entry):
+        path = join(self._path, entry)
+        request.delete(path)
 
-            name = self._children[0]
-            path = join(self._path, name)
-            try:
-                self._client.zk.create(join(path, "__lock__"), ephemeral=True)
-            except (kazoo.exceptions.NoNodeError, kazoo.exceptions.NodeExistsError):
-                self._children.pop(0)  # FIXME: need a watcher
-                continue
-            self._last = name
-
-            return _decode_value(self._client.zk.get(path)[0])
-
-    def consume(self, request):
-        request.delete(join(self._path, self._last, "__lock__"))
-        request.delete(join(self._path, self._last))
-
+    @_catch_zk_conn
     def __len__(self):
         return self._client.get_children_count(self._path)

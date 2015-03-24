@@ -30,6 +30,9 @@ class TestZookeeperPool:
         assert len(pool) == 5
         for _ in range(5):
             with pytest.raises(RuntimeError):
-                with pool.get_backend() as backend:
+                backend = pool.get_backend()
+                try:
                     assert backend.rules.get_head() is None
                     raise RuntimeError("Close backend on exception")
+                finally:
+                    pool.retrieve_backend(backend)

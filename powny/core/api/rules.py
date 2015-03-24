@@ -50,7 +50,8 @@ class ExposedRulesResource(Resource):
         self._loader = loader
 
     def process_request(self):
-        with self._pool.get_backend() as backend:
+        backend = self._pool.get_backend()
+        try:
             if request.method == "GET":
                 (head, exposed, errors, exc) = tools.get_exposed(backend, self._loader)
                 if exc is None:  # No errors
@@ -61,6 +62,8 @@ class ExposedRulesResource(Resource):
                     return ({"head": head, "exposed": exposed_names, "errors": errors}, "The rules of current HEAD")
                 else:
                     raise ApiError(503, exc, {"head": head, "exposed": None, "errors": None})
+        finally:
+            self._pool.retrieve_backend(backend)
 
 
 class RulesHeadResource(Resource):
@@ -98,11 +101,14 @@ class RulesHeadResource(Resource):
         self._pool = pool
 
     def process_request(self):
-        with self._pool.get_backend() as backend:
+        backend = self._pool.get_backend()
+        try:
             if request.method == "GET":
                 return self._request_get(backend)
             elif request.method == "POST":
                 return self._request_post(backend)
+        finally:
+            self._pool.retrieve_backend(backend)
 
     def _request_post(self, backend):
         head = (request.data or {}).get("head")  # json

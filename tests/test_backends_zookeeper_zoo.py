@@ -58,13 +58,13 @@ class TestDecodeValue():
 
 class TestCatchZk:
     def test_catch_zk_no_node_error(self):
-        self._test_catch_zk_exc(kazoo.exceptions.NoNodeError, zoo.NoNodeError)
+        self._test_catch(zoo._catch_zk, kazoo.exceptions.NoNodeError, zoo.NoNodeError)
 
     def test_catch_zk_node_exists_error(self):
-        self._test_catch_zk_exc(kazoo.exceptions.NodeExistsError, zoo.NodeExistsError)
+        self._test_catch(zoo._catch_zk, kazoo.exceptions.NodeExistsError, zoo.NodeExistsError)
 
     def test_catch_zk_runtime_error(self):
-        self._test_catch_zk_exc(RuntimeError, RuntimeError)
+        self._test_catch(zoo._catch_zk, RuntimeError, RuntimeError)
 
     def test_catch_zk_ok(self):
         @zoo._catch_zk
@@ -74,8 +74,22 @@ class TestCatchZk:
         kwargs = dict.fromkeys(map(str, args))
         assert method(*args, **kwargs) == (args, kwargs)
 
-    def _test_catch_zk_exc(self, in_exc, out_exc):
-        @zoo._catch_zk
+    def test_catch_zk_conn_connection_loss(self):
+        self._test_catch(zoo._catch_zk_conn, kazoo.exceptions.ConnectionLoss, zoo.ConnectionError)
+
+    def test_catch_zk_conn_runtime_error(self):
+        self._test_catch(zoo._catch_zk_conn, RuntimeError, RuntimeError)
+
+    def test_catch_zk_conn_ok(self):
+        @zoo._catch_zk_conn
+        def method(*args, **kwargs):
+            return (args, kwargs)
+        args = (1, 2, 3)
+        kwargs = dict.fromkeys(map(str, args))
+        assert method(*args, **kwargs) == (args, kwargs)
+
+    def _test_catch(self, catcher, in_exc, out_exc):
+        @catcher
         def method():
             raise in_exc
         with pytest.raises(out_exc):
@@ -299,11 +313,6 @@ class TestQueue:
             with zclient.make_write_request() as request:
                 queue.put(request, None)
 
-    def test_get_no_node_error(self, zclient):
-        queue = zclient.get_queue("/queue")
-        with pytest.raises(zoo.NoNodeError):
-            next(iter(queue))
-
     def test_put_len_get_consume(self, zclient):
         with zclient.make_write_request() as request:
             request.create("/queue")
@@ -316,11 +325,11 @@ class TestQueue:
 
         assert len(queue) == 10
 
-        iterator = iter(queue)
-        for count in range(5):
-            for factor in (1, 10):
-                assert next(iterator) == count * factor
-                with zclient.make_write_request() as request:
-                    queue.consume(request)
-        with pytest.raises(StopIteration):
-            next(iterator)
+        entries = queue.get_entries()
+        for (count, value) in enumerate((0, 0, 1, 10, 2, 20, 3, 30, 4, 40)):
+            entry = entries[count]
+            assert queue.get_entry_value(entry) == value
+            with zclient.make_write_request() as request:
+                queue.consume_entry(request, entry)
+
+        assert len(queue) == 0

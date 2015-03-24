@@ -4,7 +4,6 @@ import importlib
 import pkgutil
 import threading
 import socket
-import functools
 import logging
 import logging.config
 import time
@@ -96,16 +95,20 @@ def init(name, description, args=None, raw_config=None):
     return _config
 
 
+_fqdn_cached = 0
+
+
 class _ClusterLogRecord(logging.LogRecord):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fqdn = self._get_cached_fqdn(int(time.time()) // 60)  # Cached value FQDN, updated every minute
+        # XXX: No locks!
+        # http://bugs.python.org/issue6721
+        global _fqdn_cached
+        stamp = int(time.time() // 60)
+        if _fqdn_cached != stamp:
+            self.fqdn = socket.getfqdn()
+            _fqdn_cached = stamp
         self.node = tools.get_node_name()  # Nodename from uname
-
-    @staticmethod
-    @functools.lru_cache(1)
-    def _get_cached_fqdn(_):
-        return socket.getfqdn()
 
 
 class Application(metaclass=abc.ABCMeta):
@@ -152,15 +155,11 @@ class Application(metaclass=abc.ABCMeta):
                 logger.warning("Sleeping %f seconds...", self._app_config.fail_sleep)
                 time.sleep(self._app_config.fail_sleep)
                 self._respawns += 1
-        self.end()
         return 0
 
     @abc.abstractmethod
     def process(self):
         raise NotImplementedError
-
-    def end(self):
-        pass
 
 
 # =====
