@@ -2,6 +2,8 @@ import sys
 import os
 import signal
 import multiprocessing
+import threading
+import logging
 import errno
 import time
 
@@ -202,14 +204,17 @@ class _JobsManager:
 
 
 def _exec_job(job, rules_dir, backend, associated, job_owner_id):
+    _unlock_logging()
     logger = get_logger(job_id=job.job_id, method=job.method_name)
+
     rules_path = os.path.join(rules_dir, job.head)
+    sys.path.insert(0, rules_path)
+
     with backend.connected():
         logger.debug("Associating job with PID %(pid)d", {"pid": os.getpid()})
         backend.jobs_process.associate_job(job.job_id, job_owner_id)
         associated.set()
 
-        sys.path.insert(0, rules_path)
         thread = context.JobThread(
             backend=backend,
             job_id=job.job_id,
@@ -218,3 +223,14 @@ def _exec_job(job, rules_dir, backend, associated, job_owner_id):
         )
         thread.start()
         thread.join()
+
+
+def _unlock_logging():
+    # XXX: ULTIMATE EPIC-SIZED CRUTCH!!!111
+    # http://bugs.python.org/issue6721
+    if logging._lock:  # pylint: disable=protected-access
+        logging._lock = threading.RLock()  # pylint: disable=protected-access
+    for wr in logging._handlerList:  # pylint: disable=protected-access
+        handler = wr()
+        if handler and handler.lock:
+            handler.lock = threading.RLock()
