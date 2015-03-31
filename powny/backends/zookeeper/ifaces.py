@@ -199,19 +199,15 @@ class JobsProcess:
         self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
 
     def get_jobs(self):
-        for entry in self._input_queue.get_entries():
-            try:
-                job_id = self._input_queue.get_entry_value(entry)
-                with self._client.make_write_request("get_jobs()") as request:
-                    self._input_queue.consume_entry(request, entry)
-                    lock = self._client.get_lock(_get_path_job_lock(job_id))
-                    lock.acquire(request, _make_lock_info("get_jobs()"))
-                    request.create(_get_path_job_taken(job_id), make_isotime())
-            except (zoo.NoNodeError, zoo.NodeExistsError):
-                continue
-
+        for job_id in self._input_queue:
             job_info = self._client.get(_get_path_job(job_id))
             exec_info = self._client.get(_get_path_job_state(job_id))
+
+            with self._client.make_write_request("get_ready_jobs()") as request:
+                lock = self._client.get_lock(_get_path_job_lock(job_id))
+                lock.acquire(request, _make_lock_info("get_ready_jobs()"))
+                request.create(_get_path_job_taken(job_id), make_isotime())
+                self._input_queue.consume(request)
 
             yield JobState(
                 head=job_info["head"],

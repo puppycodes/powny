@@ -313,6 +313,11 @@ class TestQueue:
             with zclient.make_write_request() as request:
                 queue.put(request, None)
 
+    def test_get_no_node_error(self, zclient):
+        queue = zclient.get_queue("/queue")
+        with pytest.raises(zoo.NoNodeError):
+            next(iter(queue))
+
     def test_put_len_get_consume(self, zclient):
         with zclient.make_write_request() as request:
             request.create("/queue")
@@ -325,11 +330,11 @@ class TestQueue:
 
         assert len(queue) == 10
 
-        entries = queue.get_entries()
-        for (count, value) in enumerate((0, 0, 1, 10, 2, 20, 3, 30, 4, 40)):
-            entry = entries[count]
-            assert queue.get_entry_value(entry) == value
-            with zclient.make_write_request() as request:
-                queue.consume_entry(request, entry)
-
-        assert len(queue) == 0
+        iterator = iter(queue)
+        for count in range(5):
+            for factor in (1, 10):
+                assert next(iterator) == count * factor
+                with zclient.make_write_request() as request:
+                    queue.consume(request)
+        with pytest.raises(StopIteration):
+            next(iterator)

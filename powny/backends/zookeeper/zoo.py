@@ -365,11 +365,15 @@ class _Queue:
         The queue primitive.
         This class based on the official queue recipe:
             https://zookeeper.apache.org/doc/r3.1.2/recipes.html#sc_recipes_Queues
+        Our implementation does not save items order on failure (when consume() has not been called).
+        This behaviour is acceptable for Powny.
     """
 
     def __init__(self, client, path):
         self._client = client
         self._path = path
+        self._children = []
+        self._last = None
 
     def put(self, request, value):
         assert isinstance(request, _WriteRequest), "Required _WriteRequest() object or None"
@@ -377,18 +381,40 @@ class _Queue:
         path = join(self._path, "entry-")
         request.create(path, value, sequence=True)
 
-    @_catch_zk_conn
-    def get_entries(self):
-        return list(sorted(self._client.get_children(self._path)))
+    def __iter__(self):
+        return self
 
     @_catch_zk_conn
-    def get_entry_value(self, entry):
-        path = join(self._path, entry)
-        return self._client.get(path)
+    def __next__(self):
+        # FIXME: need children watcher
+        if self._last is not None:
+            self._children.pop(0)
+            self._last = None
 
-    def consume_entry(self, request, entry):
-        path = join(self._path, entry)
-        request.delete(path)
+        while True:
+            if len(self._children) == 0:
+                try:
+                    self._children = self._client.zk.retry(self._client.zk.get_children, self._path)  # FIXME: retry?
+                except kazoo.exceptions.NoNodeError:
+                    raise NoNodeError
+                self._children = list(sorted(self._children))
+            if len(self._children) == 0:
+                raise StopIteration
+
+            name = self._children[0]
+            path = join(self._path, name)
+            try:
+                self._client.zk.create(join(path, "__lock__"), ephemeral=True)
+            except (kazoo.exceptions.NoNodeError, kazoo.exceptions.NodeExistsError):
+                self._children.pop(0)  # FIXME: need a watcher
+                continue
+            self._last = name
+
+            return _decode_value(self._client.zk.get(path)[0])
+
+    def consume(self, request):
+        request.delete(join(self._path, self._last, "__lock__"))
+        request.delete(join(self._path, self._last))
 
     @_catch_zk_conn
     def __len__(self):
