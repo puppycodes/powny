@@ -6,12 +6,6 @@ import time
 import dateutil.parser
 import pkginfo
 
-from contextlog import get_logger
-
-from . import context
-
-from .backends import JobState
-
 
 # =====
 def get_node_name():
@@ -39,28 +33,3 @@ def make_isotime(unix=None):  # ISO 8601
 def from_isotime(line):
     dt = dateutil.parser.parse(line)
     return calendar.timegm(dt.utctimetuple()) + dt.microsecond / 10 ** 6  # pylint: disable=maybe-no-member
-
-
-# =====
-def get_exposed(backend, loader):
-    head = backend.rules.get_head()
-    exposed = None
-    errors = None
-    exc = None
-    if head is not None:
-        try:
-            (exposed, errors) = loader.get_exposed(head)
-        except Exception as err:
-            exc = "{}: {}".format(type(err).__name__, err)
-            get_logger().exception("Can't load HEAD '%s'", head)
-    return (head, exposed, errors, exc)
-
-
-def make_job_state(job_id, head, name, method, kwargs):
-    return JobState(
-        job_id=job_id,
-        head=head,
-        method_name=name,
-        kwargs=kwargs,
-        state=context.dump_call(method, kwargs),
-    )

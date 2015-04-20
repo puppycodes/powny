@@ -3,9 +3,8 @@ from flask import request
 from ulib.validatorlib import ValidatorError
 from ulib.validators.extra import valid_hex_string
 
-from .. import tools
-
 from . import (
+    get_exposed,
     ApiError,
     Resource,
 )
@@ -24,7 +23,7 @@ class ExposedRulesResource(Resource):
                     "result":  {
                         "head":    "<HEAD>"
                         "errors":  {"<path.to.module>": "<Traceback>", ...}
-                        "exposed": ["<path.to.function>", ...],
+                        "exposed": ["<path.to.function>", ...]|null,
                     },
                 }
                 # =====
@@ -45,7 +44,7 @@ class ExposedRulesResource(Resource):
         backend = self._pool.get_backend()
         try:
             if request.method == "GET":
-                (head, exposed, errors, exc) = tools.get_exposed(backend, self._loader)
+                (head, exposed, errors, exc) = get_exposed(backend, self._loader)
                 if exc is None:  # No errors
                     # exposed is None if HEAD is not configured
                     exposed_names = (list(exposed) if exposed is not None else None)

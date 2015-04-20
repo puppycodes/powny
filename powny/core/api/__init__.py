@@ -52,5 +52,19 @@ class Resource(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
+def get_exposed(backend, loader):
+    head = backend.rules.get_head()
+    exposed = None
+    errors = None
+    exc = None
+    if head is not None:
+        try:
+            (exposed, errors) = loader.get_exposed(head)
+        except Exception as err:
+            exc = "{}: {}".format(type(err).__name__, err)
+            get_logger().exception("Can't load HEAD '%s'", head)
+    return (head, exposed, errors, exc)
+
+
 def get_url_for(resource_class, **kwargs):
     return flask.request.host_url.rstrip("/") + flask.url_for(resource_class.name, **kwargs)

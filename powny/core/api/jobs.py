@@ -3,14 +3,17 @@ import re
 
 from flask import request
 
+from ..context import dump_call
+
+from ..backends import JobState
 from ..backends import DeleteTimeoutError
 
-from ..tools import get_exposed
-from ..tools import make_job_state
-
-from . import get_url_for
-from . import Resource
-from . import ApiError
+from . import (
+    get_exposed,
+    get_url_for,
+    Resource,
+    ApiError,
+)
 
 
 # =====
@@ -104,9 +107,17 @@ class JobsResource(Resource):
         method = exposed.get(method_name)
         if method is None:
             raise ApiError(404, "Method not found")
-        job = make_job_state(job_id, head, method_name, method, kwargs)
+
+        job = JobState(
+            job_id=job_id,
+            head=head,
+            method_name=method_name,
+            kwargs=kwargs,
+            state=dump_call(method, kwargs),
+        )
         if not backend.jobs_control.add_job(job):
             raise ApiError(400, "Job already exists")
+
         return {job_id: {"method": method_name, "url": self._get_job_url(job_id)}}
 
     def _get_job_url(self, job_id):
