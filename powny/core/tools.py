@@ -66,11 +66,11 @@ def get_exposed(backend, loader):
     return (head, exposed, errors, exc)
 
 
-def make_job_state(head, name, method, kwargs):
+def make_job_state(job_id, head, name, method, kwargs):
     return JobState(
+        job_id=job_id,
         head=head,
         method_name=name,
         kwargs=kwargs,
         state=context.dump_call(method, kwargs),
-        job_id=None,
     )

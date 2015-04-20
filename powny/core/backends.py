@@ -1,6 +1,5 @@
 import importlib
 import collections
-import uuid
 from queue import Queue
 import time
 
@@ -13,16 +12,12 @@ class DeleteTimeoutError(Exception):
 
 
 JobState = collections.namedtuple("JobState", (
+    "job_id",
     "head",
     "method_name",
     "kwargs",
     "state",
-    "job_id",
 ))
-
-
-def make_job_id():
-    return str(uuid.uuid4())
 
 
 # =====

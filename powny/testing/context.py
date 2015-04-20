@@ -1,9 +1,9 @@
 import collections
+import uuid
 
 from contextlog import get_logger
 
 from ..core import context
-from ..core.backends import make_job_id
 
 
 # =====
@@ -17,7 +17,7 @@ def run_in_context(method, kwargs=None, job_id=None, extra=None, fatal=True):
     backend = _Backend()
     thread = context.JobThread(
         backend=backend,
-        job_id=(job_id or make_job_id()),
+        job_id=(job_id or str(uuid.uuid4())),
         state=state,
         extra=extra,
     )

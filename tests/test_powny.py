@@ -115,12 +115,12 @@ def test_api_v1_system_config():
             }
 
 
-def _test_api_v1_jobs_delete(url, kwargs):
+def test_api_v1_jobs_method_delete():
     with powny_api() as (test_client, config):
         with test_client() as api:
             _init_head(api)
 
-            result = as_dict(api.post(url, **from_dict(kwargs)))
+            result = as_dict(api.post("/v1/jobs?method=rules.test.empty_method"))
             assert result[0] == 200
             (job_id, job_info) = tuple(result[1]["result"].items())[0]
             method_name = job_info["method"]
@@ -137,16 +137,23 @@ def _test_api_v1_jobs_delete(url, kwargs):
             assert result[0] == 404
 
 
-def test_api_v1_jobs_method_delete():
-    _test_api_v1_jobs_delete("/v1/jobs?method=rules.test.empty_method", {})
-
-
 def test_api_v1_jobs_method_execution(httpserver):
+    _test_api_v1_jobs_method_execution(httpserver)
+
+
+def test_api_v1_jobs_method_execution_custom_job_id(httpserver):
+    _test_api_v1_jobs_method_execution(httpserver, "urlopen_job")
+
+
+def _test_api_v1_jobs_method_execution(httpserver, job_id=None):
     httpserver.serve_content(content="test", code=200, headers=None)
     with powny_api(with_worker=True) as (test_client, config):
         with test_client() as api:
             _init_head(api)
-            result = as_dict(api.post("/v1/jobs?method=rules.test.do_urlopen", **from_dict({
+            handle = "/v1/jobs?method=rules.test.do_urlopen"
+            if job_id is not None:
+                handle += "&job_id={}".format(job_id)
+            result = as_dict(api.post(handle, **from_dict({
                 "test": "urlopen_by_event",
                 "url": httpserver.url,
             })))

@@ -8,7 +8,6 @@ from contextlog import get_logger
 from ...core.backends import (
     DeleteTimeoutError,
     JobState,
-    make_job_id,
     CasNoValueError,
     CasVersionError,
     CasNoValue,
@@ -121,34 +120,30 @@ class JobsControl:
     def get_jobs_count(self):
         return self._client.get_children_count(_PATH_JOBS)
 
-    def add_jobs(self, head, jobs):
+    def add_job(self, job):
         now = make_isotime()
-        added_ids = []
-
-        with self._client.make_write_request("add_jobs()") as request:
-            for job in jobs:
-                job_id = make_job_id()
-
-                get_logger().info("Registering job", job_id=job_id, head=head,
+        try:
+            with self._client.make_write_request("add_job()") as request:
+                get_logger().info("Registering job", job_id=job.job_id, head=job.head,
                                   method=job.method_name, kwargs=job.kwargs)
-                request.create(_get_path_job(job_id), {
-                    "head": head,
+                request.create(_get_path_job(job.job_id), {
+                    "head": job.head,
                     "method": job.method_name,
                     "kwargs": job.kwargs,
                     "created": now,
                 })
-                request.create(_get_path_job_state(job_id), {
+                request.create(_get_path_job_state(job.job_id), {
                     "state": job.state,
                     "stack": None,
                     "finished": None,
                     "retval": None,
                     "exc": None,
                 })
-
-                self._input_queue.put(request, job_id)
-                added_ids.append(job_id)
-
-        return added_ids
+                self._input_queue.put(request, job.job_id)
+            return True
+        except zoo.NodeExistsError:
+            get_logger().error("The job already exists", job_id=job.job_id)
+            return False
 
     def delete_job(self, job_id, timeout=None):
         logger = get_logger(job_id=job_id)
