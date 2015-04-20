@@ -9,7 +9,6 @@ import pkginfo
 from contextlog import get_logger
 
 from . import context
-from . import imprules
 
 from .backends import JobState
 
@@ -43,15 +42,6 @@ def from_isotime(line):
 
 
 # =====
-def make_loader(rules_root):
-    return imprules.Loader(
-        prefix=rules_root,
-        group_by=(
-            ("methods", lambda _: True),
-        ),
-    )
-
-
 def get_exposed(backend, loader):
     head = backend.rules.get_head()
     exposed = None

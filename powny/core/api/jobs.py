@@ -101,7 +101,7 @@ class JobsResource(Resource):
         return (head, exposed)
 
     def _run_method(self, backend, job_id, method_name, kwargs, head, exposed):
-        method = exposed.get("methods", {}).get(method_name)
+        method = exposed.get(method_name)
         if method is None:
             raise ApiError(404, "Method not found")
         job = make_job_state(job_id, head, method_name, method, kwargs)

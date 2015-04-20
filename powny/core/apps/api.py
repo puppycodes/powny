@@ -9,7 +9,7 @@ import gunicorn.glogging
 from contextlog import get_logger
 
 from .. import backends
-from .. import tools
+from .. import imprules
 from .. import api
 from .. import backdoor
 
@@ -91,7 +91,7 @@ def make_app(config):
         backend_opts=config.backend,
     )
 
-    loader = tools.make_loader(config.core.rules_dir)
+    loader = imprules.Loader(config.core.rules_dir)
 
     app = _Api(__name__)
     app.add_url_resource("v1", "/v1/rules/exposed", ExposedRulesResource(

@@ -67,7 +67,7 @@ def test_api_v1_rules():
             assert result[1]["message"] == "The rules of current HEAD"
             assert result[1]["result"]["head"] == "0123456789abcdef"
             assert isinstance(result[1]["result"]["errors"], dict)
-            assert isinstance(result[1]["result"]["exposed"]["methods"], list)
+            assert isinstance(result[1]["result"]["exposed"], list)
 
 
 def test_api_v1_system_state():
