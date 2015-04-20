@@ -1,13 +1,11 @@
 import sys
 import os
+import re
 import importlib
 import traceback
 import threading
 
 from contextlog import get_logger
-
-from ulib.validatorlib import ValidatorError
-from ulib.validators.python import valid_object_name
 
 
 # =====
@@ -145,11 +143,7 @@ def _is_package_root(base_path, package_path):
 
 
 def _is_object_name(name):
-    try:
-        valid_object_name(name)
-        return True
-    except ValidatorError:
-        return False
+    return bool(re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", name))
 
 
 def _is_package(path):

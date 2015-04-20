@@ -14,8 +14,6 @@ import yaml
 import contextlog
 from contextlog import get_logger
 
-from ulib import typetools
-
 from .. import tools
 from .. import backends
 
@@ -54,7 +52,7 @@ def init(name, description, args=None, raw_config=None):
     raw_config = (raw_config or {})
     if options.config_file_path is not None:
         raw_config = load_yaml_file(options.config_file_path)
-    typetools.merge_dicts(raw_config, optconf.build_raw_from_options(options.set_options))
+    _merge_dicts(raw_config, optconf.build_raw_from_options(options.set_options))
     scheme = _get_config_scheme()
     config = optconf.make_config(raw_config, scheme)
 
@@ -73,7 +71,7 @@ def init(name, description, args=None, raw_config=None):
 
     # Update scheme for backend opts
     backend_scheme = backends.get_backend_class(config.core.backend).get_options()
-    typetools.merge_dicts(scheme, {"backend": backend_scheme})
+    _merge_dicts(scheme, {"backend": backend_scheme})
     config = optconf.make_config(raw_config, scheme)
 
     # Update scheme for selected helpers/modules
@@ -82,7 +80,7 @@ def init(name, description, args=None, raw_config=None):
         get_options = getattr(helper, "get_options", None)
         if get_options is None:
             raise RuntimeError("Helper '{}' requires no configuration".format(helper_name))
-        typetools.merge_dicts(scheme, {"helpers": get_options()})
+        _merge_dicts(scheme, {"helpers": get_options()})
 
     # Provide global configuration for helpers
     _config = optconf.make_config(raw_config, scheme)
@@ -168,6 +166,17 @@ def _valid_log_level(arg):
         return int(arg)
     except ValueError:
         return logging._nameToLevel[arg.upper()]  # pylint: disable=protected-access
+
+
+def _merge_dicts(dest, src, path=None):
+    if path is None:
+        path = []
+    for key in src:
+        if key in dest:
+            if isinstance(dest[key], dict) and isinstance(src[key], dict):
+                _merge_dicts(dest[key], src[key], list(path) + [str(key)])
+                continue
+        dest[key] = src[key]
 
 
 def _get_config_scheme():

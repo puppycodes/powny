@@ -55,7 +55,6 @@ if __name__ == "__main__":
             "python-dateutil",
             "gunicorn",
             "pyyaml",
-            "ulib",
             "decorator",
             "contextlog",
             "colorlog",

@@ -1,7 +1,6 @@
-from flask import request
+import re
 
-from ulib.validatorlib import ValidatorError
-from ulib.validators.extra import valid_hex_string
+from flask import request
 
 from . import (
     get_exposed,
@@ -100,11 +99,9 @@ class RulesHeadResource(Resource):
             self._pool.retrieve_backend(backend)
 
     def _request_post(self, backend):
-        head = (request.data or {}).get("head")  # json
-        try:
-            head = valid_hex_string(head)
-        except ValidatorError as err:
-            raise ApiError(400, str(err), {"head": head})
+        head = str((request.data or {}).get("head")).strip()
+        if re.match(r"^[0-9a-fA-F]+$", head) is None:
+            raise ApiError(400, "The HEAD must be a hex string", {"head": head})
         backend.rules.set_head(head)
         return ({"head": head}, "The HEAD has been updated")
 

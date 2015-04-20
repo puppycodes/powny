@@ -25,7 +25,7 @@ def test_api_v1_rules():
             assert result[0] == 400
             assert result[1] == {
                 "status": "error",
-                "message": "The argument \"foobar\" is not a valid hex string",
+                "message": "The HEAD must be a hex string",
                 "result": {"head": "foobar"},
             }
             result = as_dict(api.get("/v1/rules/exposed"))
