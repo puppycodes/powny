@@ -51,14 +51,12 @@ class JobsResource(Resource):
 
                 Possible POST errors (with status=="error"):
                     404 -- Method not found (for method call).
-                    503 -- In the queue is more then N jobs.
                     503 -- No HEAD or exposed methods.
     """
 
-    def __init__(self, pool, loader, input_limit):
+    def __init__(self, pool, loader):
         self._pool = pool
         self._loader = loader
-        self._input_limit = input_limit
 
     def process_request(self):
         backend = self._pool.get_backend()
@@ -78,9 +76,6 @@ class JobsResource(Resource):
         return (result, ("No jobs" if len(result) == 0 else "The list with all jobs"))
 
     def _request_post(self, backend):
-        if backend.jobs_control.get_input_size() >= self._input_limit:
-            raise ApiError(503, "In the queue is more then {} jobs".format(self._input_limit))
-
         (head, exposed) = self._get_exposed(backend)
         method_name = request.args.get("method", None)
         if method_name is None:

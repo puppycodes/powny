@@ -26,7 +26,6 @@ class ExposedRulesResource(Resource):
                         "errors":  {"<path.to.module>": "<Traceback>", ...}
                         "exposed": {
                             "methods":  ["<path.to.function>", ...],
-                            "handlers": ["<path.to.function>", ...],
                         },
                     },
                 }
@@ -38,8 +37,6 @@ class ExposedRulesResource(Resource):
                 @exposed -- Functions loaded from the rules and ready for execution (null if global
                             error occurs).
                 @exposed.methods  -- List of functions that can be called directly by name.
-                @exposed.handlers -- List of event handlers that are selected based on filters.
-                                     They may also be called manually as methods.
 
                 Possible errors (with status=="error"):
                     503 -- Non-existant HEAD for rules.

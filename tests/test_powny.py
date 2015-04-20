@@ -2,7 +2,6 @@ import pprint
 import time
 
 from powny.core import __version__
-from powny.core.golem import convert_status
 
 from .fixtures.application import powny_api
 from .fixtures.application import as_dict
@@ -69,7 +68,6 @@ def test_api_v1_rules():
             assert result[1]["result"]["head"] == "0123456789abcdef"
             assert isinstance(result[1]["result"]["errors"], dict)
             assert isinstance(result[1]["result"]["exposed"]["methods"], list)
-            assert isinstance(result[1]["result"]["exposed"]["handlers"], list)
 
 
 def test_api_v1_system_state():
@@ -155,32 +153,6 @@ def test_api_v1_jobs_method_execution(httpserver):
             assert result[0] == 200
             job_id = tuple(result[1]["result"])[0]
             _check_result(job_id, api, config.worker.empty_sleep + 300)
-
-
-def test_compat_golem_execution(httpserver):
-    httpserver.serve_content(content="test", code=200, headers=None)
-    with powny_api(with_worker=True) as (test_client, config):
-        with test_client() as api:
-            _init_head(api)
-            previous_status = None
-            for status in ("ok", "warning", "critical", "ok"):
-                result = as_dict(api.post("/api/compat/golem/submit", **from_dict({
-                    "object": "foo",
-                    "eventtype": "urlopen_by_event",
-                    "status": status,
-                    "info": httpserver.url,
-                })))
-                assert result[0] == 200
-                for (job_id, job_info) in result[1]["result"].items():
-                    if job_info["method"] == "rules.test.urlopen_by_event":
-                        break
-                else:
-                    job_id = None
-                assert job_id is not None
-                (previous, current) = _check_result(job_id, api, config.worker.empty_sleep + 300)
-                assert (previous_status and convert_status(previous_status)) == (previous and previous["status"])
-                assert convert_status(status) == current["status"]
-                previous_status = status
 
 
 def _init_head(api):

@@ -10,7 +10,6 @@ from contextlog import get_logger
 
 from . import context
 from . import imprules
-from . import golem
 
 from .backends import JobState
 
@@ -48,7 +47,6 @@ def make_loader(rules_root):
     return imprules.Loader(
         prefix=rules_root,
         group_by=(
-            ("handlers", golem.is_event_handler),
             ("methods", lambda _: True),
         ),
     )

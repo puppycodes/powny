@@ -23,8 +23,6 @@ from ..api.system import StateResource
 from ..api.system import InfoResource
 from ..api.system import ConfigResource
 
-from ..api.golem import GolemResource
-
 from . import init
 
 
@@ -101,20 +99,11 @@ def make_app(config):
         loader=loader,
     ))
     app.add_url_resource("v1", "/v1/rules/head", RulesHeadResource(pool))
-    app.add_url_resource("v1", "/v1/jobs", JobsResource(
-        pool=pool,
-        loader=loader,
-        input_limit=config.api.input_limit,
-    ))
+    app.add_url_resource("v1", "/v1/jobs", JobsResource(pool, loader))
     app.add_url_resource("v1", "/v1/jobs/<job_id>", JobControlResource(pool, config.api.delete_timeout))
     app.add_url_resource("v1", "/v1/system/state", StateResource(pool))
     app.add_url_resource("v1", "/v1/system/info", InfoResource(pool))
     app.add_url_resource("v1", "/v1/system/config", ConfigResource(config))
-    app.add_url_resource("compat", "/api/compat/golem/submit", GolemResource(
-        pool=pool,
-        loader=loader,
-        input_limit=config.api.input_limit,
-    ))
 
     return app
 
