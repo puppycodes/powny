@@ -20,6 +20,7 @@ def run_in_context(method, kwargs=None, job_id=None, extra=None, fatal=True):
         job_id=(job_id or str(uuid.uuid4())),
         state=state,
         extra=extra,
+        fatal_internal=True,
     )
     thread.start()
     thread.join()

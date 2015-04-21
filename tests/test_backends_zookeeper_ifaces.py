@@ -32,11 +32,12 @@ class TestJobs:
 
     def _make_job_state(self):
         return backends.JobState(
+            job_id=str(uuid.uuid4()),
             head=self.func_head,
             method_name=self.func_name,
             kwargs=self.func_kwargs,
             state=self.func_state,
-            job_id=str(uuid.uuid4()),
+            respawn=False,
         )
 
     def test_get_input_size(self, zclient):

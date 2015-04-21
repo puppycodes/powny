@@ -131,6 +131,7 @@ class JobsControl:
                     "method": job.method_name,
                     "kwargs": job.kwargs,
                     "created": now,
+                    "respawn": job.respawn,
                 })
                 request.create(_get_path_job_state(job.job_id), {
                     "state": job.state,
@@ -205,11 +206,12 @@ class JobsProcess:
                 self._input_queue.consume(request)
 
             yield JobState(
+                job_id=job_id,
                 head=job_info["head"],
                 method_name=job_info["method"],
                 kwargs=job_info["kwargs"],
                 state=exec_info["state"],
-                job_id=job_id,
+                respawn=job_info["respawn"],
             )
 
     def is_my_job(self, job_id):

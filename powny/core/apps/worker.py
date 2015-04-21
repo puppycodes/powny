@@ -204,6 +204,7 @@ def _exec_job(job, rules_dir, backend, associated, job_owner_id):
                 job_id=job.job_id,
                 state=job.state,
                 extra={"head": job.head},
+                fatal_internal=(not job.respawn),
             )
             thread.start()
             thread.join()

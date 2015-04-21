@@ -16,6 +16,7 @@ JobState = collections.namedtuple("JobState", (
     "method_name",
     "kwargs",
     "state",
+    "respawn",
 ))
 
 

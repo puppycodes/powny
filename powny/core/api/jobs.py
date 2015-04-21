@@ -87,23 +87,17 @@ class JobsResource(Resource):
         return (result, ("No jobs" if len(result) == 0 else "The list with all jobs"))
 
     def _request_post(self, backend):
-        (head, exposed) = self._get_exposed(backend)
+        (head, exposed, _, _) = get_exposed(backend, self._loader)
+        if exposed is None:
+            raise ApiError(503, "No HEAD or exposed methods")
+
         job_id = _valid_job_id(request.args.get("job_id", str(uuid.uuid4())))
         method_name = request.args.get("method", None)
         if method_name is None:
             raise ApiError(400, "Required method_name")
         kwargs = dict(request.data or {})
+        respawn = (str(request.args.get("respawn", "false")).lower() in ("1", "true", "yes"))
 
-        result = self._run_method(backend, job_id, method_name, kwargs, head, exposed)
-        return (result, "Method was launched")
-
-    def _get_exposed(self, backend):
-        (head, exposed, _, _) = get_exposed(backend, self._loader)
-        if exposed is None:
-            raise ApiError(503, "No HEAD or exposed methods")
-        return (head, exposed)
-
-    def _run_method(self, backend, job_id, method_name, kwargs, head, exposed):
         method = exposed.get(method_name)
         if method is None:
             raise ApiError(404, "Method not found")
@@ -114,11 +108,13 @@ class JobsResource(Resource):
             method_name=method_name,
             kwargs=kwargs,
             state=dump_call(method, kwargs),
+            respawn=respawn,
         )
         if not backend.jobs_control.add_job(job):
             raise ApiError(400, "Job already exists")
 
-        return {job_id: {"method": method_name, "url": self._get_job_url(job_id)}}
+        result = {job_id: {"method": method_name, "url": self._get_job_url(job_id)}}
+        return (result, "Method was launched")
 
     def _get_job_url(self, job_id):
         return get_url_for(JobControlResource, job_id=job_id)
@@ -138,6 +134,7 @@ class JobControlResource(Resource):
                           "method":   "<path.to.function>",  # Full method path in the rules
                           "head":     "<HEAD>",    # HEAD of the rules for this job
                           "kwargs":   {...},       # Function arguments
+                          "respawn":  <bool>,      # Infinite respawn (except unpickle errors)
                           "created":  <str>,       # ISO-8601-like time when the job was created
                           "locked":   <dict|null>, # Job in progress (null if not locked, dict with info otherwise)
                           "deleted":  <str|null>,  # ISO-8601-like time when job was marked to stop and delete
