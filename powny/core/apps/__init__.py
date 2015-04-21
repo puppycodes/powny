@@ -1,6 +1,5 @@
 import sys
 import argparse
-import importlib
 import pkgutil
 import threading
 import socket
@@ -28,11 +27,7 @@ from .. import backdoor
 _config = None
 
 
-def get_config(check_helpers=()):
-    if len(check_helpers) > 0:
-        for helper in check_helpers:
-            if helper not in _config.helpers.configure:
-                raise RuntimeError("Helper '{}' is not configured".format(helper))
+def get_config():
     return _config
 
 
@@ -74,20 +69,12 @@ def init(name, description, args=None, raw_config=None):
     _merge_dicts(scheme, {"backend": backend_scheme})
     config = optconf.make_config(raw_config, scheme)
 
-    # Update scheme for selected helpers/modules
-    for helper_name in config.helpers.configure:
-        helper = importlib.import_module(helper_name)
-        get_options = getattr(helper, "get_options", None)
-        if get_options is None:
-            raise RuntimeError("Helper '{}' requires no configuration".format(helper_name))
-        _merge_dicts(scheme, {"helpers": get_options()})
-
-    # Provide global configuration for helpers
+    # Provide global configuration
     _config = optconf.make_config(raw_config, scheme)
 
     # Print config dump and exit
     if options.dump_config:
-        print(make_config_dump(_config, split_by=((), ("helpers",))))
+        print(make_config_dump(_config, split_by=((),)))
         sys.exit(0)
 
     return _config
@@ -190,10 +177,6 @@ def _get_config_scheme():
         "backdoor": {
             "enabled": optconf.Option(default=False, help="Enable telnet-based backdoor to Python process"),
             "port": optconf.Option(default=2200, help="Backdoor port"),
-        },
-
-        "helpers": {
-            "configure": optconf.Option(default=[], help="A list of modules that are configured"),
         },
 
         "api": {
