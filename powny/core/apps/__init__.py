@@ -195,9 +195,7 @@ def _get_config_scheme():
             "wait_slowpokes": optconf.Option(default=30.0, help="Wait slow jobs before kill"),
         },
 
-        "collector": {
-            "done_lifetime": optconf.Option(default=60, help="Seconds to wait before deleting completed job"),
-        },
+        "collector": {},
     }
     for app in ("worker", "collector"):
         scheme[app].update({

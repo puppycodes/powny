@@ -1,7 +1,5 @@
 import os
 import threading
-import random
-import time
 
 from contextlog import get_logger
 
@@ -156,13 +154,14 @@ class JobsControl:
             pass  # Lock on existent delete-op
         except zoo.NoNodeError:
             return False
-        wait = threading.Event()
-        if self._client.exists(_get_path_job_delete(job_id), watch=lambda _: wait.set()):
-            wait.wait(timeout=timeout)
-            if not wait.is_set():
-                msg = "The job was not removed, try again"
-                logger.error(msg)
-                raise DeleteTimeoutError(msg)
+        if timeout is not None:
+            event = threading.Event()
+            if self._client.exists(_get_path_job_delete(job_id), watch=lambda _: event.set()):
+                event.wait(timeout=timeout)
+                if not event.is_set():
+                    msg = "The job was not removed, try again"
+                    logger.error(msg)
+                    raise DeleteTimeoutError(msg)
         logger.info("Deleted job")
         return True
 
@@ -275,10 +274,8 @@ class JobsGc:
         self._client = client
         self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
 
-    def get_jobs(self, done_lifetime):
-        ids = self._client.get_children(_PATH_JOBS)
-        random.shuffle(ids)  # Избавляемся от гонки на большом количестве задач
-        for job_id in ids:
+    def get_jobs(self):
+        for job_id in self._client.get_children(_PATH_JOBS):
             to_delete = self._client.exists(_get_path_job_delete(job_id))
             taken = self._client.exists(_get_path_job_taken(job_id))
             lock = self._client.get_lock(_get_path_job_lock(job_id))
@@ -286,15 +283,13 @@ class JobsGc:
             if (to_delete or taken) and not lock.is_locked():
                 try:
                     finished = self._client.get(_get_path_job_state(job_id))["finished"]
-                except zoo.NoNodeError:
-                    continue
-                if to_delete or finished is None or from_isotime(finished) + done_lifetime <= time.time():
-                    try:
-                        with self._client.make_write_request("get_unfinished_jobs()") as request:
-                            lock.acquire(request, _make_lock_info("get_unfinished_jobs()"))
-                    except (zoo.NoNodeError, zoo.NodeExistsError):
+                    if finished is not None and not to_delete:
                         continue
-                    yield (job_id, to_delete or finished is not None)  # (id, done)
+                    with self._client.make_write_request("get_unfinished_jobs()") as request:
+                        lock.acquire(request, _make_lock_info("get_unfinished_jobs()"))
+                except (zoo.NoNodeError, zoo.NodeExistsError):
+                    continue
+                yield (job_id, to_delete)  # (id, done)
 
     def push_back_job(self, job_id):
         with self._client.make_write_request("push_back_job()") as request:

@@ -74,7 +74,7 @@ class TestJobs:
         before = time.time()
         with pytest.raises(backends.DeleteTimeoutError):
             control_iface.delete_job(job.job_id, timeout=1)
-        control_iface.delete_job(job.job_id)
+        control_iface.delete_job(job.job_id, timeout=30)
         assert time.time() - before >= 3
         assert control_iface.get_job_info(job.job_id) is None
 
@@ -150,15 +150,15 @@ class TestJobs:
 
             job_info = control_iface.get_job_info(job.job_id)
             self._assert_job_info_finished(job_info, ok)
+            control_iface.delete_job(job.job_id)
 
             count += 1
         assert count == 1
 
         count = 0
-        for (job_id, done) in gc_iface.get_jobs(0):
+        for (job_id, done) in gc_iface.get_jobs():
             assert done
             gc_iface.remove_job_data(job_id)
-            control_iface.delete_job(job_id)
             count += 1
         assert count == 1
 
