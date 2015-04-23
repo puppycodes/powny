@@ -15,7 +15,7 @@ def in_context():
 
 def get_context():
     assert in_context(), "Called not from a job context!"
-    return thread
+    return threading.current_thread()
 
 
 def get_job_id():
