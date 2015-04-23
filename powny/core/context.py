@@ -8,9 +8,13 @@ from contextlog import get_logger
 
 
 # =====
-def get_context():
+def in_context():
     thread = threading.current_thread()
-    assert isinstance(thread, JobThread), "Called not from a job context!"
+    return isinstance(thread, JobThread)
+
+
+def get_context():
+    assert in_context(), "Called not from a job context!"
     return thread
 
 
