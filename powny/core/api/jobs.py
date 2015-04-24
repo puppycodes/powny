@@ -1,5 +1,4 @@
 import uuid
-import re
 
 from flask import request
 
@@ -9,6 +8,7 @@ from ..backends import JobState
 from ..backends import DeleteTimeoutError
 
 from . import (
+    valid_object_name,
     get_exposed,
     get_url_for,
     Resource,
@@ -17,13 +17,6 @@ from . import (
 
 
 # =====
-def _valid_job_id(job_id):
-    job_id = str(job_id).strip()
-    if re.match(r"^[\w-]{1,100}$", job_id) is None:
-        raise ApiError(400, "Invalid job id, required something like this: ^[\\w-]{1,100}$")
-    return job_id
-
-
 class JobsResource(Resource):
     name = "Create and view jobs"
     methods = ("GET", "POST")
@@ -91,7 +84,7 @@ class JobsResource(Resource):
         if exposed is None:
             raise ApiError(503, "No HEAD or exposed methods")
 
-        job_id = _valid_job_id(request.args.get("job_id", str(uuid.uuid4())))
+        job_id = valid_object_name(request.args.get("job_id", str(uuid.uuid4())))
         method_name = request.args.get("method", None)
         if method_name is None:
             raise ApiError(400, "Required method_name")
@@ -172,7 +165,7 @@ class JobControlResource(Resource):
         self._delete_timeout = delete_timeout
 
     def process_request(self, job_id):  # pylint: disable=arguments-differ
-        job_id = _valid_job_id(job_id)
+        job_id = valid_object_name(job_id)
         backend = self._pool.get_backend()
         try:
             if request.method == "GET":

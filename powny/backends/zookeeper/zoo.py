@@ -10,7 +10,6 @@ from ...core.backends import ConnectionError
 import decorator
 import kazoo.client
 import kazoo.exceptions
-from kazoo.protocol.paths import join
 
 from contextlog import get_logger
 
@@ -29,7 +28,17 @@ class EmptyValue:  # pylint: disable=no-init
         raise RuntimeError("Use a class rather than an object of class")
 
 
-# ====
+# =====
+def join(base, *items):
+    is_root = (base.startswith("/") or len(base) == 0)
+    path = base + "/" + "/".join(items)
+    path = "/".join(filter(None, path.split("/")))
+    if is_root:
+        path = "/" + path
+    return path
+
+
+# =====
 def _encode_value(value):
     if value is EmptyValue:
         return b""

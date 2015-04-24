@@ -19,6 +19,9 @@ from ..api.rules import RulesHeadResource
 from ..api.jobs import JobsResource
 from ..api.jobs import JobControlResource
 
+from ..api.cas import CasRootResource
+from ..api.cas import CasPathResource
+
 from ..api.system import StateResource
 from ..api.system import InfoResource
 from ..api.system import ConfigResource
@@ -50,6 +53,7 @@ class _Api(flask_api.app.FlaskAPI):
         ))
         self._resources = {}
         self.add_url_rule("/", "API's list", self._get_apis)
+        self._count = 0
 
     def add_url_resource(self, version, url_rule, resource):
         def handler(**kwargs):
@@ -57,12 +61,13 @@ class _Api(flask_api.app.FlaskAPI):
         handler.__doc__ = resource.docstring
         self.add_url_rule(
             url_rule,
-            resource.name,
+            str(resource.__class__.__name__),
             handler,
-            methods=resource.methods
+            methods=resource.methods,
         )
         self._resources.setdefault(version, [])
         self._resources[version].append(resource)
+        self._count += 1
 
     def _get_apis(self):
         """ View available API's """
@@ -94,13 +99,12 @@ def make_app(config):
     loader = imprules.Loader(config.core.rules_dir)
 
     app = _Api(__name__)
-    app.add_url_resource("v1", "/v1/rules/exposed", ExposedRulesResource(
-        pool=pool,
-        loader=loader,
-    ))
+    app.add_url_resource("v1", "/v1/rules/exposed", ExposedRulesResource(pool, loader))
     app.add_url_resource("v1", "/v1/rules/head", RulesHeadResource(pool))
     app.add_url_resource("v1", "/v1/jobs", JobsResource(pool, loader))
     app.add_url_resource("v1", "/v1/jobs/<job_id>", JobControlResource(pool, config.api.delete_timeout))
+    app.add_url_resource("v1", "/v1/cas", CasRootResource(pool))
+    app.add_url_resource("v1", "/v1/cas/<path:path>", CasPathResource(pool))
     app.add_url_resource("v1", "/v1/system/state", StateResource(pool))
     app.add_url_resource("v1", "/v1/system/info", InfoResource(pool))
     app.add_url_resource("v1", "/v1/system/config", ConfigResource(config))

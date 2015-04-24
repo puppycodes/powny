@@ -378,6 +378,18 @@ class CasStorage:
     def __init__(self, client):
         self._client = client
 
+    def get_children(self, path):
+        try:
+            return self._client.get_children(_get_path_cas_storage(path))
+        except zoo.NoNodeError:
+            return None
+
+    def get_raw(self, path):
+        raw = self._client.get(_get_path_cas_storage(path), default=None)
+        if raw is zoo.EmptyValue:
+            raw = None
+        return raw
+
     def set_value(self, path, value, version=None):
         try:
             self.replace_value(path, value=value, version=version, default=None)
@@ -403,6 +415,7 @@ class CasStorage:
                 version is not None -- write if version >= old_version
         """
 
+        lock_path = _get_path_cas_storage_lock(path)
         path = _get_path_cas_storage(path)
 
         try:
@@ -411,7 +424,7 @@ class CasStorage:
         except zoo.NodeExistsError:
             pass
 
-        with self._client.get_lock(_get_path_cas_storage_lock(path)):
+        with self._client.get_lock(lock_path):
             old = self._client.get(path)
             if old is zoo.EmptyValue:
                 if default is CasNoValue:
