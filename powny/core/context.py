@@ -8,6 +8,14 @@ from contextlog import get_logger
 
 
 # =====
+class SuicideError(Exception):
+    pass
+
+
+def suicide(msg):
+    raise SuicideError(msg)
+
+
 def in_context():
     thread = threading.current_thread()
     return isinstance(thread, JobThread)
@@ -154,8 +162,11 @@ class JobThread(threading.Thread):
                         retval=stack_or_retval,
                         exc=None,
                     )
-            except Exception:
-                logger.exception("Unhandled step error; fatal_internal=%s", self._fatal_internal)
+            except Exception as err:
+                if isinstance(err, SuicideError):
+                    logger.warning("Suicide; fatal_internal=%s", self._fatal_internal)
+                else:
+                    logger.exception("Unhandled step error; fatal_internal=%s", self._fatal_internal)
                 # self._cont.switch() switches the stack, so we will see a valid exception, up to this place
                 # in the rule. sys.exc_info() return a raw exception data. Some of them can't be pickled, for
                 # example, traceback-object. For those who use the API, easier to read the text messages.
