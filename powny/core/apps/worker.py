@@ -188,6 +188,7 @@ class _JobsManager:
 
 
 def _exec_job(job, rules_dir, backend, associated, job_owner_id):
+    sys.dont_write_bytecode = True
     _unlock_logging()
     logger = get_logger(job_id=job.job_id, method=job.method_name)
     try:
