@@ -386,6 +386,16 @@ class CasStorage:
     def __init__(self, client):
         self._client = client
 
+    def delete(self, path):
+        try:
+            with self._client.make_write_request("cas_delete()") as request:
+                request.delete(_get_path_cas_storage(path))
+            return True
+        except zoo.NoNodeError:
+            return False
+        except zoo.NotEmptyError:
+            return None
+
     def get_children(self, path):
         try:
             return [
