@@ -388,7 +388,10 @@ class CasStorage:
 
     def get_children(self, path):
         try:
-            return self._client.get_children(_get_path_cas_storage(path))
+            return [
+                item for item in self._client.get_children(_get_path_cas_storage(path))
+                if item != "__lock__"
+            ]
         except zoo.NoNodeError:
             return None
 
