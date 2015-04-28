@@ -59,6 +59,7 @@ if __name__ == "__main__":
             "contextlog",
             "colorlog",
             "pkginfo",
+            "setproctitle",
 
             # Backdoor
             "manhole",
