@@ -146,7 +146,7 @@ class JobsControl:
 
     def delete_job(self, job_id, timeout=None):
         logger = get_logger(job_id=job_id)
-        logger.info("Deleting job")
+        logger.info("Deleting job; timeout=%s", timeout)
         try:
             with self._client.make_write_request("delete_job()") as request:
                 request.create(_get_path_job_delete(job_id), make_isotime())
@@ -158,11 +158,12 @@ class JobsControl:
             event = threading.Event()
             if self._client.exists(_get_path_job_delete(job_id), watch=lambda _: event.set()):
                 event.wait(timeout=timeout)
-                if not event.is_set():
+                if event.is_set():
+                    logger.info("Deleted job")
+                else:
                     msg = "The job was not removed, try again"
                     logger.error(msg)
                     raise DeleteTimeoutError(msg)
-        logger.info("Deleted job")
         return True
 
     def get_job_info(self, job_id):

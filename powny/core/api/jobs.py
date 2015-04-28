@@ -182,8 +182,13 @@ class JobControlResource(Resource):
         return (job_info, "Information about the job")
 
     def _request_delete(self, backend, job_id):
+        wait = request.args.get("wait", self._delete_timeout)
         try:
-            deleted = backend.jobs_control.delete_job(job_id, timeout=self._delete_timeout)
+            wait = max(0, int(wait))
+        except ValueError:
+            raise ApiError(400, "Invalid wait")
+        try:
+            deleted = backend.jobs_control.delete_job(job_id, timeout=(wait or None))
         except DeleteTimeoutError as err:
             raise ApiError(503, str(err))
         if not deleted:

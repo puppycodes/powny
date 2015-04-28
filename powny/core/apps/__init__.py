@@ -181,7 +181,7 @@ def _get_config_scheme():
 
         "api": {
             "backend_connections": optconf.Option(default=1, help="Maximum number of backend connections"),
-            "delete_timeout": optconf.Option(default=15.0, help="Timeout for stop/delete operation"),
+            "delete_timeout": optconf.Option(default=15, help="Timeout for stop/delete operation"),
             "gunicorn": optconf.Option(default={}, help="Gunicorn options (workers, max_requests, etc.) "
                                                         " exclude entrypoint-specific (like errorlog, accesslog). "
                                                         " See http://docs.gunicorn.org/en/latest/settings.html"),
