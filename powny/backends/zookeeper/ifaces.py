@@ -204,14 +204,11 @@ class JobsProcess:
                     self._input_queue.consume(request)
                 continue
 
-            try:
-                with self._client.make_write_request("get_ready_jobs()") as request:
-                    lock = self._client.get_lock(_get_path_job_lock(job_id))
-                    lock.acquire(request, _make_lock_info("get_ready_jobs()"))
-                    request.create(_get_path_job_taken(job_id), make_isotime())
-                    self._input_queue.consume(request)
-            except zoo.NodeExistsError:
-                continue
+            with self._client.make_write_request("get_ready_jobs()") as request:
+                lock = self._client.get_lock(_get_path_job_lock(job_id))
+                lock.acquire(request, _make_lock_info("get_ready_jobs()"))
+                request.create(_get_path_job_taken(job_id), make_isotime())
+                self._input_queue.consume(request)
 
             yield JobState(
                 job_id=job_id,
