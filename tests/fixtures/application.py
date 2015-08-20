@@ -2,7 +2,6 @@ import contextlib
 import threading
 import uuid
 import json
-
 from powny.core.apps import (
     api,
     worker,
@@ -13,34 +12,16 @@ from powny.testing.application import configured
 
 # =====
 @contextlib.contextmanager
-def powny_api(text=None, with_worker=False, with_collector=True):
+def powny_api(text=None):
     with configured(text) as config:
         chroot = "/" + str(uuid.uuid4())
         config["backend"]["chroot"] = chroot
         try:
-            if with_worker:
-                worker_thread = threading.Thread(target=worker.run, kwargs={"config": config})
-                worker_thread.daemon = True
-                worker_thread.start()
-
-            if with_collector:
-                collector_thread = threading.Thread(target=collector.run, kwargs={"config": config})
-                collector_thread.daemon = True
-                collector_thread.start()
-
             api_app = api.make_app(config)
             api_app.debug = True
             api_app.testing = True
             yield (api_app.test_client, config)
         finally:
-            if with_worker:
-                worker._stop()  # pylint: disable=protected-access
-                worker_thread.join()
-
-            if with_collector:
-                collector._stop()  # pylint: disable=protected-access
-                collector_thread.join()
-
             # Cleanup ZooKeeper
             if config.core.backend == "zookeeper":
                 from powny.backends.zookeeper import zoo
@@ -62,3 +43,27 @@ def from_dict(attrs):
         "headers": {"Content-Type": "application/json"},
         "data": json.dumps(attrs).encode(),
     }
+
+
+@contextlib.contextmanager
+def running_worker(config):
+    try:
+        thread = threading.Thread(target=worker.run, kwargs={"config": config})
+        thread.daemon = True
+        thread.start()
+        yield
+    finally:
+        worker._stop()  # pylint: disable=protected-access
+        thread.join()
+
+
+@contextlib.contextmanager
+def running_collector(config):
+    try:
+        thread = threading.Thread(target=collector.run, kwargs={"config": config})
+        thread.daemon = True
+        thread.start()
+        yield
+    finally:
+        collector._stop()  # pylint: disable=protected-access
+        thread.join()

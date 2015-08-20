@@ -6,14 +6,6 @@ import time
 import dateutil.parser
 import pkginfo
 
-from contextlog import get_logger
-
-from . import context
-from . import imprules
-from . import golem
-
-from .backends import JobState
-
 
 # =====
 def get_node_name():
@@ -41,38 +33,3 @@ def make_isotime(unix=None):  # ISO 8601
 def from_isotime(line):
     dt = dateutil.parser.parse(line)
     return calendar.timegm(dt.utctimetuple()) + dt.microsecond / 10 ** 6  # pylint: disable=maybe-no-member
-
-
-# =====
-def make_loader(rules_root):
-    return imprules.Loader(
-        prefix=rules_root,
-        group_by=(
-            ("handlers", golem.is_event_handler),
-            ("methods", lambda _: True),
-        ),
-    )
-
-
-def get_exposed(backend, loader):
-    head = backend.rules.get_head()
-    exposed = None
-    errors = None
-    exc = None
-    if head is not None:
-        try:
-            (exposed, errors) = loader.get_exposed(head)
-        except Exception as err:
-            exc = "{}: {}".format(type(err).__name__, err)
-            get_logger().exception("Can't load HEAD '%s'", head)
-    return (head, exposed, errors, exc)
-
-
-def make_job_state(head, name, method, kwargs):
-    return JobState(
-        head=head,
-        method_name=name,
-        kwargs=kwargs,
-        state=context.dump_call(method, kwargs),
-        job_id=None,
-    )

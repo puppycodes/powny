@@ -1,8 +1,6 @@
 import importlib
 import collections
-import uuid
 from queue import Queue
-import time
 
 from contextlog import get_logger
 
@@ -13,16 +11,13 @@ class DeleteTimeoutError(Exception):
 
 
 JobState = collections.namedtuple("JobState", (
+    "job_id",
     "head",
     "method_name",
     "kwargs",
     "state",
-    "job_id",
+    "respawn",
 ))
-
-
-def make_job_id():
-    return str(uuid.uuid4())
 
 
 # =====
@@ -102,19 +97,3 @@ class Pool:
         backend = backend_class(**self._backend_opts)
         get_logger().debug("Created backend: %s(%s) = %s", backend_class, self._backend_opts, backend)
         return backend
-
-
-def retry(pool, method, args=(), kwargs=None, retries=5, sleep=1, stopper=None):
-    kwargs = (kwargs or {})
-    while retries and (stopper is None or not stopper()):
-        retries -= 1
-        try:
-            backend = pool.get_backend()
-            try:
-                return method(backend, *args, **kwargs)
-            finally:
-                pool.retrieve_backend(backend)
-        except ConnectionError:
-            if retries == 0:
-                raise
-            time.sleep(sleep)

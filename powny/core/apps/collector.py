@@ -46,7 +46,7 @@ class _Collector(Application):
     def _gc_jobs(self, backend):
         processed = 0
         self._dump_collector_state(backend)
-        for (job_id, done) in backend.jobs_gc.get_jobs(self._app_config.done_lifetime):
+        for (job_id, done) in backend.jobs_gc.get_jobs():
             logger = get_logger(job_id=job_id)
             logger.debug("Processing: done=%s", done)
             if done:

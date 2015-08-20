@@ -12,6 +12,9 @@ from .apps import get_config
 from .imprules import expose
 
 from .context import (
+    SuicideError,
+    suicide,
+    in_context,
     get_context,
     get_job_id,
     get_extra,

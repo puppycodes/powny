@@ -2,11 +2,14 @@ import pprint
 import time
 
 from powny.core import __version__
-from powny.core.golem import convert_status
 
-from .fixtures.application import powny_api
-from .fixtures.application import as_dict
-from .fixtures.application import from_dict
+from .fixtures.application import (
+    powny_api,
+    as_dict,
+    from_dict,
+    running_worker,
+    running_collector,
+)
 
 
 # ====
@@ -14,53 +17,47 @@ def test_api_v1_rules():
     with powny_api() as (test_client, _):
         with test_client() as api:
             result = as_dict(api.get("/v1/rules/exposed"))
-            assert result[0] == 200
-            assert result[1] == {
+            assert result == (200, {
                 "status": "ok",
                 "message": "The rules of current HEAD",
                 "result": {"head": None, "errors": None, "exposed": None},
-            }
+            })
 
             # ---
             result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "foobar"})))
-            assert result[0] == 400
-            assert result[1] == {
+            assert result == (400, {
                 "status": "error",
-                "message": "The argument \"foobar\" is not a valid hex string",
+                "message": "The HEAD must be a hex string",
                 "result": {"head": "foobar"},
-            }
+            })
             result = as_dict(api.get("/v1/rules/exposed"))
-            assert result[0] == 200
-            assert result[1] == {
+            assert result == (200, {
                 "status": "ok",
                 "message": "The rules of current HEAD",
                 "result": {"head": None, "errors": None, "exposed": None},
-            }
+            })
 
             # ---
             result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "0"})))
-            assert result[0] == 200
-            assert result[1] == {
+            assert result == (200, {
                 "status": "ok",
                 "message": "The HEAD has been updated",
                 "result": {"head": "0"},
-            }
+            })
             result = as_dict(api.get("/v1/rules/exposed"))
-            assert result[0] == 503
-            assert result[1] == {
+            assert result == (503, {
                 "status": "error",
                 "message": "AssertionError: Can't find module path: rules/0",
                 "result": {"head": "0", "errors": None, "exposed": None},
-            }
+            })
 
             # ---
             result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "0123456789abcdef"})))
-            assert result[0] == 200
-            assert result[1] == {
+            assert result == (200, {
                 "status": "ok",
                 "message": "The HEAD has been updated",
                 "result": {"head": "0123456789abcdef"},
-            }
+            })
 
             result = as_dict(api.get("/v1/rules/exposed"))
             assert result[0] == 200
@@ -68,12 +65,11 @@ def test_api_v1_rules():
             assert result[1]["message"] == "The rules of current HEAD"
             assert result[1]["result"]["head"] == "0123456789abcdef"
             assert isinstance(result[1]["result"]["errors"], dict)
-            assert isinstance(result[1]["result"]["exposed"]["methods"], list)
-            assert isinstance(result[1]["result"]["exposed"]["handlers"], list)
+            assert isinstance(result[1]["result"]["exposed"], list)
 
 
 def test_api_v1_system_state():
-    with powny_api(with_worker=True) as (test_client, config):
+    with powny_api() as (test_client, config):
         with test_client() as api:
             result = as_dict(api.get("/v1/system/state"))
             assert result[0] == 200
@@ -84,14 +80,13 @@ def test_api_v1_system_state():
 
             _init_head(api)
 
-            assert as_dict(api.post("/v1/jobs?method=rules.test.empty_method", **from_dict({})))[0]
-
-            time.sleep(config.worker.empty_sleep + 3)
-
-            result = as_dict(api.get("/v1/system/state"))
-            assert result[0] == 200
-            assert result[1]["result"]["jobs"]["input"] == 0
-            assert result[1]["result"]["jobs"]["all"] == 1
+            with running_worker(config):
+                assert as_dict(api.post("/v1/jobs?method=rules.test.empty_method", **from_dict({})))[0]
+                time.sleep(config.worker.empty_sleep + 3)
+                result = as_dict(api.get("/v1/system/state"))
+                assert result[0] == 200
+                assert result[1]["result"]["jobs"]["input"] == 0
+                assert result[1]["result"]["jobs"]["all"] == 1
 
 
 def test_api_v1_system_info():
@@ -109,91 +104,106 @@ def test_api_v1_system_config():
     with powny_api() as (test_client, config):
         with test_client() as api:
             result = as_dict(api.get("/v1/system/config"))
-            assert result[0] == 200
-            assert result[1] == {
+            assert result == (200, {
                 "status": "ok",
                 "message": "The system configuration",
                 "result": config,
-            }
+            })
 
 
-def _test_api_v1_jobs_delete(url, kwargs):
+def test_api_v1_jobs_delete():
+    with powny_api() as (test_client, config):
+        with running_collector(config):
+            with test_client() as api:
+                _init_head(api)
+
+                result = as_dict(api.post("/v1/jobs?method=rules.test.empty_method"))
+                assert result[0] == 200
+                (job_id, job_info) = tuple(result[1]["result"].items())[0]
+                method_name = job_info["method"]
+
+                result = as_dict(api.get("/v1/jobs/" + job_id))
+                assert result[0] == 200
+                assert result[1]["result"]["method"] == method_name
+                assert result[1]["result"]["deleted"] is None
+
+                assert as_dict(api.delete("/v1/jobs/" + job_id))[0] == 200
+                assert as_dict(api.get("/v1/jobs/" + job_id))[0] == 404
+
+
+def test_api_v1_jobs_do_urlopen(httpserver):
+    _test_api_v1_jobs_do_urlopen(httpserver)
+
+
+def test_api_v1_jobs_do_urlopen_custom_id(httpserver):
+    _test_api_v1_jobs_do_urlopen(httpserver, "urlopen_job")
+
+
+def _test_api_v1_jobs_do_urlopen(httpserver, job_id=None):
+    httpserver.serve_content(content="test", code=200, headers=None)
     with powny_api() as (test_client, config):
         with test_client() as api:
             _init_head(api)
 
-            result = as_dict(api.post(url, **from_dict(kwargs)))
-            assert result[0] == 200
-            (job_id, job_info) = tuple(result[1]["result"].items())[0]
-            method_name = job_info["method"]
-
-            result = as_dict(api.get("/v1/jobs/" + job_id))
-            assert result[0] == 200
-            assert result[1]["result"]["method"] == method_name
-            assert result[1]["result"]["deleted"] is None
-
-            result = as_dict(api.delete("/v1/jobs/" + job_id))
-            time.sleep(config.collector.empty_sleep)
-
-            result = as_dict(api.get("/v1/jobs/" + job_id))
-            assert result[0] == 404
-
-
-def test_api_v1_jobs_method_delete():
-    _test_api_v1_jobs_delete("/v1/jobs?method=rules.test.empty_method", {})
-
-
-def test_api_v1_jobs_method_execution(httpserver):
-    httpserver.serve_content(content="test", code=200, headers=None)
-    with powny_api(with_worker=True) as (test_client, config):
-        with test_client() as api:
-            _init_head(api)
-            result = as_dict(api.post("/v1/jobs?method=rules.test.do_urlopen", **from_dict({
-                "test": "urlopen_by_event",
-                "url": httpserver.url,
-            })))
+            handle = "/v1/jobs?method=rules.test.do_urlopen"
+            if job_id is not None:
+                handle += "&job_id={}".format(job_id)
+            result = as_dict(api.post(handle, **from_dict({"url": httpserver.url})))
             assert result[0] == 200
             job_id = tuple(result[1]["result"])[0]
-            _check_result(job_id, api, config.worker.empty_sleep + 300)
+
+            with running_worker(config):
+                result = _wait_unlock_job(api, job_id, config.worker.empty_sleep + 300)
+                assert result["locked"] is None, pprint.pformat(result)
+                assert result["finished"] is not None, pprint.pformat(result)
+                assert result["exc"] is None, pprint.pformat(result)
 
 
-def test_compat_golem_execution(httpserver):
+def test_api_v1_jobs_failed_once(httpserver):
     httpserver.serve_content(content="test", code=200, headers=None)
-    with powny_api(with_worker=True) as (test_client, config):
+    with powny_api() as (test_client, config):
         with test_client() as api:
             _init_head(api)
-            previous_status = None
-            for status in ("ok", "warning", "critical", "ok"):
-                result = as_dict(api.post("/api/compat/golem/submit", **from_dict({
-                    "object": "foo",
-                    "eventtype": "urlopen_by_event",
-                    "status": status,
-                    "info": httpserver.url,
-                })))
-                assert result[0] == 200
-                for (job_id, job_info) in result[1]["result"].items():
-                    if job_info["method"] == "rules.test.urlopen_by_event":
+
+            result = as_dict(api.post("/v1/jobs?method=rules.test.failed_once&respawn=true",
+                                      **from_dict({"url": httpserver.url})))
+            assert result[0] == 200
+            job_id = tuple(result[1]["result"])[0]
+
+            with running_worker(config):
+                time.sleep(config.worker.empty_sleep + 3)
+                result = _wait_unlock_job(api, job_id, config.worker.empty_sleep + 300)
+                # Unfinished job
+                assert result["locked"] is None, pprint.pformat(result)
+                assert len(result["stack"] or ()) != 0, pprint.pformat(result)
+                assert result["finished"] is None, pprint.pformat(result)
+
+            with running_collector(config):
+                for _ in range(int(config.collector.empty_sleep + 300)):
+                    result = as_dict(api.get("/v1/jobs/" + job_id))
+                    assert result[0] == 200
+                    if result[1]["result"]["taken"] is None:
                         break
-                else:
-                    job_id = None
-                assert job_id is not None
-                (previous, current) = _check_result(job_id, api, config.worker.empty_sleep + 300)
-                assert (previous_status and convert_status(previous_status)) == (previous and previous["status"])
-                assert convert_status(status) == current["status"]
-                previous_status = status
+
+            with running_worker(config):
+                time.sleep(config.worker.empty_sleep + 3)
+                result = _wait_unlock_job(api, job_id, config.worker.empty_sleep + 300)
+                # Finished job
+                assert result["locked"] is None, pprint.pformat(result)
+                assert result["stack"] is None, pprint.pformat(result)
+                assert result["finished"] is not None, pprint.pformat(result)
+                assert result["retval"] == "OK", pprint.pformat(result)
 
 
 def _init_head(api):
     assert as_dict(api.post("/v1/rules/head", **from_dict({"head": "0123456789abcdef"})))[0] == 200
 
 
-def _check_result(job_id, api, wait):
+def _wait_unlock_job(api, job_id, wait):
     for _ in range(int(wait)):
         result = as_dict(api.get("/v1/jobs/" + job_id))
         assert result[0] == 200
-        if result[1]["result"]["finished"] is not None:
-            break
-        time.sleep(1)
-    assert result[0] == 200
-    assert result[1]["result"]["exc"] is None, pprint.pformat(result)
-    return result[1]["result"]["retval"]
+        result = result[1]["result"]
+        if result["locked"] is None and result["taken"] is not None:
+            return result
+    raise RuntimeError("I can't wait more!")

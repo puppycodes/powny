@@ -1,6 +1,7 @@
 # pylint: disable=redefined-outer-name
 
 
+import uuid
 import threading
 import time
 
@@ -28,20 +29,23 @@ class TestJobs:
     func_name = "method"
     func_state = b"pickled_function"
     func_kwargs = {"a": 1, "b": 2}
-    fresh_job = backends.JobState(
-        head=func_head,
-        method_name=func_name,
-        kwargs=func_kwargs,
-        state=func_state,
-        job_id=None,
-    )
+
+    def _make_job_state(self):
+        return backends.JobState(
+            job_id=str(uuid.uuid4()),
+            head=self.func_head,
+            method_name=self.func_name,
+            kwargs=self.func_kwargs,
+            state=self.func_state,
+            respawn=False,
+        )
 
     def test_get_input_size(self, zclient):
         ifaces.init(zclient)
         control_iface = ifaces.JobsControl(zclient)
         assert control_iface.get_input_size() == 0
         for count in range(5):
-            control_iface.add_jobs(self.func_head, [self.fresh_job])
+            control_iface.add_job(self._make_job_state())
             assert control_iface.get_input_size() == count + 1
 
     def test_delete_wait(self, zclient):
@@ -50,17 +54,18 @@ class TestJobs:
         process_iface = ifaces.JobsProcess(zclient)
         gc_iface = ifaces.JobsGc(zclient)
 
-        job_id = control_iface.add_jobs(self.func_head, [self.fresh_job])[0]
-        assert len(control_iface.get_job_info(job_id)) > 0
-        assert not process_iface.is_deleted_job(job_id)
+        job = self._make_job_state()
+        control_iface.add_job(job)
+        assert len(control_iface.get_job_info(job.job_id)) > 0
+        assert not process_iface.is_deleted_job(job.job_id)
 
         ready_job = next(process_iface.get_jobs())
-        assert job_id == ready_job.job_id
-        process_iface.associate_job(job_id, process_iface.get_my_id())
+        assert job.job_id == ready_job.job_id
+        process_iface.associate_job(job.job_id, process_iface.get_my_id())
 
         def remove_job():
             time.sleep(3)
-            gc_iface.remove_job_data(job_id)
+            gc_iface.remove_job_data(job.job_id)
 
         remover = threading.Thread(target=remove_job)
         remover.daemon = True
@@ -68,10 +73,10 @@ class TestJobs:
 
         before = time.time()
         with pytest.raises(backends.DeleteTimeoutError):
-            control_iface.delete_job(job_id, timeout=1)
-        control_iface.delete_job(job_id)
+            control_iface.delete_job(job.job_id, timeout=1)
+        control_iface.delete_job(job.job_id, timeout=30)
         assert time.time() - before >= 3
-        assert control_iface.get_job_info(job_id) is None
+        assert control_iface.get_job_info(job.job_id) is None
 
     def test_remove_fresh_job(self, zclient):
         ifaces.init(zclient)
@@ -79,16 +84,17 @@ class TestJobs:
         process_iface = ifaces.JobsProcess(zclient)
         gc_iface = ifaces.JobsGc(zclient)
 
-        job_id = control_iface.add_jobs(self.func_head, [self.fresh_job])[0]
-        assert len(control_iface.get_job_info(job_id)) > 0
-        assert not process_iface.is_deleted_job(job_id)
+        job = self._make_job_state()
+        control_iface.add_job(job)
+        assert len(control_iface.get_job_info(job.job_id)) > 0
+        assert not process_iface.is_deleted_job(job.job_id)
 
         ready_job = next(process_iface.get_jobs())
-        assert job_id == ready_job.job_id
-        process_iface.associate_job(job_id, process_iface.get_my_id())
+        assert job.job_id == ready_job.job_id
+        process_iface.associate_job(job.job_id, process_iface.get_my_id())
 
-        gc_iface.remove_job_data(job_id)
-        assert control_iface.get_job_info(job_id) is None
+        gc_iface.remove_job_data(job.job_id)
+        assert control_iface.get_job_info(job.job_id) is None
 
     def test_get_job_info_none(self, zclient):
         control_iface = ifaces.JobsControl(zclient)
@@ -112,28 +118,29 @@ class TestJobs:
         process_iface = ifaces.JobsProcess(client)
         gc_iface = ifaces.JobsGc(client)
 
-        job_id = control_iface.add_jobs(self.func_head, [self.fresh_job])[0]
-        assert isinstance(job_id, str)
-        assert len(job_id) > 0
-        assert control_iface.get_jobs_list() == [job_id]
+        job = self._make_job_state()
+        control_iface.add_job(job)
+        assert isinstance(job.job_id, str)
+        assert len(job.job_id) > 0
+        assert control_iface.get_jobs_list() == [job.job_id]
 
-        job_info = control_iface.get_job_info(job_id)
+        job_info = control_iface.get_job_info(job.job_id)
         self._assert_job_info_new(job_info)
 
         count = 0
         for ready_job in process_iface.get_jobs():
-            assert ready_job.job_id == job_id
+            assert ready_job.job_id == job.job_id
             assert ready_job.head == self.func_head
             assert ready_job.state == self.func_state
 
-            job_info = control_iface.get_job_info(job_id)
+            job_info = control_iface.get_job_info(job.job_id)
             self._assert_job_info_taken(job_info)
 
-            process_iface.associate_job(job_id, process_iface.get_my_id())
+            process_iface.associate_job(job.job_id, process_iface.get_my_id())
 
             if with_save:
-                process_iface.save_job_state(job_id, b"fictive state", ["fictive", "stack"])
-                job_info = control_iface.get_job_info(job_id)
+                process_iface.save_job_state(job.job_id, b"fictive state", ["fictive", "stack"])
+                job_info = control_iface.get_job_info(job.job_id)
                 self._assert_job_info_in_progress(job_info)
 
             if ok:
@@ -141,17 +148,17 @@ class TestJobs:
             else:
                 process_iface.done_job(ready_job.job_id, retval=None, exc="Traceback (most recent call last):\n")
 
-            job_info = control_iface.get_job_info(job_id)
+            job_info = control_iface.get_job_info(job.job_id)
             self._assert_job_info_finished(job_info, ok)
+            control_iface.delete_job(job.job_id)
 
             count += 1
         assert count == 1
 
         count = 0
-        for (job_id, done) in gc_iface.get_jobs(0):
+        for (job_id, done) in gc_iface.get_jobs():
             assert done
             gc_iface.remove_job_data(job_id)
-            control_iface.delete_job(job_id)
             count += 1
         assert count == 1
 

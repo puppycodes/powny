@@ -8,10 +8,22 @@ from contextlog import get_logger
 
 
 # =====
-def get_context():
+class SuicideError(Exception):
+    pass
+
+
+def suicide(msg):
+    raise SuicideError(msg)
+
+
+def in_context():
     thread = threading.current_thread()
-    assert isinstance(thread, JobThread), "Called not from a job context!"
-    return thread
+    return isinstance(thread, JobThread)
+
+
+def get_context():
+    assert in_context(), "Called not from a job context!"
+    return threading.current_thread()
 
 
 def get_job_id():
@@ -58,12 +70,15 @@ class JobThread(threading.Thread):
         получить метаданные текущей задачи, используя threading.current_thread().
     """
 
-    def __init__(self, backend, job_id, state, extra, __unpickle=False):  # pylint: disable=unused-argument
+    def __init__(self, backend, job_id, state, extra, fatal_internal,  # pylint: disable=unused-argument
+                 __unpickle=False):
+
         threading.Thread.__init__(self, name="JobThread::" + job_id)
         self._backend = backend
         self._job_id = job_id
         self._state = state
         self._extra = extra
+        self._fatal_internal = fatal_internal
         self._cont = None
         self._log_context = get_logger().get_context()  # Proxy context into the continulet
 
@@ -79,9 +94,9 @@ class JobThread(threading.Thread):
         # Шаг 2. Распикливаемся, передавая в __new__ аргумент о том, что мы именно распикливаемся,
         #        а не создаем новый контекст.
         #        https://docs.python.org/3.2/library/pickle.html#pickle.object.__getnewargs__
-        return ((None,) * 4) + (True,)  # Unpickle as current context
+        return ((None,) * 5) + (True,)  # Unpickle as current context
 
-    def __new__(cls, backend, job_id, state, extra, __unpickle=False):
+    def __new__(cls, backend, job_id, state, extra, fatal_internal, __unpickle=False):
         if __unpickle:
             # Шаг 3. При распикливании, вместо создания нового объекта, возвращаем ссылку на текущий
             #        контекст, предполагая, что он и является контекстом той задачи, в которой
@@ -89,7 +104,7 @@ class JobThread(threading.Thread):
             context = get_context()
             return context  # Return the current context instead of the new object
         else:
-            return super(JobThread, cls).__new__(cls, backend, job_id, state, extra)
+            return super(JobThread, cls).__new__(cls, backend, job_id, state, extra, fatal_internal)
 
     def __setstate__(self, job_id):
         # Шаг 4. После распикливания, проверяем, что мы распиклились в правильном контексте. Айдишник
@@ -147,16 +162,21 @@ class JobThread(threading.Thread):
                         retval=stack_or_retval,
                         exc=None,
                     )
-            except Exception:
-                logger.exception("Unhandled step error")
+            except Exception as err:
+                if isinstance(err, SuicideError):
+                    logger.warning("Suicide; fatal_internal=%s", self._fatal_internal)
+                else:
+                    logger.exception("Unhandled step error; fatal_internal=%s", self._fatal_internal)
                 # self._cont.switch() switches the stack, so we will see a valid exception, up to this place
                 # in the rule. sys.exc_info() return a raw exception data. Some of them can't be pickled, for
                 # example, traceback-object. For those who use the API, easier to read the text messages.
                 # traceback.format_exc() simply converts data from sys.exc_info() into a string.
-                self._backend.jobs_process.done_job(
-                    job_id=self._job_id,
-                    retval=None,
-                    exc=traceback.format_exc(),
-                )
-                break
-        logger.debug("Job finished")
+                if self._fatal_internal:
+                    self._backend.jobs_process.done_job(
+                        job_id=self._job_id,
+                        retval=None,
+                        exc=traceback.format_exc(),
+                    )
+                logger.debug("Context failed")
+                return
+        logger.debug("Context finished")

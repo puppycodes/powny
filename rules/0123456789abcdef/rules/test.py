@@ -3,11 +3,7 @@ import urllib.request
 from powny.core import (
     expose,
     save_job_state,
-)
-
-from powny.core.golem import (
-    on_event,
-    match_event,
+    get_cas_storage,
 )
 
 
@@ -18,13 +14,6 @@ def empty_method(**event):
 
 
 @expose
-@on_event
-def empty_handler(previous, current):
-    pass
-
-
-# =====
-@expose
 def do_urlopen(url, **_):
     for _ in range(3):
         urllib.request.build_opener().open(url)
@@ -32,8 +21,15 @@ def do_urlopen(url, **_):
 
 
 @expose
-@on_event
-@match_event(lambda _, current: current.service == "urlopen_by_event")
-def urlopen_by_event(previous, current):
-    do_urlopen(current.description)
-    return ((previous and previous.get_raw()), current.get_raw())
+def failed_once(url):
+    save_job_state()
+    do_fail = get_cas_storage().replace_value(
+        path="failed_once_value",
+        value=False,
+        default=True,
+    )[0].value
+    if do_fail:
+        raise RuntimeError("A-HA-HA ANARCHY!!!111")
+    save_job_state()
+    urllib.request.build_opener().open(url)
+    return "OK"

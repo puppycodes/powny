@@ -1,16 +1,19 @@
+import uuid
+
 from flask import request
 
-from ulib.validatorlib import ValidatorError
-from ulib.validators.extra import valid_uuid
+from ..context import dump_call
 
+from ..backends import JobState
 from ..backends import DeleteTimeoutError
 
-from ..tools import get_exposed
-from ..tools import make_job_state
-
-from . import get_url_for
-from . import Resource
-from . import ApiError
+from . import (
+    valid_object_name,
+    get_exposed,
+    get_url_for,
+    Resource,
+    ApiError,
+)
 
 
 # =====
@@ -50,15 +53,14 @@ class JobsResource(Resource):
                 # =====
 
                 Possible POST errors (with status=="error"):
+                    400 -- Missed required argument; job already exists.
                     404 -- Method not found (for method call).
-                    503 -- In the queue is more then N jobs.
                     503 -- No HEAD or exposed methods.
     """
 
-    def __init__(self, pool, loader, input_limit):
+    def __init__(self, pool, loader):
         self._pool = pool
         self._loader = loader
-        self._input_limit = input_limit
 
     def process_request(self):
         backend = self._pool.get_backend()
@@ -78,37 +80,34 @@ class JobsResource(Resource):
         return (result, ("No jobs" if len(result) == 0 else "The list with all jobs"))
 
     def _request_post(self, backend):
-        if backend.jobs_control.get_input_size() >= self._input_limit:
-            raise ApiError(503, "In the queue is more then {} jobs".format(self._input_limit))
-
-        (head, exposed) = self._get_exposed(backend)
-        method_name = request.args.get("method", None)
-        if method_name is None:
-            raise ApiError(400, "Requires method_name")
-        kwargs = dict(request.data or {})
-
-        result = self._run_method(backend, method_name, kwargs, head, exposed)
-        return (result, "Method was launched")
-
-    def _get_exposed(self, backend):
         (head, exposed, _, _) = get_exposed(backend, self._loader)
         if exposed is None:
             raise ApiError(503, "No HEAD or exposed methods")
-        return (head, exposed)
 
-    def _run_method(self, backend, method_name, kwargs, head, exposed):
-        job = self._make_job(head, method_name, kwargs, exposed)  # Validation is not required
-        if job is None:
-            raise ApiError(404, "Method not found")
-        job_id = backend.jobs_control.add_jobs(head, [job])[0]
-        return {job_id: {"method": method_name, "url": self._get_job_url(job_id)}}
+        job_id = valid_object_name(request.args.get("job_id", str(uuid.uuid4())))
+        method_name = request.args.get("method", None)
+        if method_name is None:
+            raise ApiError(400, "Required method_name")
+        kwargs = dict(request.data or {})
+        respawn = (str(request.args.get("respawn", "false")).lower() in ("1", "true", "yes"))
 
-    def _make_job(self, head, name, kwargs, exposed):
-        method = exposed.get("methods", {}).get(name)
+        method = exposed.get(method_name)
         if method is None:
-            return None
-        else:
-            return make_job_state(head, name, method, kwargs)
+            raise ApiError(404, "Method not found")
+
+        job = JobState(
+            job_id=job_id,
+            head=head,
+            method_name=method_name,
+            kwargs=kwargs,
+            state=dump_call(method, kwargs),
+            respawn=respawn,
+        )
+        if not backend.jobs_control.add_job(job):
+            raise ApiError(400, "Job already exists")
+
+        result = {job_id: {"method": method_name, "url": self._get_job_url(job_id)}}
+        return (result, "Method was launched")
 
     def _get_job_url(self, job_id):
         return get_url_for(JobControlResource, job_id=job_id)
@@ -128,6 +127,7 @@ class JobControlResource(Resource):
                           "method":   "<path.to.function>",  # Full method path in the rules
                           "head":     "<HEAD>",    # HEAD of the rules for this job
                           "kwargs":   {...},       # Function arguments
+                          "respawn":  <bool>,      # Infinite respawn (except unpickle errors)
                           "created":  <str>,       # ISO-8601-like time when the job was created
                           "locked":   <dict|null>, # Job in progress (null if not locked, dict with info otherwise)
                           "deleted":  <str|null>,  # ISO-8601-like time when job was marked to stop and delete
@@ -165,6 +165,7 @@ class JobControlResource(Resource):
         self._delete_timeout = delete_timeout
 
     def process_request(self, job_id):  # pylint: disable=arguments-differ
+        job_id = valid_object_name(job_id)
         backend = self._pool.get_backend()
         try:
             if request.method == "GET":
@@ -175,18 +176,19 @@ class JobControlResource(Resource):
             self._pool.retrieve_backend(backend)
 
     def _request_get(self, backend, job_id):
-        try:
-            job_id = valid_uuid(job_id)
-        except ValidatorError as err:
-            raise ApiError(400, str(err))
         job_info = backend.jobs_control.get_job_info(job_id)
         if job_info is None:
             raise ApiError(404, "Job not found")
         return (job_info, "Information about the job")
 
     def _request_delete(self, backend, job_id):
+        wait = request.args.get("wait", self._delete_timeout)
         try:
-            deleted = backend.jobs_control.delete_job(job_id, timeout=self._delete_timeout)
+            wait = max(0, int(wait))
+        except ValueError:
+            raise ApiError(400, "Invalid wait")
+        try:
+            deleted = backend.jobs_control.delete_job(job_id, timeout=(wait or None))
         except DeleteTimeoutError as err:
             raise ApiError(503, str(err))
         if not deleted:

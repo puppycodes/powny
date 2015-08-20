@@ -1,14 +1,11 @@
 import os
 import threading
-import random
-import time
 
 from contextlog import get_logger
 
 from ...core.backends import (
     DeleteTimeoutError,
     JobState,
-    make_job_id,
     CasNoValueError,
     CasVersionError,
     CasNoValue,
@@ -121,38 +118,35 @@ class JobsControl:
     def get_jobs_count(self):
         return self._client.get_children_count(_PATH_JOBS)
 
-    def add_jobs(self, head, jobs):
+    def add_job(self, job):
         now = make_isotime()
-        added_ids = []
-
-        with self._client.make_write_request("add_jobs()") as request:
-            for job in jobs:
-                job_id = make_job_id()
-
-                get_logger().info("Registering job", job_id=job_id, head=head,
+        try:
+            with self._client.make_write_request("add_job()") as request:
+                get_logger().info("Registering job", job_id=job.job_id, head=job.head,
                                   method=job.method_name, kwargs=job.kwargs)
-                request.create(_get_path_job(job_id), {
-                    "head": head,
+                request.create(_get_path_job(job.job_id), {
+                    "head": job.head,
                     "method": job.method_name,
                     "kwargs": job.kwargs,
                     "created": now,
+                    "respawn": job.respawn,
                 })
-                request.create(_get_path_job_state(job_id), {
+                request.create(_get_path_job_state(job.job_id), {
                     "state": job.state,
                     "stack": None,
                     "finished": None,
                     "retval": None,
                     "exc": None,
                 })
-
-                self._input_queue.put(request, job_id)
-                added_ids.append(job_id)
-
-        return added_ids
+                self._input_queue.put(request, job.job_id)
+            return True
+        except zoo.NodeExistsError:
+            get_logger().error("The job already exists", job_id=job.job_id)
+            return False
 
     def delete_job(self, job_id, timeout=None):
         logger = get_logger(job_id=job_id)
-        logger.info("Deleting job")
+        logger.info("Deleting job; timeout=%s", timeout)
         try:
             with self._client.make_write_request("delete_job()") as request:
                 request.create(_get_path_job_delete(job_id), make_isotime())
@@ -160,14 +154,16 @@ class JobsControl:
             pass  # Lock on existent delete-op
         except zoo.NoNodeError:
             return False
-        wait = threading.Event()
-        if self._client.exists(_get_path_job_delete(job_id), watch=lambda _: wait.set()):
-            wait.wait(timeout=timeout)
-            if not wait.is_set():
-                msg = "The job was not removed, try again"
-                logger.error(msg)
-                raise DeleteTimeoutError(msg)
-        logger.info("Deleted job")
+        if timeout is not None:
+            event = threading.Event()
+            if self._client.exists(_get_path_job_delete(job_id), watch=lambda _: event.set()):
+                event.wait(timeout=timeout)
+                if event.is_set():
+                    logger.info("Deleted job")
+                else:
+                    msg = "The job was not removed, try again"
+                    logger.error(msg)
+                    raise DeleteTimeoutError(msg)
         return True
 
     def get_job_info(self, job_id):
@@ -200,8 +196,13 @@ class JobsProcess:
 
     def get_jobs(self):
         for job_id in self._input_queue:
-            job_info = self._client.get(_get_path_job(job_id))
-            exec_info = self._client.get(_get_path_job_state(job_id))
+            try:
+                job_info = self._client.get(_get_path_job(job_id))
+                exec_info = self._client.get(_get_path_job_state(job_id))
+            except zoo.NoNodeError:
+                with self._client.make_write_request("get_ready_jobs()") as request:
+                    self._input_queue.consume(request)
+                continue
 
             with self._client.make_write_request("get_ready_jobs()") as request:
                 lock = self._client.get_lock(_get_path_job_lock(job_id))
@@ -210,11 +211,12 @@ class JobsProcess:
                 self._input_queue.consume(request)
 
             yield JobState(
+                job_id=job_id,
                 head=job_info["head"],
                 method_name=job_info["method"],
                 kwargs=job_info["kwargs"],
                 state=exec_info["state"],
-                job_id=job_id,
+                respawn=job_info["respawn"],
             )
 
     def is_my_job(self, job_id):
@@ -278,10 +280,8 @@ class JobsGc:
         self._client = client
         self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
 
-    def get_jobs(self, done_lifetime):
-        ids = self._client.get_children(_PATH_JOBS)
-        random.shuffle(ids)  # Избавляемся от гонки на большом количестве задач
-        for job_id in ids:
+    def get_jobs(self):
+        for job_id in self._client.get_children(_PATH_JOBS):
             to_delete = self._client.exists(_get_path_job_delete(job_id))
             taken = self._client.exists(_get_path_job_taken(job_id))
             lock = self._client.get_lock(_get_path_job_lock(job_id))
@@ -289,15 +289,13 @@ class JobsGc:
             if (to_delete or taken) and not lock.is_locked():
                 try:
                     finished = self._client.get(_get_path_job_state(job_id))["finished"]
-                except zoo.NoNodeError:
-                    continue
-                if to_delete or finished is None or from_isotime(finished) + done_lifetime <= time.time():
-                    try:
-                        with self._client.make_write_request("get_unfinished_jobs()") as request:
-                            lock.acquire(request, _make_lock_info("get_unfinished_jobs()"))
-                    except (zoo.NoNodeError, zoo.NodeExistsError):
+                    if finished is not None and not to_delete:
                         continue
-                    yield (job_id, to_delete or finished is not None)  # (id, done)
+                    with self._client.make_write_request("get_unfinished_jobs()") as request:
+                        lock.acquire(request, _make_lock_info("get_unfinished_jobs()"))
+                except (zoo.NoNodeError, zoo.NodeExistsError):
+                    continue
+                yield (job_id, to_delete)  # (id, done)
 
     def push_back_job(self, job_id):
         with self._client.make_write_request("push_back_job()") as request:
@@ -386,6 +384,31 @@ class CasStorage:
     def __init__(self, client):
         self._client = client
 
+    def delete(self, path):
+        try:
+            with self._client.make_write_request("cas_delete()") as request:
+                request.delete(_get_path_cas_storage(path))
+            return True
+        except zoo.NoNodeError:
+            return False
+        except zoo.NotEmptyError:
+            return None
+
+    def get_children(self, path):
+        try:
+            return [
+                item for item in self._client.get_children(_get_path_cas_storage(path))
+                if item != "__lock__"
+            ]
+        except zoo.NoNodeError:
+            return None
+
+    def get_raw(self, path):
+        raw = self._client.get(_get_path_cas_storage(path), default=None)
+        if raw is zoo.EmptyValue:
+            raw = None
+        return raw
+
     def set_value(self, path, value, version=None):
         try:
             self.replace_value(path, value=value, version=version, default=None)
@@ -411,6 +434,7 @@ class CasStorage:
                 version is not None -- write if version >= old_version
         """
 
+        lock_path = _get_path_cas_storage_lock(path)
         path = _get_path_cas_storage(path)
 
         try:
@@ -419,7 +443,7 @@ class CasStorage:
         except zoo.NodeExistsError:
             pass
 
-        with self._client.get_lock(_get_path_cas_storage_lock(path)):
+        with self._client.get_lock(lock_path):
             old = self._client.get(path)
             if old is zoo.EmptyValue:
                 if default is CasNoValue:

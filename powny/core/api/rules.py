@@ -1,11 +1,9 @@
+import re
+
 from flask import request
 
-from ulib.validatorlib import ValidatorError
-from ulib.validators.extra import valid_hex_string
-
-from .. import tools
-
 from . import (
+    get_exposed,
     ApiError,
     Resource,
 )
@@ -24,22 +22,14 @@ class ExposedRulesResource(Resource):
                     "result":  {
                         "head":    "<HEAD>"
                         "errors":  {"<path.to.module>": "<Traceback>", ...}
-                        "exposed": {
-                            "methods":  ["<path.to.function>", ...],
-                            "handlers": ["<path.to.function>", ...],
-                        },
+                        "exposed": ["<path.to.function>", ...]|null,
                     },
                 }
                 # =====
 
                 @head    -- Current version of the rules. Null if the version has not yet been set.
-                @errors  -- Errors that occurred while loading the specified modules (null if global
-                            error occurs).
-                @exposed -- Functions loaded from the rules and ready for execution (null if global
-                            error occurs).
-                @exposed.methods  -- List of functions that can be called directly by name.
-                @exposed.handlers -- List of event handlers that are selected based on filters.
-                                     They may also be called manually as methods.
+                @errors  -- Errors that occurred while loading the specified modules (null if global error occurs).
+                @exposed -- List of functions that can be called directly by name (null if global error occurs).
 
                 Possible errors (with status=="error"):
                     503 -- Non-existant HEAD for rules.
@@ -53,12 +43,10 @@ class ExposedRulesResource(Resource):
         backend = self._pool.get_backend()
         try:
             if request.method == "GET":
-                (head, exposed, errors, exc) = tools.get_exposed(backend, self._loader)
+                (head, exposed, errors, exc) = get_exposed(backend, self._loader)
                 if exc is None:  # No errors
-                    if exposed is not None:
-                        exposed_names = {group: list(methods) for (group, methods) in exposed.items()}
-                    else:
-                        exposed_names = None  # Not configured HEAD
+                    # exposed is None if HEAD is not configured
+                    exposed_names = (list(exposed) if exposed is not None else None)
                     return ({"head": head, "exposed": exposed_names, "errors": errors}, "The rules of current HEAD")
                 else:
                     raise ApiError(503, exc, {"head": head, "exposed": None, "errors": None})
@@ -111,11 +99,9 @@ class RulesHeadResource(Resource):
             self._pool.retrieve_backend(backend)
 
     def _request_post(self, backend):
-        head = (request.data or {}).get("head")  # json
-        try:
-            head = valid_hex_string(head)
-        except ValidatorError as err:
-            raise ApiError(400, str(err), {"head": head})
+        head = str((request.data or {}).get("head")).strip()
+        if re.match(r"^[0-9a-fA-F]+$", head) is None:
+            raise ApiError(400, "The HEAD must be a hex string", {"head": head})
         backend.rules.set_head(head)
         return ({"head": head}, "The HEAD has been updated")
 

@@ -1,13 +1,11 @@
 import sys
 import os
+import re
 import importlib
 import traceback
 import threading
 
 from contextlog import get_logger
-
-from ulib.validatorlib import ValidatorError
-from ulib.validators.python import valid_object_name
 
 
 # =====
@@ -26,17 +24,15 @@ class Loader:
         При вызове get_exposed(), он удаляет все модули, __file__ которых начинается с prefix.
         Затем, в sys.path добавлется prefix/head и происходит загрузка всех пакетов и модулей
         из этого каталога, рекурсивно.
-        Далее, все функции, находящиеся в этих модулях, анализируются с помощью набора фильтров
-        в group_by (вида {"key": lambda func: True}), и группируются по указанным ключам.
+        Далее загружаются все фунции с декоратором @expose из этих модулей.
         Операция замены модулей не является атомарной и функции, которые во время обновления
         модулей обратились к оным, потерпят сбой. FIXME: исправить это.
     """
 
     _lock = threading.Lock()
 
-    def __init__(self, prefix, group_by=None):
+    def __init__(self, prefix):
         self._prefix = prefix
-        self._group_by = group_by
         self._cache = {}
         self._thread = None
 
@@ -54,16 +50,7 @@ class Loader:
             try:
                 _remove_modules_unsafe(self._prefix)
                 (exposed_methods, errors) = _get_exposed_unsafe(os.path.join(self._prefix, head))
-                if self._group_by is None:
-                    self._cache[head] = (exposed_methods, errors)
-                else:
-                    methods = {sub: {} for (sub, _) in self._group_by}
-                    for (name, method) in exposed_methods.items():
-                        for (sub, test) in self._group_by:
-                            if test(method):
-                                methods[sub][name] = method
-                                break
-                    self._cache[head] = (methods, errors)
+                self._cache[head] = (exposed_methods, errors)
                 return self._cache[head]
             finally:
                 self._thread = None
@@ -156,11 +143,7 @@ def _is_package_root(base_path, package_path):
 
 
 def _is_object_name(name):
-    try:
-        valid_object_name(name)
-        return True
-    except ValidatorError:
-        return False
+    return bool(re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", name))
 
 
 def _is_package(path):

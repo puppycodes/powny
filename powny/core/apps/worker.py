@@ -3,6 +3,7 @@ import os
 import signal
 import multiprocessing
 import threading
+import setproctitle
 import logging
 import errno
 import time
@@ -188,6 +189,8 @@ class _JobsManager:
 
 
 def _exec_job(job, rules_dir, backend, associated, job_owner_id):
+    sys.dont_write_bytecode = True
+    _rename_process(job)
     _unlock_logging()
     logger = get_logger(job_id=job.job_id, method=job.method_name)
     try:
@@ -204,12 +207,20 @@ def _exec_job(job, rules_dir, backend, associated, job_owner_id):
                 job_id=job.job_id,
                 state=job.state,
                 extra={"head": job.head},
+                fatal_internal=(not job.respawn),
             )
             thread.start()
             thread.join()
     except Exception:
         logger.exception("Unhandled exception in the job process")
         raise
+
+
+def _rename_process(job):
+    setproctitle.setproctitle("[worker: {}] {}".format(  # pylint: disable=no-member
+        job.job_id,
+        setproctitle.getproctitle(),  # pylint: disable=no-member
+    ))
 
 
 def _unlock_logging():

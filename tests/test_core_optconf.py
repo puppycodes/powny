@@ -3,10 +3,9 @@
 
 import pytest
 
-from ulib import typetools
-
 from powny.core import optconf
 from powny.core.optconf.loaders import yaml
+from powny.core.apps import _merge_dicts
 from powny.testing.tmpfile import write_file
 from powny.backends import zookeeper
 
@@ -42,7 +41,7 @@ class TestLoadFromYaml:
         unpack(**config.section1.section2)
 
     def test_with_update(self, scheme):
-        typetools.merge_dicts(scheme, {"backend": zookeeper.Backend.get_options()})
+        _merge_dicts(scheme, {"backend": zookeeper.Backend.get_options()})
         config = optconf.make_config({}, scheme)
 
         assert config.key1 == 1
@@ -71,7 +70,7 @@ class TestLoadFromYaml:
                 assert raw["backend"]["nodes"] == ["foo", "bar"]
                 assert config.core.backend == "zookeeper"
 
-                typetools.merge_dicts(scheme, {"backend": zookeeper.Backend.get_options()})
+                _merge_dicts(scheme, {"backend": zookeeper.Backend.get_options()})
                 config = optconf.make_config(raw, scheme)
                 assert config.backend.nodes == ["foo", "bar"]
                 assert config.backend.timeout == 10.0

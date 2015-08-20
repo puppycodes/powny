@@ -26,3 +26,5 @@ root:
 loggers:
     kazoo:
         level: WARNING
+    requests:
+        level: WARNING

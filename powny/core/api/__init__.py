@@ -1,3 +1,4 @@
+import re
 import abc
 
 from contextlog import get_logger
@@ -52,5 +53,29 @@ class Resource(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-def get_url_for(resource_class, **kwargs):
-    return flask.request.host_url.rstrip("/") + flask.url_for(resource_class.name, **kwargs)
+def valid_object_name(name):
+    if re.match(r"^[\w-]{0,100}$", name) is None:
+        raise ApiError(400, "Invalid object name, required something like this: ^[\\w-]{0,100}$")
+    return name
+
+
+def get_exposed(backend, loader):
+    head = backend.rules.get_head()
+    exposed = None
+    errors = None
+    exc = None
+    if head is not None:
+        try:
+            (exposed, errors) = loader.get_exposed(head)
+        except Exception as err:
+            exc = "{}: {}".format(type(err).__name__, err)
+            get_logger().exception("Can't load HEAD '%s'", head)
+    return (head, exposed, errors, exc)
+
+
+def get_url_for(obj, **kwargs):
+    if hasattr(obj, "__name__"):
+        name = obj.__name__
+    else:
+        name = obj.__class__.__name__
+    return flask.request.host_url.rstrip("/") + flask.url_for(name, **kwargs)
