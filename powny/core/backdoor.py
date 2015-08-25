@@ -11,7 +11,7 @@ import manhole
 def start(port, reinstall_on_fork=False):
     manhole.logger = get_logger()
     manhole.Manhole.get_socket = staticmethod(_make_get_socket(port))
-    manhole.ManholeConnection.check_credentials = staticmethod(_check_credentials)
+    manhole.ManholeConnectionThread.check_credentials = staticmethod(_check_credentials)
     manhole.install(patch_fork=reinstall_on_fork)
 
 
