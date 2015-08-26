@@ -1,8 +1,7 @@
-[![Build Status](https://travis-ci.org/yandex-sysmon/powny.svg?branch=master)](https://travis-ci.org/yandex-sysmon/powny)
-[![Coverage Status](https://coveralls.io/repos/yandex-sysmon/powny/badge.png?branch=master)](https://coveralls.io/r/yandex-sysmon/powny?branch=master)
-[![Latest Version](https://pypip.in/v/powny/badge.png)](https://pypi.python.org/pypi/powny/)
-[![Dependency Status](https://gemnasium.com/yandex-sysmon/powny.svg)](https://gemnasium.com/yandex-sysmon/powny)
-[![Gitter chat](https://badges.gitter.im/yandex-sysmon/powny.png)](https://gitter.im/yandex-sysmon/powny)
+[![Build Status](https://img.shields.io/travis/yandex-sysmon/powny.svg)](https://travis-ci.org/yandex-sysmon/powny)
+[![Coverage Status](https://img.shields.io/coveralls/yandex-sysmon/powny/master.svg)](https://coveralls.io/r/yandex-sysmon/powny?branch=master)
+[![Latest Version](https://img.shields.io/pypi/v/powny.svg)](https://pypi.python.org/pypi/powny/)
+[![Dependency Status](https://img.shields.io/gemnasium/yandex-sysmon/powny.svg)](https://gemnasium.com/yandex-sysmon/powny)
 
 
 ###Что это?###
