@@ -10,6 +10,9 @@ import abc
 
 import yaml
 
+import pygments.lexers.data
+import pygments.formatters
+
 import contextlog
 from contextlog import get_logger
 
@@ -18,7 +21,9 @@ from .. import backends
 
 from .. import optconf
 from ..optconf.dumper import make_config_dump
-from ..optconf.loaders.yaml import load_file as load_yaml_file
+from ..optconf.loader import load_file as load_yaml_file
+from ..optconf.converters import as_string_or_none
+from ..optconf.converters import as_int_or_none
 
 from .. import backdoor
 
@@ -74,7 +79,14 @@ def init(name, description, args=None, raw_config=None):
 
     # Print config dump and exit
     if options.dump_config:
-        print(make_config_dump(_config, split_by=((),)))
+        dump = make_config_dump(config)
+        if sys.stdout.isatty():
+            dump = pygments.highlight(
+                dump,
+                pygments.lexers.data.YamlLexer(),
+                pygments.formatters.TerminalFormatter(bg="dark"),
+            )
+        print(dump)
         sys.exit(0)
 
     return _config
@@ -169,7 +181,7 @@ def _merge_dicts(dest, src, path=None):
 def _get_config_scheme():
     scheme = {
         "core": {
-            "node_name": optconf.Option(default=None, type=str, help="Short node name (like uname -n)"),
+            "node_name": optconf.Option(default=None, type=as_string_or_none, help="Short node name (like uname -n)"),
             "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
             "rules_dir": optconf.Option(default="rules", help="Path to rules root"),
         },
@@ -183,8 +195,8 @@ def _get_config_scheme():
             "backend_connections": optconf.Option(default=1, help="Maximum number of backend connections"),
             "delete_timeout": optconf.Option(default=15, help="Timeout for stop/delete operation"),
             "gunicorn": optconf.Option(default={}, help="Gunicorn options (workers, max_requests, etc.) "
-                                                        " exclude entrypoint-specific (like errorlog, accesslog). "
-                                                        " See http://docs.gunicorn.org/en/latest/settings.html"),
+                                                        "exclude entrypoint-specific (like errorlog, accesslog). "
+                                                        "See http://docs.gunicorn.org/en/latest/settings.html"),
         },
 
         "worker": {
@@ -199,8 +211,8 @@ def _get_config_scheme():
     }
     for app in ("worker", "collector"):
         scheme[app].update({
-            "max_fails": optconf.Option(default=None, type=int, help="Number of failures after which the program "
-                                                                     "terminates"),
+            "max_fails": optconf.Option(default=None, type=as_int_or_none, help="Number of failures after which "
+                                                                                "the program terminates"),
             "fail_sleep": optconf.Option(default=5, help="If processing fails, sleep for awhile and restart (seconds)"),
             "empty_sleep": optconf.Option(default=1, help="Interval after which process will sleep when "
                                                           "there are no jobs (seconds)"),

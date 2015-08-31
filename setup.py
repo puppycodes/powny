@@ -19,7 +19,6 @@ if __name__ == "__main__":
             "powny.core.api",
             "powny.core.apps",
             "powny.core.optconf",  # TODO: Make a separate package
-            "powny.core.optconf.loaders",
             "powny.backends",
             "powny.backends.zookeeper",
             "powny.testing",
@@ -65,7 +64,6 @@ if __name__ == "__main__":
             "manhole",
 
             # Optconf
-            "tabloid",
             "colorama",
             "pygments",
         ],

@@ -4,7 +4,7 @@
 import pytest
 
 from powny.core import optconf
-from powny.core.optconf.loaders import yaml
+from powny.core.optconf.loader import load_file as load_yaml_file
 from powny.core.apps import _merge_dicts
 from powny.testing.tmpfile import write_file
 from powny.backends import zookeeper
@@ -60,7 +60,7 @@ class TestLoadFromYaml:
     def test_with_include(self):
         with write_file("nodes:\n  - foo\n  - bar\nstart-retries: 1") as include_path:
             with write_file("core:\n  backend: zookeeper\nbackend: !include {}".format(include_path)) as main_path:
-                raw = yaml.load_file(main_path)
+                raw = load_yaml_file(main_path)
                 scheme = {
                     "core": {
                         "backend": optconf.Option(default="noop", type=str, help=""),
@@ -77,24 +77,24 @@ class TestLoadFromYaml:
 
     def test_yaml_root_error(self, scheme):
         with write_file("foobar") as path:
-            raw = yaml.load_file(path)
+            raw = load_yaml_file(path)
             with pytest.raises(ValueError):
                 optconf.make_config(raw, scheme)
 
     def test_yaml_syntax_error(self):
         with write_file("&") as path:
             with pytest.raises(ValueError):
-                yaml.load_file(path)
+                load_yaml_file(path)
 
     def test_yaml_invalid_value(self, scheme):
         with write_file("key1: x") as path:
-            raw = yaml.load_file(path)
+            raw = load_yaml_file(path)
             with pytest.raises(ValueError):
                 optconf.make_config(raw, scheme)
 
     def test_yaml_not_a_section(self, scheme):
         with write_file("section1: 5") as path:
-            raw = yaml.load_file(path)
+            raw = load_yaml_file(path)
             with pytest.raises(ValueError):
                 optconf.make_config(raw, scheme)
 
