@@ -37,8 +37,9 @@ class StateResource(Resource):
 
                Application-specific fields:
                    worker:
-                       processed -- Number of the processed jobs (exclude active);
-                       active    -- Number of the current active jobs.
+                       processed  -- Number of the processed jobs (exclude active);
+                       active     -- Number of the current active jobs;
+                       jobs_limit -- Current jobs limit.
                    collector:
                        processed -- Number of the processed (removed or pushed-back) jobs.
     """

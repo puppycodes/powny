@@ -40,6 +40,7 @@ class _Worker(Application):
     def __init__(self, config):
         Application.__init__(self, "worker", config)
         self._manager = _JobsManager(self._config.core.rules_dir, self._app_config.wait_slowpokes)
+        self._jobs_limit = None
 
     def process(self):
         logger = get_logger()
@@ -48,13 +49,14 @@ class _Worker(Application):
             while not self._stop_event.is_set():
                 gen_jobs = backend.jobs_process.get_jobs()
                 while not self._stop_event.is_set():
+                    self._set_jobs_limit(backend)
                     self._manager.manage(backend)
                     self._dump_worker_state(backend)
 
-                    if self._manager.get_current() >= self._app_config.max_jobs:
+                    if self._manager.get_current() >= self._jobs_limit:
                         logger.debug("Have reached the maximum concurrent jobs %(maxjobs)d,"
                                      " sleeping %(delay)f seconds...",
-                                     {"maxjobs": self._app_config.max_jobs, "delay": self._app_config.max_jobs_sleep})
+                                     {"maxjobs": self._jobs_limit, "delay": self._app_config.max_jobs_sleep})
                         time.sleep(self._app_config.max_jobs_sleep)
 
                     else:
@@ -74,11 +76,24 @@ class _Worker(Application):
                             # Скорее всего, имеет место гонка между воркерами.
                             time.sleep(self._app_config.job_delay)
 
+    def _set_jobs_limit(self, backend):
+        if self._app_config.max_jobs is None:
+            all_jobs = backend.jobs_control.get_jobs_count()
+            workers = max(len(backend.system_apps_state.get_full_state().get("worker", {})), 1)
+            jobs_limit = int(all_jobs / workers + 1)
+        else:
+            jobs_limit = self._app_config.max_jobs
+
+        if self._jobs_limit != jobs_limit:
+            get_logger().info("Set new jobs limit: %d", jobs_limit)
+            self._jobs_limit = jobs_limit
+
     def _dump_worker_state(self, backend):
         self.dump_app_state(backend, {
             "active": self._manager.get_current(),
             "processed": self._manager.get_finished(),
             "not_started": self._manager.get_not_started(),
+            "jobs_limit": self._jobs_limit,
         })
 
 

@@ -202,7 +202,7 @@ def _get_config_scheme():
         "worker": {
             "max_jobs_sleep": optconf.Option(default=1, help="If we have reached the maximum concurrent jobs - "
                                                              "the process goes to sleep (seconds)"),
-            "max_jobs": optconf.Option(default=100, help="The maximum number of job processes"),
+            "max_jobs": optconf.Option(default=None, type=as_int_or_none, help="The maximum number of job processes"),
             "job_delay": optconf.Option(default=0.1, help="Sleep between start of jobs"),
             "wait_slowpokes": optconf.Option(default=30.0, help="Wait slow jobs before kill"),
         },
