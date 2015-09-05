@@ -4,8 +4,10 @@ from flask import request
 
 from ..context import dump_call
 
-from ..backends import JobState
-from ..backends import DeleteTimeoutError
+from ..backends import (
+    JobState,
+    DeleteTimeoutError,
+)
 
 from . import (
     valid_object_name,

@@ -1,5 +1,6 @@
 from .. import tools
-from .. import optconf
+
+from ..optconf import Section
 
 from . import Resource
 
@@ -125,7 +126,7 @@ class ConfigResource(Resource):
     def _make_public(self, config):
         public = {}
         for (key, value) in config.items():
-            if isinstance(value, optconf.Section):
+            if isinstance(value, Section):
                 public[key] = self._make_public(value)
             elif not config._is_secret(key):  # pylint: disable=protected-access
                 public[key] = value

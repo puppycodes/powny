@@ -12,8 +12,10 @@ from contextlog import get_logger
 
 from .. import context
 
-from . import init
-from . import Application
+from . import (
+    init,
+    Application,
+)
 
 
 # =====

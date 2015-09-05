@@ -4,8 +4,8 @@ from flask import request
 
 from . import (
     get_exposed,
-    ApiError,
     Resource,
+    ApiError,
 )
 
 

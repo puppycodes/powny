@@ -3,17 +3,16 @@ import threading
 import contextlib
 import re
 
-from ...core import optconf
-
-from ...core.optconf.converters import as_string_or_none
-
-from ...core.backends import ConnectionError
-
 import decorator
+
 import kazoo.client
 import kazoo.exceptions
 
 from contextlog import get_logger
+
+from ...core.optconf import Option
+from ...core.optconf.converters import as_string_or_none
+from ...core.backends import ConnectionError
 
 
 # =====
@@ -104,14 +103,14 @@ class Client:
     @classmethod
     def get_options(cls):
         return {
-            "nodes": optconf.Option(default=["localhost:2181"], help="List of hosts to connect (in host:port format)"),
-            "timeout": optconf.Option(default=10.0, help="The longest to wait for a Zookeeper connection"),
-            "start_timeout": optconf.Option(default=10.0, help="Timeout of the initial connection"),
-            "start_retries": optconf.Option(default=1, type=int, help="The number of attempts the initial "
-                                                                      "connection to ZooKeeper (0=infinite)"),
-            "randomize_hosts": optconf.Option(default=True, help="Randomize host selection"),
-            "chroot": optconf.Option(default=None, type=as_string_or_none, help="Use specified node as root "
-                                                                                "(it must be created manually)"),
+            "nodes": Option(default=["localhost:2181"], help="List of hosts to connect (in host:port format)"),
+            "timeout": Option(default=10.0, help="The longest to wait for a Zookeeper connection"),
+            "start_timeout": Option(default=10.0, help="Timeout of the initial connection"),
+            "start_retries": Option(default=1, type=int, help="The number of attempts the initial "
+                                                              "connection to ZooKeeper (0=infinite)"),
+            "randomize_hosts": Option(default=True, help="Randomize host selection"),
+            "chroot": Option(default=None, type=as_string_or_none, help="Use specified node as root "
+                                                                        "(it must be created manually)"),
         }
 
     @contextlib.contextmanager

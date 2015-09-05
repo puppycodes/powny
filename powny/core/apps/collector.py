@@ -2,8 +2,10 @@ import time
 
 from contextlog import get_logger
 
-from . import init
-from . import Application
+from . import (
+    init,
+    Application,
+)
 
 
 # =====

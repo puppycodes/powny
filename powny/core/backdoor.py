@@ -8,6 +8,7 @@ from contextlog import get_logger
 import manhole
 
 
+# =====
 def start(port, reinstall_on_fork=False):
     manhole.logger = get_logger()
     manhole.Manhole.get_socket = staticmethod(_make_get_socket(port))
@@ -15,6 +16,7 @@ def start(port, reinstall_on_fork=False):
     manhole.install(patch_fork=reinstall_on_fork)
 
 
+# =====
 def _make_get_socket(port):
     def get_socket():
         for res in socket.getaddrinfo(None, port, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):

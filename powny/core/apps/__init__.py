@@ -13,19 +13,31 @@ import yaml
 import pygments.lexers.data
 import pygments.formatters
 
-import contextlog
-from contextlog import get_logger
+from contextlog import (
+    get_logger,
+    patch_logging,
+    patch_threading,
+)
 
-from .. import tools
-from .. import backends
+from .. import (
+    tools,
+    backends,
+    backdoor,
+)
 
-from .. import optconf
+from ..optconf import (
+    build_raw_from_options,
+    make_config,
+    Option,
+)
+
 from ..optconf.dumper import make_config_dump
 from ..optconf.loader import load_file as load_yaml_file
-from ..optconf.converters import as_string_or_none
-from ..optconf.converters import as_int_or_none
 
-from .. import backdoor
+from ..optconf.converters import (
+    as_string_or_none,
+    as_int_or_none,
+)
 
 
 # =====
@@ -52,13 +64,13 @@ def init(name, description, args=None, raw_config=None):
     raw_config = (raw_config or {})
     if options.config_file_path is not None:
         raw_config = load_yaml_file(options.config_file_path)
-    _merge_dicts(raw_config, optconf.build_raw_from_options(options.set_options))
+    _merge_dicts(raw_config, build_raw_from_options(options.set_options))
     scheme = _get_config_scheme()
-    config = optconf.make_config(raw_config, scheme)
+    config = make_config(raw_config, scheme)
 
     # Configure logging
-    contextlog.patch_logging()
-    contextlog.patch_threading()
+    patch_logging()
+    patch_threading()
     logging.setLogRecordFactory(_ClusterLogRecord)
     logging.captureWarnings(True)
     logging_config = raw_config.get("logging")
@@ -72,10 +84,10 @@ def init(name, description, args=None, raw_config=None):
     # Update scheme for backend opts
     backend_scheme = backends.get_backend_class(config.core.backend).get_options()
     _merge_dicts(scheme, {"backend": backend_scheme})
-    config = optconf.make_config(raw_config, scheme)
+    config = make_config(raw_config, scheme)
 
     # Provide global configuration
-    _config = optconf.make_config(raw_config, scheme)
+    _config = make_config(raw_config, scheme)
 
     # Print config dump and exit
     if options.dump_config:
@@ -181,41 +193,41 @@ def _merge_dicts(dest, src, path=None):
 def _get_config_scheme():
     scheme = {
         "core": {
-            "node_name": optconf.Option(default=None, type=as_string_or_none, help="Short node name (like uname -n)"),
-            "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
-            "scripts_dir": optconf.Option(default="scripts", help="Path to scripts root"),
+            "node_name": Option(default=None, type=as_string_or_none, help="Short node name (like uname -n)"),
+            "backend": Option(default="zookeeper", help="Backend plugin"),
+            "scripts_dir": Option(default="scripts", help="Path to scripts root"),
         },
 
         "backdoor": {
-            "enabled": optconf.Option(default=False, help="Enable telnet-based backdoor to Python process"),
-            "port": optconf.Option(default=2200, help="Backdoor port"),
+            "enabled": Option(default=False, help="Enable telnet-based backdoor to Python process"),
+            "port": Option(default=2200, help="Backdoor port"),
         },
 
         "api": {
-            "backend_connections": optconf.Option(default=1, help="Maximum number of backend connections"),
-            "delete_timeout": optconf.Option(default=15, help="Timeout for stop/delete operation"),
-            "gunicorn": optconf.Option(default={}, help="Gunicorn options (workers, max_requests, etc.) "
-                                                        "exclude entrypoint-specific (like errorlog, accesslog). "
-                                                        "See http://docs.gunicorn.org/en/latest/settings.html"),
+            "backend_connections": Option(default=1, help="Maximum number of backend connections"),
+            "delete_timeout": Option(default=15, help="Timeout for stop/delete operation"),
+            "gunicorn": Option(default={}, help="Gunicorn options (workers, max_requests, etc.) "
+                                                "exclude entrypoint-specific (like errorlog, accesslog). "
+                                                "See http://docs.gunicorn.org/en/latest/settings.html"),
         },
 
         "worker": {
-            "max_jobs_sleep": optconf.Option(default=1, help="If we have reached the maximum concurrent jobs - "
-                                                             "the process goes to sleep (seconds)"),
-            "max_jobs": optconf.Option(default=None, type=as_int_or_none, help="The maximum number of job processes"),
-            "job_delay": optconf.Option(default=0.1, help="Sleep between start of jobs"),
-            "wait_slowpokes": optconf.Option(default=30.0, help="Wait slow jobs before kill"),
+            "max_jobs_sleep": Option(default=1, help="If we have reached the maximum concurrent jobs - "
+                                                     "the process goes to sleep (seconds)"),
+            "max_jobs": Option(default=None, type=as_int_or_none, help="The maximum number of job processes"),
+            "job_delay": Option(default=0.1, help="Sleep between start of jobs"),
+            "wait_slowpokes": Option(default=30.0, help="Wait slow jobs before kill"),
         },
 
         "collector": {},
     }
     for app in ("worker", "collector"):
         scheme[app].update({
-            "max_fails": optconf.Option(default=None, type=as_int_or_none, help="Number of failures after which "
-                                                                                "the program terminates"),
-            "fail_sleep": optconf.Option(default=5, help="If processing fails, sleep for awhile and restart (seconds)"),
-            "empty_sleep": optconf.Option(default=1, help="Interval after which process will sleep when "
-                                                          "there are no jobs (seconds)"),
-            "state_every": optconf.Option(default=5, help="Dump appstate to backend every this time (seconds)"),
+            "max_fails": Option(default=None, type=as_int_or_none, help="Number of failures after which "
+                                                                        "the program terminates"),
+            "fail_sleep": Option(default=5, help="If processing fails, sleep for awhile and restart (seconds)"),
+            "empty_sleep": Option(default=1, help="Interval after which process will sleep when "
+                                                  "there are no jobs (seconds)"),
+            "state_every": Option(default=5, help="Dump appstate to backend every this time (seconds)"),
         })
     return scheme
