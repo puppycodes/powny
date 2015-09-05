@@ -35,7 +35,7 @@ class JobsResource(Resource):
                 # =====
 
         POST -- Run the specified method. If the argument "method" is specified, will
-                be running the specified method (requires the full path from the rules).
+                be running the specified method (requires the full path from the scripts).
                 The arguments passed to method via request body (in dict format).
 
                 Return value:
@@ -124,8 +124,8 @@ class JobControlResource(Resource):
                       "status":  "ok",
                       "message": "<...>",
                       "result":  {
-                          "method":   "<path.to.function>",  # Full method path in the rules
-                          "head":     "<HEAD>",    # HEAD of the rules for this job
+                          "method":   "<path.to.function>",  # Full method path in the scripts
+                          "head":     "<HEAD>",    # HEAD of the scripts for this job
                           "kwargs":   {...},       # Function arguments
                           "respawn":  <bool>,      # Infinite respawn (except unpickle errors)
                           "created":  <str>,       # ISO-8601-like time when the job was created

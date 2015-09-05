@@ -13,56 +13,56 @@ from .fixtures.application import (
 
 
 # ====
-def test_api_v1_rules():
+def test_api_v1_scripts():
     with powny_api() as (test_client, _):
         with test_client() as api:
-            result = as_dict(api.get("/v1/rules/exposed"))
+            result = as_dict(api.get("/v1/scripts/exposed"))
             assert result == (200, {
                 "status": "ok",
-                "message": "The rules of current HEAD",
+                "message": "The scripts of current HEAD",
                 "result": {"head": None, "errors": None, "exposed": None},
             })
 
             # ---
-            result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "foobar"})))
+            result = as_dict(api.post("/v1/scripts/head", **from_dict({"head": "foobar"})))
             assert result == (400, {
                 "status": "error",
                 "message": "The HEAD must be a hex string",
                 "result": {"head": "foobar"},
             })
-            result = as_dict(api.get("/v1/rules/exposed"))
+            result = as_dict(api.get("/v1/scripts/exposed"))
             assert result == (200, {
                 "status": "ok",
-                "message": "The rules of current HEAD",
+                "message": "The scripts of current HEAD",
                 "result": {"head": None, "errors": None, "exposed": None},
             })
 
             # ---
-            result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "0"})))
+            result = as_dict(api.post("/v1/scripts/head", **from_dict({"head": "0"})))
             assert result == (200, {
                 "status": "ok",
                 "message": "The HEAD has been updated",
                 "result": {"head": "0"},
             })
-            result = as_dict(api.get("/v1/rules/exposed"))
+            result = as_dict(api.get("/v1/scripts/exposed"))
             assert result == (503, {
                 "status": "error",
-                "message": "AssertionError: Can't find module path: rules/0",
+                "message": "AssertionError: Can't find module path: scripts/0",
                 "result": {"head": "0", "errors": None, "exposed": None},
             })
 
             # ---
-            result = as_dict(api.post("/v1/rules/head", **from_dict({"head": "0123456789abcdef"})))
+            result = as_dict(api.post("/v1/scripts/head", **from_dict({"head": "0123456789abcdef"})))
             assert result == (200, {
                 "status": "ok",
                 "message": "The HEAD has been updated",
                 "result": {"head": "0123456789abcdef"},
             })
 
-            result = as_dict(api.get("/v1/rules/exposed"))
+            result = as_dict(api.get("/v1/scripts/exposed"))
             assert result[0] == 200
             assert result[1]["status"] == "ok"
-            assert result[1]["message"] == "The rules of current HEAD"
+            assert result[1]["message"] == "The scripts of current HEAD"
             assert result[1]["result"]["head"] == "0123456789abcdef"
             assert isinstance(result[1]["result"]["errors"], dict)
             assert isinstance(result[1]["result"]["exposed"], list)
@@ -81,7 +81,7 @@ def test_api_v1_system_state():
             _init_head(api)
 
             with running_worker(config):
-                assert as_dict(api.post("/v1/jobs?method=rules.test.empty_method", **from_dict({})))[0]
+                assert as_dict(api.post("/v1/jobs?method=scripts.test.empty_method", **from_dict({})))[0]
                 time.sleep(config.worker.empty_sleep + 3)
                 result = as_dict(api.get("/v1/system/state"))
                 assert result[0] == 200
@@ -117,7 +117,7 @@ def test_api_v1_jobs_delete():
             with test_client() as api:
                 _init_head(api)
 
-                result = as_dict(api.post("/v1/jobs?method=rules.test.empty_method"))
+                result = as_dict(api.post("/v1/jobs?method=scripts.test.empty_method"))
                 assert result[0] == 200
                 (job_id, job_info) = tuple(result[1]["result"].items())[0]
                 method_name = job_info["method"]
@@ -145,7 +145,7 @@ def _test_api_v1_jobs_do_urlopen(httpserver, job_id=None):
         with test_client() as api:
             _init_head(api)
 
-            handle = "/v1/jobs?method=rules.test.do_urlopen"
+            handle = "/v1/jobs?method=scripts.test.do_urlopen"
             if job_id is not None:
                 handle += "&job_id={}".format(job_id)
             result = as_dict(api.post(handle, **from_dict({"url": httpserver.url})))
@@ -165,7 +165,7 @@ def test_api_v1_jobs_failed_once(httpserver):
         with test_client() as api:
             _init_head(api)
 
-            result = as_dict(api.post("/v1/jobs?method=rules.test.failed_once&respawn=true",
+            result = as_dict(api.post("/v1/jobs?method=scripts.test.failed_once&respawn=true",
                                       **from_dict({"url": httpserver.url})))
             assert result[0] == 200
             job_id = tuple(result[1]["result"])[0]
@@ -196,7 +196,7 @@ def test_api_v1_jobs_failed_once(httpserver):
 
 
 def _init_head(api):
-    assert as_dict(api.post("/v1/rules/head", **from_dict({"head": "0123456789abcdef"})))[0] == 200
+    assert as_dict(api.post("/v1/scripts/head", **from_dict({"head": "0123456789abcdef"})))[0] == 200
 
 
 def _wait_unlock_job(api, job_id, wait):

@@ -9,7 +9,7 @@ from .tools import (
 
 from .apps import get_config
 
-from .imprules import expose
+from .impscripts import expose
 
 from .context import (
     SuicideError,

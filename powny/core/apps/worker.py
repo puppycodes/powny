@@ -39,7 +39,7 @@ class _Worker(Application):
 
     def __init__(self, config):
         Application.__init__(self, "worker", config)
-        self._manager = _JobsManager(self._config.core.rules_dir, self._app_config.wait_slowpokes)
+        self._manager = _JobsManager(self._config.core.scripts_dir, self._app_config.wait_slowpokes)
         self._jobs_limit = None
 
     def process(self):
@@ -98,8 +98,8 @@ class _Worker(Application):
 
 
 class _JobsManager:
-    def __init__(self, rules_dir, wait_slowpokes):
-        self._rules_dir = rules_dir
+    def __init__(self, scripts_dir, wait_slowpokes):
+        self._scripts_dir = scripts_dir
         self._wait_slowpokes = wait_slowpokes
         self._procs = {}
         self._finished = 0
@@ -122,7 +122,7 @@ class _JobsManager:
             target=_exec_job,
             kwargs={
                 "job": job,
-                "rules_dir": self._rules_dir,
+                "scripts_dir": self._scripts_dir,
                 "backend": backend_for_proc,
                 "associated": associated,
                 "job_owner_id": backend.jobs_process.get_my_id(),
@@ -203,14 +203,14 @@ class _JobsManager:
             raise
 
 
-def _exec_job(job, rules_dir, backend, associated, job_owner_id):
+def _exec_job(job, scripts_dir, backend, associated, job_owner_id):
     sys.dont_write_bytecode = True
     _rename_process(job)
     _unlock_logging()
     logger = get_logger(job_id=job.job_id, method=job.method_name)
     try:
-        rules_path = os.path.join(rules_dir, job.head)
-        sys.path.insert(0, rules_path)
+        scripts_path = os.path.join(scripts_dir, job.head)
+        sys.path.insert(0, scripts_path)
 
         with backend.connected():
             logger.debug("Associating job with PID %(pid)d", {"pid": os.getpid()})

@@ -168,7 +168,7 @@ class JobThread(threading.Thread):
                 else:
                     logger.exception("Unhandled step error; fatal_internal=%s", self._fatal_internal)
                 # self._cont.switch() switches the stack, so we will see a valid exception, up to this place
-                # in the rule. sys.exc_info() return a raw exception data. Some of them can't be pickled, for
+                # in the script. sys.exc_info() return a raw exception data. Some of them can't be pickled, for
                 # example, traceback-object. For those who use the API, easier to read the text messages.
                 # traceback.format_exc() simply converts data from sys.exc_info() into a string.
                 if self._fatal_internal:

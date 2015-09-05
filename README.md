@@ -22,7 +22,7 @@ Powny будет установлен в отладочном режиме. Дл
 ~/.local/bin/powny-worker -l debug
 ~/.local/bin/powny-collector -l debug
 ```
-По-умолчанию, вам будут доступны правила из каталога `rules`.
+По-умолчанию, вам будут доступны функции из каталога `scripts`.
 
 
 ###TODO & FIXME###

@@ -183,7 +183,7 @@ def _get_config_scheme():
         "core": {
             "node_name": optconf.Option(default=None, type=as_string_or_none, help="Short node name (like uname -n)"),
             "backend": optconf.Option(default="zookeeper", help="Backend plugin"),
-            "rules_dir": optconf.Option(default="rules", help="Path to rules root"),
+            "scripts_dir": optconf.Option(default="scripts", help="Path to scripts root"),
         },
 
         "backdoor": {

@@ -9,12 +9,12 @@ import gunicorn.glogging
 from contextlog import get_logger
 
 from .. import backends
-from .. import imprules
+from .. import impscripts
 from .. import api
 from .. import backdoor
 
-from ..api.rules import ExposedRulesResource
-from ..api.rules import RulesHeadResource
+from ..api.scripts import ExposedScriptsResource
+from ..api.scripts import ScriptsHeadResource
 
 from ..api.jobs import JobsResource
 from ..api.jobs import JobControlResource
@@ -96,11 +96,11 @@ def make_app(config):
         backend_opts=config.backend,
     )
 
-    loader = imprules.Loader(config.core.rules_dir)
+    loader = impscripts.Loader(config.core.scripts_dir)
 
     app = _Api(__name__)
-    app.add_url_resource("v1", "/v1/rules/exposed", ExposedRulesResource(pool, loader))
-    app.add_url_resource("v1", "/v1/rules/head", RulesHeadResource(pool))
+    app.add_url_resource("v1", "/v1/scripts/exposed", ExposedScriptsResource(pool, loader))
+    app.add_url_resource("v1", "/v1/scripts/head", ScriptsHeadResource(pool))
     app.add_url_resource("v1", "/v1/jobs", JobsResource(pool, loader))
     app.add_url_resource("v1", "/v1/jobs/<job_id>", JobControlResource(pool, config.api.delete_timeout))
     app.add_url_resource("v1", "/v1/cas", CasRootResource(pool))

@@ -209,14 +209,14 @@ class TestJobs:
             assert isinstance(job_info["exc"], str)
 
 
-class TestRules:
+class TestScripts:
     def test_head_cycle(self, zclient):
         ifaces.init(zclient)
-        rules_iface = ifaces.Rules(zclient)
-        assert rules_iface.get_head() is None
+        scripts_iface = ifaces.Scripts(zclient)
+        assert scripts_iface.get_head() is None
         for count in range(5):
-            rules_iface.set_head("foobar{}".format(count))
-            assert rules_iface.get_head() == "foobar{}".format(count)
+            scripts_iface.set_head("foobar{}".format(count))
+            assert scripts_iface.get_head() == "foobar{}".format(count)
 
 
 class TestAppsState:

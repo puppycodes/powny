@@ -23,7 +23,7 @@ from . import zoo
 # =====
 _PATH_INPUT_QUEUE = "/input_queue"
 _PATH_SYSTEM = "/system"
-_PATH_RULES_HEAD = zoo.join(_PATH_SYSTEM, "rules_head")
+_PATH_SCRIPTS_HEAD = zoo.join(_PATH_SYSTEM, "scripts_head")
 _PATH_APPS_STATE = zoo.join(_PATH_SYSTEM, "apps_state")
 _PATH_JOBS = "/jobs"
 _PATH_USER = "/user"
@@ -83,7 +83,7 @@ def init(client):
     for path in (
         _PATH_INPUT_QUEUE,
         _PATH_SYSTEM,
-        _PATH_RULES_HEAD,
+        _PATH_SCRIPTS_HEAD,
         _PATH_APPS_STATE,
         _PATH_JOBS,
         _PATH_USER,
@@ -317,9 +317,9 @@ class JobsGc:
             request.delete(_get_path_job(job_id))
 
 
-class Rules:
+class Scripts:
     """
-        Interface to managing the rules HEAD.
+        Interface to managing the scripts HEAD.
     """
 
     def __init__(self, client):
@@ -327,10 +327,10 @@ class Rules:
 
     def set_head(self, head):
         with self._client.make_write_request("set_head()") as request:
-            request.set(_PATH_RULES_HEAD, head)
+            request.set(_PATH_SCRIPTS_HEAD, head)
 
     def get_head(self):
-        head = self._client.get(_PATH_RULES_HEAD)
+        head = self._client.get(_PATH_SCRIPTS_HEAD)
         if head is zoo.EmptyValue:
             return None
         else:

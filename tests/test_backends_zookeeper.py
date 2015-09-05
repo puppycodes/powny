@@ -29,5 +29,5 @@ def test_ifaces(zclient_kwargs, zclient_chroot):
     with zookeeper.Backend(chroot=zclient_chroot, **zclient_kwargs).connected() as backend:
         assert isinstance(backend.jobs_control, ifaces.JobsControl)
         assert isinstance(backend.jobs_process, ifaces.JobsProcess)
-        assert isinstance(backend.rules, ifaces.Rules)
+        assert isinstance(backend.scripts, ifaces.Scripts)
         assert isinstance(backend.system_apps_state, ifaces.AppsState)

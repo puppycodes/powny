@@ -76,7 +76,7 @@ def _get_exposed_unsafe(path):
     assert os.access(path, os.F_OK), "Can't find module path: {}".format(path)
 
     logger = get_logger()
-    logger.debug("Loading rules from path: %s", path)
+    logger.debug("Loading scripts from path: %s", path)
 
     sys.path.insert(0, path)
     try:

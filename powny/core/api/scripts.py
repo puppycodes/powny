@@ -10,10 +10,10 @@ from . import (
 
 
 # =====
-class ExposedRulesResource(Resource):
-    name = "Information about rules"
+class ExposedScriptsResource(Resource):
+    name = "Information about scripts"
     docstring = """
-        GET  -- Returns a current version (head) of the rules in format:
+        GET  -- Returns a current version (head) of the scripts in format:
 
                 # =====
                 {
@@ -27,12 +27,12 @@ class ExposedRulesResource(Resource):
                 }
                 # =====
 
-                @head    -- Current version of the rules. Null if the version has not yet been set.
+                @head    -- Current version of the scripts. Null if the version has not yet been set.
                 @errors  -- Errors that occurred while loading the specified modules (null if global error occurs).
                 @exposed -- List of functions that can be called directly by name (null if global error occurs).
 
                 Possible errors (with status=="error"):
-                    503 -- Non-existant HEAD for rules.
+                    503 -- Non-existant HEAD for scripts.
     """
 
     def __init__(self, pool, loader):
@@ -47,18 +47,18 @@ class ExposedRulesResource(Resource):
                 if exc is None:  # No errors
                     # exposed is None if HEAD is not configured
                     exposed_names = (list(exposed) if exposed is not None else None)
-                    return ({"head": head, "exposed": exposed_names, "errors": errors}, "The rules of current HEAD")
+                    return ({"head": head, "exposed": exposed_names, "errors": errors}, "The scripts of current HEAD")
                 else:
                     raise ApiError(503, exc, {"head": head, "exposed": None, "errors": None})
         finally:
             self._pool.retrieve_backend(backend)
 
 
-class RulesHeadResource(Resource):
-    name = "Operations with rules HEAD"
+class ScriptsHeadResource(Resource):
+    name = "Operations with scripts HEAD"
     methods = ("GET", "POST")
     docstring = """
-        GET  -- Returns a current version (head) of the rules in format:
+        GET  -- Returns a current version (head) of the scripts in format:
 
                 # =====
                 {
@@ -68,7 +68,7 @@ class RulesHeadResource(Resource):
                 }
                 # =====
 
-                @head -- Current version of the rules. Null if the version has not yet been set.
+                @head -- Current version of the scripts. Null if the version has not yet been set.
 
         POST -- Takes a version (head) in the format: {"head": "<HEAD>"} and applies it.
 
@@ -102,8 +102,8 @@ class RulesHeadResource(Resource):
         head = str((request.data or {}).get("head")).strip()
         if re.match(r"^[0-9a-fA-F]+$", head) is None:
             raise ApiError(400, "The HEAD must be a hex string", {"head": head})
-        backend.rules.set_head(head)
+        backend.scripts.set_head(head)
         return ({"head": head}, "The HEAD has been updated")
 
     def _request_get(self, backend):
-        return ({"head": backend.rules.get_head()}, "Current HEAD")
+        return ({"head": backend.scripts.get_head()}, "Current HEAD")

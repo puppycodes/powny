@@ -60,7 +60,7 @@ def valid_object_name(name):
 
 
 def get_exposed(backend, loader):
-    head = backend.rules.get_head()
+    head = backend.scripts.get_head()
     exposed = None
     errors = None
     exc = None

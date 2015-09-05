@@ -32,7 +32,7 @@ class TestZookeeperPool:
             with pytest.raises(RuntimeError):
                 backend = pool.get_backend()
                 try:
-                    assert backend.rules.get_head() is None
+                    assert backend.scripts.get_head() is None
                     raise RuntimeError("Close backend on exception")
                 finally:
                     pool.retrieve_backend(backend)
