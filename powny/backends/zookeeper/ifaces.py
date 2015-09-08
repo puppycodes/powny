@@ -282,20 +282,27 @@ class JobsGc:
 
     def get_jobs(self):
         for job_id in self._client.get_children(_PATH_JOBS):
-            to_delete = self._client.exists(_get_path_job_delete(job_id))
-            taken = self._client.exists(_get_path_job_taken(job_id))
             lock = self._client.get_lock(_get_path_job_lock(job_id))
 
-            if (to_delete or taken) and not lock.is_locked():
+            to_delete = self._client.exists(_get_path_job_delete(job_id))
+            taken = self._client.exists(_get_path_job_taken(job_id))
+            if not lock.is_locked() and (to_delete or taken):
                 try:
-                    finished = self._client.get(_get_path_job_state(job_id))["finished"]
-                    if finished is not None and not to_delete:
+                    finished = (self._client.get(_get_path_job_state(job_id))["finished"] is not None)
+                    if finished and not to_delete:
                         continue
                     with self._client.make_write_request("get_unfinished_jobs()") as request:
                         lock.acquire(request, _make_lock_info("get_unfinished_jobs()"))
                 except (zoo.NoNodeError, zoo.NodeExistsError):
                     continue
-                yield (job_id, to_delete)  # (id, done)
+
+                to_delete = self._client.exists(_get_path_job_delete(job_id))
+                taken = self._client.exists(_get_path_job_taken(job_id))
+                if to_delete or taken:
+                    yield (job_id, to_delete)  # (id, done)
+                else:  # Если при операциях выше push-back уже был сделан другим коллектором
+                    with self._client.make_write_request("get_unfinished_jobs()") as request:
+                        lock.release(request)
 
     def push_back_job(self, job_id):
         with self._client.make_write_request("push_back_job()") as request:
