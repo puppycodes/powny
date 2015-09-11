@@ -189,7 +189,6 @@ class Client:
         return {
             "envi": self._get_info_envi(),
             "mntr": self._get_info_mntr(),
-            "srvr": self._get_info_srvr(),
         }
 
     @_catch_zk_conn
@@ -213,18 +212,6 @@ class Client:
         return dict(
             item.split("\t", 1)
             for item in self.zk.command(b"mntr").split("\n")[:-1]
-        )
-
-    @_catch_zk_conn
-    def _get_info_srvr(self):
-        # echo srvr | nc localhost 2181
-        # Zookeeper version: 3.4.6-1569965, built on 02/20/2014 09:09 GMT
-        # Latency min/avg/max: 0/0/5
-        # Received: 48
-        # ...
-        return dict(
-            item.split(": ", 1)
-            for item in self.zk.command(b"srvr").split("\n")[:-1]
         )
 
     # ===
