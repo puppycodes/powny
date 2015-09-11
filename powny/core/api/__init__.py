@@ -54,8 +54,8 @@ class Resource(metaclass=abc.ABCMeta):
 
 
 def valid_object_name(name):
-    if re.match(r"^[\w-]{0,100}$", name) is None:
-        raise ApiError(400, "Invalid object name, required something like this: ^[\\w-]{0,100}$")
+    if re.match(r"^[\w-]{1,100}$", name) is None:
+        raise ApiError(400, "Invalid object name, required something like this: ^[\\w-]{1,100}$")
     return name
 
 
