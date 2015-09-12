@@ -40,13 +40,13 @@ class TestJobs:
             respawn=False,
         )
 
-    def test_get_input_size(self, zclient):
+    def test_get_awaiting_count(self, zclient):
         ifaces.init(zclient)
         control_iface = ifaces.JobsControl(zclient)
-        assert control_iface.get_input_size() == 0
+        assert control_iface.get_awaiting_count() == 0
         for count in range(5):
             control_iface.add_job(self._make_job_state())
-            assert control_iface.get_input_size() == count + 1
+            assert control_iface.get_awaiting_count() == count + 1
 
     def test_delete_wait(self, zclient):
         ifaces.init(zclient)

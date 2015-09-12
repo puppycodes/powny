@@ -1,5 +1,6 @@
 import os
 import threading
+import random
 
 from contextlog import get_logger
 
@@ -21,7 +22,6 @@ from . import zoo
 
 
 # =====
-_PATH_INPUT_QUEUE = "/input_queue"
 _PATH_SYSTEM = "/system"
 _PATH_SCRIPTS_HEAD = zoo.join(_PATH_SYSTEM, "scripts_head")
 _PATH_APPS_STATE = zoo.join(_PATH_SYSTEM, "apps_state")
@@ -81,7 +81,6 @@ def _make_lock_info(label):
 def init(client):
     logger = get_logger()
     for path in (
-        _PATH_INPUT_QUEUE,
         _PATH_SYSTEM,
         _PATH_SCRIPTS_HEAD,
         _PATH_APPS_STATE,
@@ -107,28 +106,38 @@ class JobsControl:
 
     def __init__(self, client):
         self._client = client
-        self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
 
     def get_jobs_list(self):
         return self._client.get_children(_PATH_JOBS)
 
-    def get_input_size(self):
-        return len(self._input_queue)
-
     def get_jobs_count(self):
         return self._client.get_children_count(_PATH_JOBS)
 
+    def get_awaiting_count(self):
+        count = 0
+        for job_id in self._client.get_children(_PATH_JOBS):
+            try:
+                if not self._client.get_lock(_get_path_job_lock(job_id)).is_locked():
+                    count += 1
+            except zoo.NoNodeError:
+                pass
+        return count
+
     def add_job(self, job):
-        now = make_isotime()
+        logger = get_logger(
+            job_id=job.job_id,
+            head=job.head,
+            method=job.method_name,
+            kwargs=job.kwargs,
+        )
         try:
             with self._client.make_write_request("add_job()") as request:
-                get_logger().info("Registering job", job_id=job.job_id, head=job.head,
-                                  method=job.method_name, kwargs=job.kwargs)
+                logger.info("Registering job")
                 request.create(_get_path_job(job.job_id), {
                     "head": job.head,
                     "method": job.method_name,
                     "kwargs": job.kwargs,
-                    "created": now,
+                    "created": make_isotime(),
                     "respawn": job.respawn,
                 })
                 request.create(_get_path_job_state(job.job_id), {
@@ -138,10 +147,9 @@ class JobsControl:
                     "retval": None,
                     "exc": None,
                 })
-                self._input_queue.put(request, job.job_id)
             return True
         except zoo.NodeExistsError:
-            get_logger().error("The job already exists", job_id=job.job_id)
+            logger.error("The job already exists")
             return False
 
     def delete_job(self, job_id, timeout=None):
@@ -192,32 +200,31 @@ class JobsProcess:
 
     def __init__(self, client):
         self._client = client
-        self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
 
     def get_jobs(self):
-        for job_id in self._input_queue:
-            try:
+        ids = self._client.get_children(_PATH_JOBS)
+        random.shuffle(ids)
+        for job_id in ids:
+            lock = self._client.get_lock(_get_path_job_lock(job_id))
+            if not lock.is_locked():
+                try:
+                    with self._client.make_write_request("get_ready_jobs()") as request:
+                        lock.acquire(request, _make_lock_info("get_ready_jobs()"))
+                        request.create(_get_path_job_taken(job_id), make_isotime())
+                except (zoo.NoNodeError, zoo.NodeExistsError):
+                    continue
+
                 job_info = self._client.get(_get_path_job(job_id))
                 exec_info = self._client.get(_get_path_job_state(job_id))
-            except zoo.NoNodeError:
-                with self._client.make_write_request("get_ready_jobs()") as request:
-                    self._input_queue.consume(request)
-                continue
 
-            with self._client.make_write_request("get_ready_jobs()") as request:
-                lock = self._client.get_lock(_get_path_job_lock(job_id))
-                lock.acquire(request, _make_lock_info("get_ready_jobs()"))
-                request.create(_get_path_job_taken(job_id), make_isotime())
-                self._input_queue.consume(request)
-
-            yield JobState(
-                job_id=job_id,
-                head=job_info["head"],
-                method_name=job_info["method"],
-                kwargs=job_info["kwargs"],
-                state=exec_info["state"],
-                respawn=job_info["respawn"],
-            )
+                yield JobState(
+                    job_id=job_id,
+                    head=job_info["head"],
+                    method_name=job_info["method"],
+                    kwargs=job_info["kwargs"],
+                    state=exec_info["state"],
+                    respawn=job_info["respawn"],
+                )
 
     def is_my_job(self, job_id):
         try:
@@ -278,10 +285,11 @@ class JobsGc:
 
     def __init__(self, client):
         self._client = client
-        self._input_queue = self._client.get_queue(_PATH_INPUT_QUEUE)
 
     def get_jobs(self):
-        for job_id in self._client.get_children(_PATH_JOBS):
+        ids = self._client.get_children(_PATH_JOBS)
+        random.shuffle(ids)
+        for job_id in ids:
             lock = self._client.get_lock(_get_path_job_lock(job_id))
 
             to_delete = self._client.exists(_get_path_job_delete(job_id))
@@ -308,7 +316,6 @@ class JobsGc:
         with self._client.make_write_request("push_back_job()") as request:
             request.delete(_get_path_job_taken(job_id))
             request.delete(_get_path_job_lock(job_id))
-            self._input_queue.put(request, job_id)
 
     def remove_job_data(self, job_id):
         with self._client.make_write_request("remove_job_data()") as request:

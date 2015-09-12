@@ -16,7 +16,8 @@ class StateResource(Resource):
                    "message": "<...>",
                    "result": {
                        "jobs": {
-                           "input":    <number>,
+                           "input":    <number>,  # == awaiting
+                           "awaiting": <number>,
                            "all":      <number>,
                        },
                        "apps": {
@@ -54,9 +55,11 @@ class StateResource(Resource):
             full_apps_state = backend.system_apps_state.get_full_state()
             full_apps_state.setdefault("worker", {})
             full_apps_state.setdefault("collector", {})
+            awaiting = backend.jobs_control.get_awaiting_count()
             result = {
                 "jobs": {
-                    "input": backend.jobs_control.get_input_size(),
+                    "awaiting": awaiting,
+                    "input": awaiting,  # TODO: Remove this compat
                     "all": backend.jobs_control.get_jobs_count(),
                 },
                 "apps": full_apps_state,

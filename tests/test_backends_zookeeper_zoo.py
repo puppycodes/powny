@@ -304,37 +304,3 @@ class TestLock:
             assert lock.is_locked()
         assert not lock.is_locked()
         assert time.time() - before >= 3
-
-
-class TestQueue:
-    def test_put_no_node_error(self, zclient):
-        queue = zclient.get_queue("/queue")
-        with pytest.raises(zoo.NoNodeError):
-            with zclient.make_write_request() as request:
-                queue.put(request, None)
-
-    def test_get_no_node_error(self, zclient):
-        queue = zclient.get_queue("/queue")
-        with pytest.raises(zoo.NoNodeError):
-            next(iter(queue))
-
-    def test_put_len_get_consume(self, zclient):
-        with zclient.make_write_request() as request:
-            request.create("/queue")
-        queue = zclient.get_queue("/queue")
-
-        for count in range(5):
-            with zclient.make_write_request() as request:
-                queue.put(request, count)
-                queue.put(request, count * 10)
-
-        assert len(queue) == 10
-
-        iterator = iter(queue)
-        for count in range(5):
-            for factor in (1, 10):
-                assert next(iterator) == count * factor
-                with zclient.make_write_request() as request:
-                    queue.consume(request)
-        with pytest.raises(StopIteration):
-            next(iterator)
