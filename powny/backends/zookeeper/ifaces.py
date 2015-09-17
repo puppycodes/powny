@@ -121,12 +121,12 @@ class JobsControl:
         for job_id in ids:
             locked = self._client.exists(_get_path_job_lock(job_id))
             taken = self._client.exists(_get_path_job_taken(job_id))
-            deleted = self._client.exists(_get_path_job_delete(job_id))
-            if not locked and not taken and not deleted:
+            to_delete = self._client.exists(_get_path_job_delete(job_id))
+            if not locked and not taken and not to_delete:
                 awaiting += 1
-            elif not locked and taken and not deleted:
+            elif not locked and taken and not to_delete:
                 dead += 1
-            elif deleted:
+            elif to_delete:
                 deleted += 1
         return {
             "total": len(ids),
