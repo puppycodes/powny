@@ -117,7 +117,7 @@ class JobsControl:
         count = 0
         for job_id in self._client.get_children(_PATH_JOBS):
             try:
-                if not self._client.get_lock(_get_path_job_lock(job_id)).is_locked():
+                if not self._client.exists(_get_path_job_lock(job_id)):
                     count += 1
             except zoo.NoNodeError:
                 pass
@@ -201,12 +201,22 @@ class JobsProcess:
     def __init__(self, client):
         self._client = client
 
-    def get_jobs(self):
+    def has_ready_jobs(self):
+        for job_id in self._client.get_children(_PATH_JOBS):
+            if (
+                not self._client.exists(_get_path_job_lock(job_id))
+                and not self._client.exists(_get_path_job_taken(job_id))
+                and not self._client.exists(_get_path_job_delete(job_id))
+            ):
+                return True
+        return False
+
+    def get_job(self):
         ids = self._client.get_children(_PATH_JOBS)
         random.shuffle(ids)
         for job_id in ids:
             lock = self._client.get_lock(_get_path_job_lock(job_id))
-            if not lock.is_locked():
+            if not lock.is_locked() and not self._client.exists(_get_path_job_delete(job_id)):
                 try:
                     with self._client.make_write_request("get_ready_jobs()") as request:
                         lock.acquire(request, _make_lock_info("get_ready_jobs()"))
@@ -217,7 +227,7 @@ class JobsProcess:
                 job_info = self._client.get(_get_path_job(job_id))
                 exec_info = self._client.get(_get_path_job_state(job_id))
 
-                yield JobState(
+                return JobState(
                     job_id=job_id,
                     head=job_info["head"],
                     method_name=job_info["method"],
@@ -225,32 +235,7 @@ class JobsProcess:
                     state=exec_info["state"],
                     respawn=job_info["respawn"],
                 )
-
-    def is_my_job(self, job_id):
-        try:
-            path = _get_path_job_lock(job_id)
-            return self.get_my_id() == self._client.get_ephemeral_session_id(path)
-        except zoo.NoNodeError:
-            return False
-
-    def get_my_id(self):
-        return self._client.get_session_id()
-
-    def associate_job(self, job_id, owner_id):
-        path = _get_path_job_lock(job_id)
-        if self._client.get_ephemeral_session_id(path) != owner_id:
-            raise RuntimeError("Can't re-lock someone else's job")
-        # TODO: если в этом месте зафризить процесс, то можно нечаянно перехватить чужую блокировку.
-        # Вероятность ничтожно мала, но стоит подумать, что с этим можно сделать.
-        with self._client.make_write_request("associate_job()") as request:
-            # Assign lock to current process
-            lock = self._client.get_lock(path)
-            lock.release(request)
-            lock.acquire(request, _make_lock_info("associate_job()"))
-
-    def release_job(self, job_id):
-        with self._client.make_write_request("release_job()") as request:
-            self._client.get_lock(_get_path_job_lock(job_id)).release(request)
+        return None
 
     def is_deleted_job(self, job_id):
         return self._client.exists(_get_path_job_delete(job_id))

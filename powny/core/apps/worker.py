@@ -41,42 +41,49 @@ class _Worker(Application):
 
     def __init__(self, config):
         Application.__init__(self, "worker", config)
-        self._manager = _JobsManager(self._config.core.scripts_dir, self._app_config.wait_slowpokes)
         self._jobs_limit = None
+        self._procs = {}
+        self._finished = 0
+        self._not_started = 0
 
     def process(self):
         logger = get_logger()
-        sleep_mode = False
+
         with self.get_backend_object().connected() as backend:
             while not self._stop_event.is_set():
-                gen_jobs = backend.jobs_process.get_jobs()
-                while not self._stop_event.is_set():
-                    self._set_jobs_limit(backend)
-                    self._manager.manage(backend)
-                    self._dump_worker_state(backend)
+                self._set_jobs_limit(backend)
+                self._manage_processes(backend)
+                self._dump_worker_state(backend)
 
-                    if self._manager.get_current() >= self._jobs_limit:
-                        logger.debug("Have reached the maximum concurrent jobs %(maxjobs)d,"
-                                     " sleeping %(delay)f seconds...",
-                                     {"maxjobs": self._jobs_limit, "delay": self._app_config.max_jobs_sleep})
-                        time.sleep(self._app_config.max_jobs_sleep)
+                if len(self._procs) >= self._jobs_limit:
+                    logger.debug("Have reached the maximum concurrent jobs %d, sleeping %f seconds...",
+                                 self._jobs_limit, self._app_config.max_jobs_sleep)
+                    time.sleep(self._app_config.max_jobs_sleep)
 
-                    else:
-                        try:
-                            job = next(gen_jobs)
-                        except StopIteration:
-                            if not sleep_mode:
-                                logger.debug("No jobs in queue, sleeping for %(delay)f seconds...",
-                                             {"delay": self._app_config.empty_sleep})
-                            sleep_mode = True
-                            time.sleep(self._app_config.empty_sleep)
-                            break
-                        else:
-                            sleep_mode = False
-                            self._manager.run_job(job, backend, self.get_backend_object())
-                            # FIXME: По неизвестной пока причине, очередь медленно рассасывается без небольшого слипа.
-                            # Скорее всего, имеет место гонка между воркерами.
-                            time.sleep(self._app_config.job_delay)
+                elif backend.jobs_process.has_ready_jobs():
+                    if not self._try_start_job():
+                        logger.debug("No jobs to start, sleeping for %f seconds...", self._app_config.empty_sleep)
+                        time.sleep(self._app_config.empty_sleep)
+
+    def _manage_processes(self, backend):
+        for (job_id, proc) in self._procs.copy().items():
+            logger = get_logger(job_id=job_id)
+
+            alive = proc.is_alive()
+            deleted = backend.jobs_process.is_deleted_job(job_id)
+
+            if not alive or deleted:
+                if deleted:
+                    logger.info("Terminating job process %d...", proc.pid)
+                    try:
+                        proc.terminate()
+                        logger.info("Terminated")
+                    except Exception:
+                        logger.exception("Can't terminate process %d; ignored", proc.pid)
+                proc.join()
+                self._procs.pop(job_id)
+                self._finished += 1
+                logger.info("Finished job process %d with retcode %d", proc.pid, proc.exitcode)
 
     def _set_jobs_limit(self, backend):
         if self._app_config.max_jobs is None:
@@ -92,132 +99,76 @@ class _Worker(Application):
 
     def _dump_worker_state(self, backend):
         self.dump_app_state(backend, {
-            "active": self._manager.get_current(),
-            "processed": self._manager.get_finished(),
-            "not_started": self._manager.get_not_started(),
+            "active": len(self._procs),
+            "processed": self._finished,
+            "not_started": self._not_started,
             "jobs_limit": self._jobs_limit,
         })
 
+    def _try_start_job(self):
+        logger = get_logger()
+        logger.debug("Starting candidate process")
 
-class _JobsManager:
-    def __init__(self, scripts_dir, wait_slowpokes):
-        self._scripts_dir = scripts_dir
-        self._wait_slowpokes = wait_slowpokes
-        self._procs = {}
-        self._finished = 0
-        self._not_started = 0
+        nothing = multiprocessing.Event()
+        launched = multiprocessing.Event()
+        return_info = multiprocessing.Manager().dict()  # pylint: disable=no-member
 
-    def get_finished(self):
-        return self._finished
-
-    def get_current(self):
-        return len(self._procs)
-
-    def get_not_started(self):
-        return self._not_started
-
-    def run_job(self, job, backend, backend_for_proc):
-        logger = get_logger(job_id=job.job_id, method=job.method_name)
-        logger.info("Starting the job process")
-        associated = multiprocessing.Event()
         proc = multiprocessing.Process(
-            target=_exec_job,
+            target=_find_job_and_run,
             kwargs={
-                "job": job,
-                "scripts_dir": self._scripts_dir,
-                "backend": backend_for_proc,
-                "associated": associated,
-                "job_owner_id": backend.jobs_process.get_my_id(),
+                "backend": self.get_backend_object(),
+                "scripts_dir": self._config.core.scripts_dir,
+                "return_info": return_info,
+                "nothing": nothing,
+                "launched": launched,
             },
         )
-        self._procs[job.job_id] = (job.method_name, proc, associated, time.time())
         proc.start()
+        launched.wait(self._app_config.wait_slowpokes)
 
-    def manage(self, backend):
-        for (job_id, (method_name, proc, associated, start_time)) in self._procs.copy().items():
-            get_logger(job_id=job_id, method=method_name)
-            if not proc.is_alive():
-                self._finish(job_id, proc, backend)
-            elif backend.jobs_process.is_deleted_job(job_id):
-                self._terminate(proc)
-                self._finish(job_id, proc, backend)
-            else:
-                self._check_slowpoke(proc, start_time, associated)
-
-    def _finish(self, job_id, proc, backend):
-        logger = get_logger()
-        if backend.jobs_process.is_my_job(job_id):
-            logger.warning("The job process did not associate the lock")
-            # Процесс мог завершиться сбоем, не перехватив блокировку.
-            backend.jobs_process.release_job(job_id)
-        self._procs.pop(job_id)
-        self._finished += 1
-        logger.info("Finished job process %(pid)d with retcode %(retcode)d",
-                    {"pid": proc.pid, "retcode": proc.exitcode})
-
-    def _terminate(self, proc):
-        logger = get_logger()
-        logger.info("Terminating job process %(pid)d...", {"pid": proc.pid})
-        try:
-            proc.terminate()
-            proc.join()
-        except Exception:
-            logger.exception("Can't terminate process %(pid)d; ignored", {"pid": proc.pid})
-            return
-        logger.info("Terminated")
-
-    def _check_slowpoke(self, proc, start_time, associated):
-        # Проверяем процессы, которые за долгое время не успели перехватить блокировку
-        if time.time() - start_time > self._wait_slowpokes and not associated.is_set():
-            logger = get_logger()
-            logger.warning("Detected slowpoke job process %(pid)d", {"pid": proc.pid})
-
-            # Останавливаем процесс и смотрим, перехватил ли он блокировку между первой проверкой
-            # и вызовом этой функции. Если сигнал не дошел, то процесс сдох, manage() его подберет
-            # через _finish().
-            if self._send_signal(proc, signal.SIGSTOP):
-                if associated.is_set():
-                    # Процесс тормозил, но блокировка перехвачена. Отпускаем с миром.
-                    logger.info("OK, slowpoke job process %(pid)d is alive and lock associated", {"pid": proc.pid})
-                    # Если потом умрет - manage() подберет его.
-                    self._send_signal(proc, signal.SIGCONT)
-                else:
-                    # Процесс до сих пор не перехватил блокировку, или не успел об этом сообщить.
-                    # Так или иначе, это тормоза. Отбираем лок, если надо, и убиваем процесс, пока он в стопе.
-                    logger.error("Can't associate lock in job process %(pid)d", {"pid": proc.pid})
-                    killed = self._send_signal(proc, signal.SIGKILL)
-                    proc.join()
-                    if killed:
-                        logger.info("Killed slowpoke job process %(pid)d with retcode %(exitcode)d",
-                                    {"pid": proc.pid, "exitcode": proc.exitcode})
-                    else:
-                        logger.info("Found dead slowpoke job process %(pid)d with retcode %(exitcode)d",
-                                    {"pid": proc.pid, "exitcode": proc.exitcode})
-                    self._not_started += 1
-
-    def _send_signal(self, proc, signum):
-        try:
-            os.kill(proc.pid, signum)
+        if launched.is_set():  # Задача нашлась и запущена
+            self._procs[return_info["job_id"]] = proc
             return True
-        except OSError as err:
-            if err.errno == errno.ESRCH:
-                return False
-            raise
+        elif nothing.is_set():  # Задач нет, надо поспать
+            proc.join()
+            return False
+        else:  # Слоупок
+            logger.error("Detected slowpoke process %d", proc.pid)
+            killed = _send_signal(proc, signal.SIGKILL)
+            proc.join()
+            if killed:
+                logger.info("Killed slowpoke job process %d with retcode %d", proc.pid, proc.exitcode)
+            else:
+                logger.info("Found dead slowpoke job process %d with retcode %d", proc.pid, proc.exitcode)
+            self._not_started += 1
 
 
-def _exec_job(job, scripts_dir, backend, associated, job_owner_id):
-    sys.dont_write_bytecode = True
-    _rename_process(job)
-    _unlock_logging()
-    logger = get_logger(job_id=job.job_id, method=job.method_name)
+def _send_signal(proc, signum):
     try:
-        scripts_path = os.path.join(scripts_dir, job.head)
-        sys.path.insert(0, scripts_path)
+        os.kill(proc.pid, signum)
+        return True
+    except OSError as err:
+        if err.errno == errno.ESRCH:
+            return False
+        raise
 
+
+def _find_job_and_run(backend, scripts_dir, nothing, launched, return_info):
+    sys.dont_write_bytecode = True
+    _unlock_logging()
+    try:
         with backend.connected():
-            logger.debug("Associating job with PID %(pid)d", {"pid": os.getpid()})
-            backend.jobs_process.associate_job(job.job_id, job_owner_id)
-            associated.set()
+            job = backend.jobs_process.get_job()
+            if job is None:
+                get_logger().debug("Nothing to run; exit")
+                nothing.set()
+                return
+
+            scripts_path = os.path.join(scripts_dir, job.head)
+            sys.path.insert(0, scripts_path)
+            logger = get_logger(job_id=job.job_id)
+            logger.info("Starting the job")
+            _rename_process(job)
 
             thread = context.JobThread(
                 backend=backend,
@@ -227,9 +178,11 @@ def _exec_job(job, scripts_dir, backend, associated, job_owner_id):
                 fatal_internal=(not job.respawn),
             )
             thread.start()
+            return_info["job_id"] = job.job_id
+            launched.set()
             thread.join()
     except Exception:
-        logger.exception("Unhandled exception in the job process")
+        logger.exception("Unhandled exception in subprocess")
         raise
 
 

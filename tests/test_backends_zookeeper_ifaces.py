@@ -59,9 +59,9 @@ class TestJobs:
         assert len(control_iface.get_job_info(job.job_id)) > 0
         assert not process_iface.is_deleted_job(job.job_id)
 
-        ready_job = next(process_iface.get_jobs())
+        assert process_iface.has_ready_jobs()
+        ready_job = process_iface.get_job()
         assert job.job_id == ready_job.job_id
-        process_iface.associate_job(job.job_id, process_iface.get_my_id())
 
         def remove_job():
             time.sleep(3)
@@ -89,9 +89,9 @@ class TestJobs:
         assert len(control_iface.get_job_info(job.job_id)) > 0
         assert not process_iface.is_deleted_job(job.job_id)
 
-        ready_job = next(process_iface.get_jobs())
+        assert process_iface.has_ready_jobs()
+        ready_job = process_iface.get_job()
         assert job.job_id == ready_job.job_id
-        process_iface.associate_job(job.job_id, process_iface.get_my_id())
 
         gc_iface.remove_job_data(job.job_id)
         assert control_iface.get_job_info(job.job_id) is None
@@ -128,15 +128,14 @@ class TestJobs:
         self._assert_job_info_new(job_info)
 
         count = 0
-        for ready_job in process_iface.get_jobs():
+        while process_iface.has_ready_jobs():
+            ready_job = process_iface.get_job()
             assert ready_job.job_id == job.job_id
             assert ready_job.head == self.func_head
             assert ready_job.state == self.func_state
 
             job_info = control_iface.get_job_info(job.job_id)
             self._assert_job_info_taken(job_info)
-
-            process_iface.associate_job(job.job_id, process_iface.get_my_id())
 
             if with_save:
                 process_iface.save_job_state(job.job_id, b"fictive state", ["fictive", "stack"])
