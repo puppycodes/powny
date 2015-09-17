@@ -10,4 +10,4 @@ clean:
 	find -name __pycache__ | xargs rm -rf
 
 clean-all: clean
-	rm -rf .tox .coverage
+	rm -rf .tox .coverage*
