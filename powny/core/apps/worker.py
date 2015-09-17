@@ -109,8 +109,7 @@ class _Worker(Application):
         logger = get_logger()
         logger.debug("Starting candidate process")
 
-        nothing = multiprocessing.Event()
-        launched = multiprocessing.Event()
+        done = multiprocessing.Event()
         return_info = multiprocessing.Manager().dict()  # pylint: disable=no-member
 
         proc = multiprocessing.Process(
@@ -119,17 +118,16 @@ class _Worker(Application):
                 "backend": self.get_backend_object(),
                 "scripts_dir": self._config.core.scripts_dir,
                 "return_info": return_info,
-                "nothing": nothing,
-                "launched": launched,
+                "done": done,
             },
         )
         proc.start()
-        launched.wait(self._app_config.wait_slowpokes)
+        done.wait(self._app_config.wait_slowpokes)
 
-        if launched.is_set():  # Задача нашлась и запущена
+        if return_info.get("launched"):  # Задача нашлась и запущена
             self._procs[return_info["job_id"]] = proc
             return True
-        elif nothing.is_set():  # Задач нет, надо поспать
+        elif return_info.get("nothing"):  # Задач нет, надо поспать
             proc.join()
             return False
         else:  # Слоупок
@@ -153,15 +151,16 @@ def _send_signal(proc, signum):
         raise
 
 
-def _find_job_and_run(backend, scripts_dir, nothing, launched, return_info):
+def _find_job_and_run(backend, scripts_dir, done, return_info):
     sys.dont_write_bytecode = True
     _unlock_logging()
     try:
         with backend.connected():
             job = backend.jobs_process.get_job()
             if job is None:
-                get_logger().debug("Nothing to run; exit")
-                nothing.set()
+                get_logger().info("Nothing to run; exit")
+                return_info["nothing"] = True
+                done.set()
                 return
 
             scripts_path = os.path.join(scripts_dir, job.head)
@@ -179,7 +178,8 @@ def _find_job_and_run(backend, scripts_dir, nothing, launched, return_info):
             )
             thread.start()
             return_info["job_id"] = job.job_id
-            launched.set()
+            return_info["launched"] = True
+            done.set()
             thread.join()
     except Exception:
         logger.exception("Unhandled exception in subprocess")
