@@ -107,21 +107,33 @@ class JobsControl:
     def __init__(self, client):
         self._client = client
 
-    def get_jobs_list(self):
-        return self._client.get_children(_PATH_JOBS)
-
     def get_jobs_count(self):
         return self._client.get_children_count(_PATH_JOBS)
 
-    def get_awaiting_count(self):
-        count = 0
-        for job_id in self._client.get_children(_PATH_JOBS):
-            try:
-                if not self._client.exists(_get_path_job_lock(job_id)):
-                    count += 1
-            except zoo.NoNodeError:
-                pass
-        return count
+    def get_jobs_list(self):
+        return self._client.get_children(_PATH_JOBS)
+
+    def get_jobs_stats(self):
+        awaiting = 0
+        dead = 0
+        deleted = 0
+        ids = self._client.get_children(_PATH_JOBS)
+        for job_id in ids:
+            locked = self._client.exists(_get_path_job_lock(job_id))
+            taken = self._client.exists(_get_path_job_taken(job_id))
+            deleted = self._client.exists(_get_path_job_delete(job_id))
+            if not locked and not taken and not deleted:
+                awaiting += 1
+            elif not locked and taken and not deleted:
+                dead += 1
+            elif deleted:
+                deleted += 1
+        return {
+            "total": len(ids),
+            "awaiting": awaiting,
+            "dead": dead,
+            "deleted": deleted,
+        }
 
     def add_job(self, job):
         logger = get_logger(
@@ -201,7 +213,7 @@ class JobsProcess:
     def __init__(self, client):
         self._client = client
 
-    def has_ready_jobs(self):
+    def has_awaiting_jobs(self):
         for job_id in self._client.get_children(_PATH_JOBS):
             if (
                 not self._client.exists(_get_path_job_lock(job_id))
@@ -218,8 +230,8 @@ class JobsProcess:
             lock = self._client.get_lock(_get_path_job_lock(job_id))
             if not lock.is_locked() and not self._client.exists(_get_path_job_delete(job_id)):
                 try:
-                    with self._client.make_write_request("get_ready_jobs()") as request:
-                        lock.acquire(request, _make_lock_info("get_ready_jobs()"))
+                    with self._client.make_write_request("get_job()") as request:
+                        lock.acquire(request, _make_lock_info("get_job()"))
                         request.create(_get_path_job_taken(job_id), make_isotime())
                 except (zoo.NoNodeError, zoo.NodeExistsError):
                     continue

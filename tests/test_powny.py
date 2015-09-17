@@ -76,18 +76,22 @@ def test_api_v1_system_state():
             assert result[1]["status"] == "ok"
             assert result[1]["message"] == "The system statistics"
             assert result[1]["result"]["jobs"]["awaiting"] == 0
-            assert result[1]["result"]["jobs"]["all"] == 0
+            assert result[1]["result"]["jobs"]["total"] == 0
 
             _init_head(api)
+            assert as_dict(api.post("/v1/jobs?method=scripts.test.empty_method", **from_dict({})))[0]
+            result = as_dict(api.get("/v1/system/state"))
+            assert result[0] == 200
+            assert result[1]["result"]["jobs"]["awaiting"] == 1
+            assert result[1]["result"]["jobs"]["total"] == 1
 
             with running_worker(config):
-                assert as_dict(api.post("/v1/jobs?method=scripts.test.empty_method", **from_dict({})))[0]
                 time.sleep(config.worker.empty_sleep + 5)
                 result = as_dict(api.get("/v1/system/state"))
                 assert result[0] == 200
-                assert result[1]["result"]["jobs"]["awaiting"] == 1
+                assert result[1]["result"]["jobs"]["awaiting"] == 0
                 assert tuple(result[1]["result"]["apps"]["worker"].values())[0]["state"]["processed"] == 1
-                assert result[1]["result"]["jobs"]["all"] == 1
+                assert result[1]["result"]["jobs"]["total"] == 1
 
 
 def test_api_v1_system_info():

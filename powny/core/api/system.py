@@ -17,8 +17,11 @@ class StateResource(Resource):
                    "result": {
                        "jobs": {
                            "input":    <number>,  # == awaiting
+                           "all":      <number>,  # == total
+                           "total":    <number>,
                            "awaiting": <number>,
-                           "all":      <number>,
+                           "dead":     <number>,
+                           "deleted":  <number>,
                        },
                        "apps": {
                            "<app_name>": {
@@ -55,13 +58,13 @@ class StateResource(Resource):
             full_apps_state = backend.system_apps_state.get_full_state()
             full_apps_state.setdefault("worker", {})
             full_apps_state.setdefault("collector", {})
-            awaiting = backend.jobs_control.get_awaiting_count()
+
+            jobs_stats = backend.jobs_control.get_jobs_stats()
+            jobs_stats["input"] = jobs_stats["awaiting"]  # TODO: Remove this compat
+            jobs_stats["all"] = jobs_stats["total"]  # TODO: Remove this compat
+
             result = {
-                "jobs": {
-                    "awaiting": awaiting,
-                    "input": awaiting,  # TODO: Remove this compat
-                    "all": backend.jobs_control.get_jobs_count(),
-                },
+                "jobs": jobs_stats,
                 "apps": full_apps_state,
             }
             return (result, self.name)

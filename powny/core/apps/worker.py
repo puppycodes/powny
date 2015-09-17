@@ -60,7 +60,7 @@ class _Worker(Application):
                                  self._jobs_limit, self._app_config.max_jobs_sleep)
                     time.sleep(self._app_config.max_jobs_sleep)
 
-                elif backend.jobs_process.has_ready_jobs():
+                elif backend.jobs_process.has_awaiting_jobs():
                     if not self._try_start_job():
                         logger.debug("No jobs to start, sleeping for %f seconds...", self._app_config.empty_sleep)
                         time.sleep(self._app_config.empty_sleep)

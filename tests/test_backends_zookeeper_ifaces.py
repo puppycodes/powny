@@ -40,13 +40,13 @@ class TestJobs:
             respawn=False,
         )
 
-    def test_get_awaiting_count(self, zclient):
+    def test_get_jobs_stats(self, zclient):
         ifaces.init(zclient)
         control_iface = ifaces.JobsControl(zclient)
-        assert control_iface.get_awaiting_count() == 0
+        assert control_iface.get_jobs_stats()["awaiting"] == 0
         for count in range(5):
             control_iface.add_job(self._make_job_state())
-            assert control_iface.get_awaiting_count() == count + 1
+            assert control_iface.get_jobs_stats()["awaiting"] == count + 1
 
     def test_delete_wait(self, zclient):
         ifaces.init(zclient)
@@ -59,7 +59,7 @@ class TestJobs:
         assert len(control_iface.get_job_info(job.job_id)) > 0
         assert not process_iface.is_deleted_job(job.job_id)
 
-        assert process_iface.has_ready_jobs()
+        assert process_iface.has_awaiting_jobs()
         ready_job = process_iface.get_job()
         assert job.job_id == ready_job.job_id
 
@@ -89,7 +89,7 @@ class TestJobs:
         assert len(control_iface.get_job_info(job.job_id)) > 0
         assert not process_iface.is_deleted_job(job.job_id)
 
-        assert process_iface.has_ready_jobs()
+        assert process_iface.has_awaiting_jobs()
         ready_job = process_iface.get_job()
         assert job.job_id == ready_job.job_id
 
@@ -128,7 +128,7 @@ class TestJobs:
         self._assert_job_info_new(job_info)
 
         count = 0
-        while process_iface.has_ready_jobs():
+        while process_iface.has_awaiting_jobs():
             ready_job = process_iface.get_job()
             assert ready_job.job_id == job.job_id
             assert ready_job.head == self.func_head
