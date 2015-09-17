@@ -107,29 +107,27 @@ class _Worker(Application):
 
     def _try_start_job(self):
         logger = get_logger()
-        logger.debug("Starting candidate process")
+        logger.info("Starting candidate process")
 
-        done = multiprocessing.Event()
-        return_info = multiprocessing.Manager().dict()  # pylint: disable=no-member
-
+        (read_conn, write_conn) = multiprocessing.Pipe(True)
         proc = multiprocessing.Process(
             target=_find_job_and_run,
             kwargs={
                 "backend": self.get_backend_object(),
                 "scripts_dir": self._config.core.scripts_dir,
-                "return_info": return_info,
-                "done": done,
+                "conns": (read_conn, write_conn),
             },
         )
         proc.start()
-        done.wait(self._app_config.wait_slowpokes)
+        write_conn.close()
 
-        if return_info.get("launched"):  # Задача нашлась и запущена
-            self._procs[return_info["job_id"]] = proc
-            return True
-        elif return_info.get("nothing"):  # Задач нет, надо поспать
-            proc.join()
-            return False
+        if read_conn.poll(self._app_config.wait_slowpokes):
+            job_id = read_conn.recv()
+            if job_id is not None:  # Задача нашлась и запущена
+                self._procs[job_id] = proc
+                return True
+            else:  # Задач нет, надо поспать
+                proc.join()
         else:  # Слоупок
             logger.error("Detected slowpoke process %d", proc.pid)
             killed = _send_signal(proc, signal.SIGKILL)
@@ -139,6 +137,7 @@ class _Worker(Application):
             else:
                 logger.info("Found dead slowpoke job process %d with retcode %d", proc.pid, proc.exitcode)
             self._not_started += 1
+        read_conn.close()
 
 
 def _send_signal(proc, signum):
@@ -151,16 +150,18 @@ def _send_signal(proc, signum):
         raise
 
 
-def _find_job_and_run(backend, scripts_dir, done, return_info):
-    sys.dont_write_bytecode = True
+def _find_job_and_run(backend, scripts_dir, conns):
     _unlock_logging()
+    (read_conn, write_conn) = conns
+    read_conn.close()
+    sys.dont_write_bytecode = True
     try:
         with backend.connected():
             job = backend.jobs_process.get_job()
             if job is None:
                 get_logger().info("Nothing to run; exit")
-                return_info["nothing"] = True
-                done.set()
+                write_conn.send(None)
+                write_conn.close()
                 return
 
             scripts_path = os.path.join(scripts_dir, job.head)
@@ -177,9 +178,8 @@ def _find_job_and_run(backend, scripts_dir, done, return_info):
                 fatal_internal=(not job.respawn),
             )
             thread.start()
-            return_info["job_id"] = job.job_id
-            return_info["launched"] = True
-            done.set()
+            write_conn.send(job.job_id)
+            write_conn.close()
             thread.join()
     except Exception:
         logger.exception("Unhandled exception in subprocess")
