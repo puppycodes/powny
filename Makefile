@@ -6,7 +6,7 @@ pypi:
 	python setup.py sdist upload
 
 clean:
-	rm -rf build dist *.egg-info
+	rm -rf build dist .cache *.egg-info
 	find -name __pycache__ | xargs rm -rf
 
 clean-all: clean
