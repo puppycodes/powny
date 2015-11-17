@@ -57,7 +57,6 @@ if __name__ == "__main__":
             "decorator",
             "contextlog",
             "colorlog",
-            "pkginfo",
             "setproctitle",
 
             # Backdoor

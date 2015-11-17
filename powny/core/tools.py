@@ -4,7 +4,6 @@ import calendar
 import time
 
 import dateutil.parser
-import pkginfo
 
 
 # =====
@@ -15,8 +14,7 @@ def get_node_name():
 
 
 def get_version():
-    pkg = pkginfo.get_metadata("powny")
-    return (pkg.version if pkg is not None else "<unknown>")
+    return "4.1.0"
 
 
 def get_user_agent():
