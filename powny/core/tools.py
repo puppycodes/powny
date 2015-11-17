@@ -14,7 +14,7 @@ def get_node_name():
 
 
 def get_version():
-    return "4.1.0"
+    return "4.2.0"
 
 
 def get_user_agent():
