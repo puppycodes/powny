@@ -3,12 +3,13 @@ import os
 import signal
 import multiprocessing
 import threading
-import setproctitle
 import logging
 import errno
 import time
 
 from contextlog import get_logger
+
+import setproctitle
 
 from .. import context
 

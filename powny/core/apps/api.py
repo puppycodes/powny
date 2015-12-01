@@ -49,7 +49,7 @@ class _Api(flask_api.app.FlaskAPI):
         # Yes, __init__ not from a base class
         flask.Flask.__init__(self, *args, **kwargs)  # pylint: disable=non-parent-init-called
         self.api_settings = flask_api.app.APISettings(self.config)
-        self.jinja_env.filters["urlize_quoted_links"] = flask_api.app.urlize_quoted_links
+        self.jinja_env.filters["urlize_quoted_links"] = flask_api.app.urlize_quoted_links  # pylint: disable=no-member
         self.register_blueprint(flask.Blueprint(
             name="flask-api",
             import_name="flask_api.app",
