@@ -164,7 +164,7 @@ class JobThread(threading.Thread):
                     )
             except Exception as err:
                 if isinstance(err, SuicideError):
-                    logger.warning("Suicide; fatal_internal=%s", self._fatal_internal)
+                    logger.info("Suicide; fatal_internal=%s", self._fatal_internal)
                 else:
                     logger.exception("Unhandled step error; fatal_internal=%s", self._fatal_internal)
                 # self._cont.switch() switches the stack, so we will see a valid exception, up to this place
