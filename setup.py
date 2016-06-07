@@ -5,7 +5,7 @@ import setuptools
 if __name__ == "__main__":
     setuptools.setup(
         name="powny",
-        version="4.4.0",
+        version="4.5.0",
         url="https://github.com/yandex-sysmon/powny",
         license="GPLv3",
         author="Devaev Maxim",
